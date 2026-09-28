@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -32,7 +33,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _avatar() async {
-    final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 512, imageQuality: 85);
+    late final XFile? x;
+    try {
+      // On web, image_picker resizes via an in-browser canvas when maxWidth/imageQuality
+      // are set; that resize silently fails for some photo formats (e.g. HEIC), so the
+      // file picker never returns and the tap looks like it does nothing. Skip resizing
+      // on web and let the server-side upload handle the original bytes instead.
+      x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: kIsWeb ? null : 512, imageQuality: kIsWeb ? null : 85);
+    } catch (e) {
+      if (mounted) toast(context, 'Could not open your photo library: $e', error: true);
+      return;
+    }
     if (x == null) return;
     try {
       final bytes = await x.readAsBytes();
@@ -41,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final url = db.storage.from('avatars').getPublicUrl(path);
       await AppState.instance.updateProfile({'avatar_url': url});
     } catch (e) {
-      if (mounted) toast(context, 'Could not update your photo.', error: true);
+      if (mounted) toast(context, 'Could not update your photo: $e', error: true);
     }
   }
 
