@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -8,7 +9,9 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
-const authRedirect = 'lk.vitalu.app://login-callback';
+/// Web (GitHub Pages) redirects back to the page the app is served from;
+/// mobile uses the app's deep link.
+final authRedirect = kIsWeb ? Uri.base.origin + Uri.base.path.replaceFirst(RegExp(r'[^/]*$'), '') : 'lk.vitalu.app://login-callback';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key, this.login = false});

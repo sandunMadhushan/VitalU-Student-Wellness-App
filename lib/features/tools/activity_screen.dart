@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -61,6 +62,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   Future<void> _sync() async {
+    if (kIsWeb) return; // no step sensor in browsers — manual entry only
     setState(() => _syncing = true);
     try {
       final status = await Permission.activityRecognition.request();
@@ -269,6 +271,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
           ]),
         ),
         PrimaryButton('Log Activity Manually', leadingIcon: Symbols.add, color: AppColors.inverseSurface, fg: AppColors.inverseOnSurface, height: 52, onTap: _logManual),
+        if (!kIsWeb)
         Pressable(
           onTap: _syncing ? null : _sync,
           child: Container(
