@@ -37,11 +37,21 @@ class AppState extends ChangeNotifier {
     final id = uid;
     if (id == null) return null;
     try {
+      final u = db.auth.currentUser!;
+      // Google (and other OAuth) sign-ins put the account photo here.
+      final googleAvatar = (u.userMetadata?['avatar_url'] ?? u.userMetadata?['picture']) as String?;
       var row = await db.from('profiles').select().eq('id', id).maybeSingle();
       if (row == null) {
         // Trigger normally creates it; fall back for safety.
-        final u = db.auth.currentUser!;
-        row = await db.from('profiles').upsert({'id': id, 'email': u.email, 'full_name': u.userMetadata?['full_name']}).select().single();
+        row = await db.from('profiles').upsert({
+          'id': id,
+          'email': u.email,
+          'full_name': u.userMetadata?['full_name'],
+          if (googleAvatar != null) 'avatar_url': googleAvatar,
+        }).select().single();
+      } else if (row['avatar_url'] == null && googleAvatar != null) {
+        // Backfill the Google photo once; a manual upload always takes priority afterwards.
+        row = await db.from('profiles').update({'avatar_url': googleAvatar}).eq('id', id).select().single();
       }
       profile = Profile(row);
       await refreshUnread();
