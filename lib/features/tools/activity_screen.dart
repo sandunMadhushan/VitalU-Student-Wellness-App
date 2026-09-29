@@ -149,7 +149,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final weekNo = weekOfYear(now);
 
     return VPage(
-      header: const MainHeader('Vitalu   Health Tools'),
+      header: const MainHeader('VitalU Health Tools'),
       nav: NavTab.tools,
       onRefresh: _load,
       children: [

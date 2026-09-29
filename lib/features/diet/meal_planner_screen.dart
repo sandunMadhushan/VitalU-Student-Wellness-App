@@ -137,7 +137,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
     final pickDay = _week.add(Duration(days: (weekNo % 5) + 1));
 
     return VPage(
-      header: const MainHeader('Vitalu   Diet & Nutrition'),
+      header: const MainHeader('VitalU Diet & Nutrition'),
       nav: NavTab.diet,
       onRefresh: _load,
       bottom: Center(

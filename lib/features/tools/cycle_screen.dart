@@ -223,7 +223,7 @@ class _CycleScreenState extends State<CycleScreen> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: const MainHeader('Vitalu   Health Tools'),
+      header: const MainHeader('VitalU Health Tools'),
       nav: NavTab.tools,
       onRefresh: _load,
       children: _loading ? [const Loading()] : _content(),

@@ -171,7 +171,7 @@ class _MealLogScreenState extends State<MealLogScreen> {
     }).toList();
 
     return VPage(
-      header: const MainHeader('Vitalu   Diet & Nutrition'),
+      header: const MainHeader('VitalU Diet & Nutrition'),
       nav: NavTab.diet,
       bottom: _tray.isEmpty ? null : _trayBar(),
       children: [

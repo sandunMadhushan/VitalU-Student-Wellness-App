@@ -108,7 +108,7 @@ class _BloodUploadScreenState extends State<BloodUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: const MainHeader('Vitalu Health Education Library'),
+      header: const MainHeader('VitalU Health Education Library'),
       nav: NavTab.library,
       navVariantLibrary: true,
       onRefresh: _loadHistory,

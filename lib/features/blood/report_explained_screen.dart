@@ -144,7 +144,7 @@ class _ReportExplainedScreenState extends State<ReportExplainedScreen> {
     final flagged = vals.where((v) => !v.inRange).toList();
 
     return VPage(
-      header: const MainHeader('Vitalu Health Education Library'),
+      header: const MainHeader('VitalU Health Education Library'),
       nav: NavTab.library,
       navVariantLibrary: true,
       onRefresh: _load,

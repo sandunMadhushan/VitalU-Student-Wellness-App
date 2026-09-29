@@ -149,7 +149,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: const MainHeader('Vitalu   Your Progress & Trends'),
+      header: const MainHeader('VitalU Your Progress & Trends'),
       nav: NavTab.progress,
       onRefresh: _load,
       children: [

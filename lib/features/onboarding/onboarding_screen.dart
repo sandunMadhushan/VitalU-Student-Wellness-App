@@ -72,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: const Icon(Symbols.favorite, size: 14, color: darkMint, weight: 700),
                 ),
                 const SizedBox(width: 6),
-                Text('VITALU', style: T.custom(12, weight: FontWeight.w700, color: darkMint.withValues(alpha: 0.8), spacing: 1.2)),
+                Text('VitalU', style: T.custom(12, weight: FontWeight.w700, color: darkMint.withValues(alpha: 0.8), spacing: 1.2)),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),

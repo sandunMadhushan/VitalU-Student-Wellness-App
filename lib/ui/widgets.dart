@@ -35,20 +35,34 @@ class AssetImg extends StatelessWidget {
   }
 }
 
-/// Circular avatar of the signed-in student (uploaded photo or default illustration).
+/// Circular avatar of the signed-in student (uploaded photo, or a gender
+/// placeholder icon when none has been uploaded yet).
 class Avatar extends StatelessWidget {
   const Avatar({super.key, this.size = 32, this.ring = true, this.onTap});
   final double size;
   final bool ring;
   final VoidCallback? onTap;
 
+  Widget _placeholder() {
+    final isFemale = AppState.instance.profile?.isFemale ?? false;
+    final bg = isFemale ? AppColors.secondaryFixed : AppColors.primaryFixed;
+    final fg = isFemale ? AppColors.onSecondaryFixed : AppColors.onPrimaryFixed;
+    return Container(
+      width: size,
+      height: size,
+      color: bg,
+      alignment: Alignment.center,
+      child: Icon(isFemale ? Symbols.woman : Symbols.man, size: size * 0.62, color: fg, fill: 1),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final url = AppState.instance.profile?.avatarUrl;
     final child = ClipOval(
       child: url != null && url.isNotEmpty
-          ? Image.network(url, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, __, ___) => AssetImg('avatar_student', width: size, height: size))
-          : AssetImg('avatar_student', width: size, height: size),
+          ? Image.network(url, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
+          : _placeholder(),
     );
     return GestureDetector(
       onTap: onTap ?? () => context.push('/profile'),
@@ -732,7 +746,7 @@ class TitleHeader extends StatelessWidget {
       );
 }
 
-/// Registration header: back + app icon + "VITALU / Personal Profile".
+/// Registration header: back + app icon + "VitalU / Personal Profile".
 class RegistrationHeader extends StatelessWidget {
   const RegistrationHeader({super.key, this.title = 'Personal Profile', this.onBack});
   final String title;
@@ -747,7 +761,7 @@ class RegistrationHeader extends StatelessWidget {
           const AssetImg('app_icon', height: 32, fit: BoxFit.contain),
           const SizedBox(width: Sp.xs),
           Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('VITALU', style: T.labelSm.c(AppColors.primary).bold.tracking(1.2).lh(1)),
+            Text('VitalU', style: T.labelSm.c(AppColors.primary).bold.tracking(1.2).lh(1)),
             Text(title, style: T.headlineSm.lh(1.3)),
           ]),
           const Spacer(),

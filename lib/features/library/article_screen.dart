@@ -119,7 +119,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
   Widget build(BuildContext context) {
     final a = _a;
     return VPage(
-      header: const MainHeader('Vitalu Health Education Library'),
+      header: const MainHeader('VitalU Health Education Library'),
       nav: NavTab.library,
       navVariantLibrary: true,
       children: [

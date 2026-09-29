@@ -87,19 +87,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  void _sso() {
-    showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          IconCircle(Symbols.account_balance, bg: AppColors.primaryFixed),
-          const SizedBox(height: Sp.sm),
-          Text('Campus SSO', style: T.headlineMd),
-          const SizedBox(height: 6),
-          Text('Single sign-on with your university account will be available once your university enables it for VitalU. For now, create an account with your university email.',
-              style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-          const SizedBox(height: Sp.md),
-          PrimaryButton('Use University Email', onTap: () => Navigator.pop(ctx), color: AppColors.tertiary),
-        ]));
-  }
-
   Widget _field({required String label, required Widget badge, required IconData icon, required Color iconBg, required Color iconFg, required Widget input, Widget? trailing}) {
     return Container(
       padding: const EdgeInsets.all(Sp.md),
@@ -187,7 +174,7 @@ class _AuthScreenState extends State<AuthScreen> {
             icon: Symbols.person_pin,
             iconBg: AppColors.primaryFixed.withValues(alpha: 0.6),
             iconFg: AppColors.primary,
-            input: TextField(controller: _name, textCapitalization: TextCapitalization.words, autofillHints: const [AutofillHints.name], style: T.bodyLg.medium, decoration: _bare.copyWith(hintText: 'Alex Morgan')),
+            input: TextField(controller: _name, textCapitalization: TextCapitalization.words, autofillHints: const [AutofillHints.name], style: T.bodyLg.medium, decoration: _bare.copyWith(hintText: 'Nimal Perera')),
           ),
         _field(
           label: 'University Email',
@@ -195,7 +182,7 @@ class _AuthScreenState extends State<AuthScreen> {
           icon: Symbols.school,
           iconBg: AppColors.surfaceContainerHigh,
           iconFg: AppColors.tertiary,
-          input: TextField(controller: _email, keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], style: T.bodyLg.medium, decoration: _bare.copyWith(hintText: 'you@university.lk')),
+          input: TextField(controller: _email, keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], style: T.bodyLg.medium, decoration: _bare.copyWith(hintText: 'fst*****@agri.pdn.ac.lk')),
         ),
         _field(
           label: 'Password',
@@ -255,17 +242,11 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ]),
         ),
-        Row(children: [
-          Expanded(child: _socialButton(IconCircle(Symbols.account_balance, size: 32, iconSize: 18, bg: AppColors.primaryFixed), 'Campus SSO', _sso)),
-          const SizedBox(width: Sp.sm),
-          Expanded(
-            child: _socialButton(
-              Container(width: 32, height: 32, decoration: BoxDecoration(color: AppColors.surfaceContainerHigh, shape: BoxShape.circle), alignment: Alignment.center, child: const _GoogleG()),
-              'Google',
-              _google,
-            ),
-          ),
-        ]),
+        _socialButton(
+          Container(width: 32, height: 32, decoration: BoxDecoration(color: AppColors.surfaceContainerHigh, shape: BoxShape.circle), alignment: Alignment.center, child: const _GoogleG()),
+          'Google',
+          _google,
+        ),
         Container(
           margin: const EdgeInsets.only(top: Sp.sm),
           padding: const EdgeInsets.all(Sp.sm),

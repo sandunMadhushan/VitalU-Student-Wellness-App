@@ -141,7 +141,7 @@ class _SleepScreenState extends State<SleepScreen> {
     final avg = _week.isEmpty ? 0 : (_week.map(Repo.sleepMinutes).reduce((a, b) => a + b) / _week.length).round();
 
     return VPage(
-      header: const MainHeader('Vitalu   Health Tools'),
+      header: const MainHeader('VitalU Health Tools'),
       nav: NavTab.tools,
       onRefresh: _load,
       children: _loading

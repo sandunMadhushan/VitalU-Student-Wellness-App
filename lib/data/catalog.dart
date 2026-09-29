@@ -22,6 +22,14 @@ const conditions = <Condition>[
   Condition('pcos', 'Diagnosed PCOS', Symbols.female, true),
   Condition('anaemia', 'Anaemia / low iron', Symbols.bloodtype, true),
   Condition('constipation', 'Frequent constipation', Symbols.nutrition, false),
+  Condition('family_cholesterol', 'Dyslipidemia / high cholesterol in family', Symbols.bloodtype, true),
+  Condition('family_obesity', 'Obesity in family', Symbols.monitor_weight, false),
+  Condition('skin_disease', 'Skin diseases', Symbols.dermatology, false),
+  Condition('kidney_disease', 'Kidney disease', Symbols.nephrology, true),
+  Condition('liver_disease', 'Liver disease', Symbols.medical_information, false),
+  Condition('hemorrhoids', 'Hemorrhoids', Symbols.healing, false),
+  Condition('std', 'Sexually transmitted diseases', Symbols.sick, true),
+  Condition('allergies_intolerances', 'Allergies / intolerances', Symbols.allergy, false),
 ];
 
 Condition? conditionByKey(String k) {
@@ -41,7 +49,7 @@ const faculties = <String>[
   'Other Academic Department',
 ];
 
-const academicYears = <String>['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate'];
+const academicYears = <String>['21/22 Batch', '22/23 Batch', '23/24 Batch', '24/25 Batch', '25/26 Batch'];
 
 /// The eight food groups used by the dietary diversity tracker.
 class FoodGroup {

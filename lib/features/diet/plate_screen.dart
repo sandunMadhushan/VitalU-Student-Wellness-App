@@ -95,7 +95,7 @@ class _PlateScreenState extends State<PlateScreen> {
   Widget build(BuildContext context) {
     final prog = _progress(_sel);
     return VPage(
-      header: const MainHeader('Vitalu   Diet & Nutrition'),
+      header: const MainHeader('VitalU Diet & Nutrition'),
       nav: NavTab.diet,
       children: [
         Row(children: [

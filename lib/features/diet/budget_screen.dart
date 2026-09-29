@@ -129,7 +129,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final under = _budget == 0 ? 0 : ((cushion / _budget) * 100).round();
 
     return VPage(
-      header: const MainHeader('Vitalu   Diet & Nutrition'),
+      header: const MainHeader('VitalU Diet & Nutrition'),
       nav: NavTab.diet,
       children: [
         Row(children: [

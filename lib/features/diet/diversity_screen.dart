@@ -74,7 +74,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
     }
 
     return VPage(
-      header: const MainHeader('Vitalu   Diet & Nutrition'),
+      header: const MainHeader('VitalU Diet & Nutrition'),
       nav: NavTab.diet,
       onRefresh: _load,
       children: [

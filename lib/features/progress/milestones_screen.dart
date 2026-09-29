@@ -53,7 +53,7 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
     final n = _earned.length, total = _badges.isEmpty ? 12 : _badges.length;
 
     return VPage(
-      header: const MainHeader('Vitalu   Your Progress & Trends'),
+      header: const MainHeader('VitalU Your Progress & Trends'),
       nav: NavTab.progress,
       onRefresh: _load,
       children: [

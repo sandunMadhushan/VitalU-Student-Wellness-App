@@ -48,7 +48,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
     final shown = available.where((t) => _filter == 'all' || t.cats.contains(_filter)).toList();
 
     return VPage(
-      header: const MainHeader('Vitalu   Health Tools'),
+      header: const MainHeader('VitalU Health Tools'),
       nav: NavTab.tools,
       children: [
         VCard(

@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../core/app_state.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
+import '../../data/weather.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -46,14 +47,19 @@ class _WaterScreenState extends State<WaterScreen> {
   List<Rec> _logs = [];
   int _selected = 250;
   late bool _nudge = AppState.instance.profile?.waterNudge ?? true;
+  double? _tempC;
 
   int get _goal => AppState.instance.profile?.waterGoalMl ?? 2500;
   int get _total => _logs.fold<int>(0, (a, r) => a + (r['amount_ml'] as int));
+  int get _heatBonus => Calc.heatAdjustmentMl(_tempC);
 
   @override
   void initState() {
     super.initState();
     _load();
+    Weather.currentTempC().then((t) {
+      if (mounted) setState(() => _tempC = t);
+    });
   }
 
   Future<void> _load() async {
@@ -139,7 +145,7 @@ class _WaterScreenState extends State<WaterScreen> {
     final nextAt = DateTime.now().add(const Duration(hours: 2));
 
     return VPage(
-      header: const MainHeader('Vitalu   Health Tools'),
+      header: const MainHeader('VitalU Health Tools'),
       nav: NavTab.tools,
       onRefresh: _load,
       children: [
@@ -291,18 +297,23 @@ class _WaterScreenState extends State<WaterScreen> {
           ),
         ]),
         VCard(
-          color: AppColors.surfaceContainerLow,
+          color: _heatBonus > 0 ? AppColors.errorContainer.withValues(alpha: 0.4) : AppColors.surfaceContainerLow,
           shadow: Shadows.tiny,
           child: Column(children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              IconCircle(Symbols.lightbulb, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.onSecondaryFixed, fill: 1),
+              IconCircle(_heatBonus > 0 ? Symbols.sunny : Symbols.lightbulb,
+                  size: 40, iconSize: 20, bg: _heatBonus > 0 ? AppColors.butterWash : AppColors.secondaryFixed, fg: _heatBonus > 0 ? AppColors.butterAccent : AppColors.onSecondaryFixed, fill: 1),
               const SizedBox(width: Sp.sm),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Exam Season Hydration Tip', style: T.labelLg),
+                  Text(_heatBonus > 0 ? "It's a hot day — drink more" : 'Exam Season Hydration Tip', style: T.labelLg),
                   const SizedBox(height: 4),
-                  Text('Drinking a glass of water before afternoon lectures refreshes focus and keeps headaches at bay far better than another sugary drink.',
-                      style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6)),
+                  Text(
+                    _heatBonus > 0
+                        ? "It's about ${_tempC!.round()}°C right now, so your body loses more water than usual. Try for an extra ${_heatBonus}ml today (around ${Fmt.litres(_goal + _heatBonus)}L total)."
+                        : 'Drinking a glass of water before afternoon lectures refreshes focus and keeps headaches at bay far better than another sugary drink.',
+                    style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6),
+                  ),
                 ]),
               ),
             ]),

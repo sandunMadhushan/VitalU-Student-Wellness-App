@@ -296,7 +296,26 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
   bool _none = false;
   bool _busy = false;
 
-  static const _keys = ['family_heart', 'family_diabetes', 'asthma_allergies', 'high_bp', 'migraine', 'anxiety_sleep'];
+  static const _keys = [
+    'family_heart',
+    'family_diabetes',
+    'family_cholesterol',
+    'family_obesity',
+    'asthma_allergies',
+    'allergies_intolerances',
+    'high_bp',
+    'migraine',
+    'anxiety_sleep',
+    'gastritis',
+    'constipation',
+    'skin_disease',
+    'kidney_disease',
+    'liver_disease',
+    'hemorrhoids',
+    'anaemia',
+    'std',
+    'pcos',
+  ];
 
   Future<void> _continue({bool skip = false}) async {
     setState(() => _busy = true);
@@ -335,7 +354,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   TagPill('Private & Encrypted', icon: Symbols.lock, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixed),
                   const SizedBox(height: 6),
-                  Text('Strictly confidential. VitalU uses this solely to tailor gentle preventative tips — never shared with lecturers or your faculty.',
+                  Text('VitalU uses this solely to tailor gentle preventative tips — never shared with lecturers or your faculty.',
                       style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6)),
                 ]),
               ),
@@ -576,8 +595,6 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
       children: [
         const _StepProgress(step: 3, label: 'Body Measurements', thin: true),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          TagPill('Optional & Confidential', icon: Symbols.lock, bg: AppColors.surfaceContainerHigh, fg: AppColors.tertiary),
-          const SizedBox(height: Sp.xs + 2),
           Text('A few numbers to personalize your tools', style: T.headlineMd.bold),
           const SizedBox(height: 4),
           Text("Don't know these? No problem, skip and add later.", style: T.bodyMd.c(AppColors.onSurfaceVariant)),
@@ -586,23 +603,6 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         _card('Weight', 'Helps baseline hydration targets', Symbols.monitor_weight, _w),
         _card('Waist Circumference', 'Optional • Gentle estimate', Symbols.straighten, _waist, optional: true),
         _card('Hip Circumference', 'Optional • Balances ratio calculations', Symbols.accessibility_new, _hip, optional: true),
-        VCard(
-          color: AppColors.surfaceContainerHigh,
-          radius: Rad.md,
-          shadow: Shadows.tiny,
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconCircle(Symbols.auto_awesome, size: 36, iconSize: 20, bg: AppColors.tertiaryContainer, fg: AppColors.onTertiaryContainer),
-            const SizedBox(width: Sp.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text("We'll calculate your BMI and WHR automatically once you add these.", style: T.labelLg),
-                const SizedBox(height: 4),
-                Text('Zero judgment or rigid body targets — these simply unlock accurate hydration targets and heart-health insights tailored to you.',
-                    style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6)),
-              ]),
-            ),
-          ]),
-        ),
         const SizedBox(height: Sp.sm),
         Column(children: [
           PrimaryButton('Finish Setup', icon: Symbols.check, color: AppColors.tertiary, height: 54, loading: _busy, onTap: () => _finish()),
@@ -681,38 +681,27 @@ class RegistrationComplete extends StatelessWidget {
           const SizedBox(height: 6),
           Text('Your personalized health space is ready.', style: T.bodyMd.c(AppColors.onSurfaceVariant).medium),
           const SizedBox(height: 4),
-          Text('Gentle reminders and tools crafted for your university rhythm — at your own pace.', textAlign: TextAlign.center, style: T.bodySm.c(AppColors.outline)),
+          Text('Gentle reminders and tools crafted for your university rhythm, at your own pace.', textAlign: TextAlign.center, style: T.bodySm.c(AppColors.outline)),
         ]),
         Column(children: [
           Row(children: [
             Text('YOUR SPACE INCLUDES', style: T.labelSm.c(AppColors.outline).tracking(1.6)),
-            const Spacer(),
-            Text('3 Unlocked', style: T.labelSm.c(AppColors.primary).medium),
           ]),
           const SizedBox(height: Sp.sm),
           Row(children: [
-            tile(Symbols.vital_signs, AppColors.tertiaryFixed, AppColors.onTertiaryFixed, 'Tools', 'Vitals & habits'),
+            tile(Symbols.vital_signs, AppColors.tertiaryFixed, AppColors.onTertiaryFixed, 'Health Tools', 'Vitals & habits'),
             const SizedBox(width: Sp.xs),
-            tile(Symbols.water_drop, AppColors.secondaryFixed, AppColors.onSecondaryFixed, 'Dietary', 'Meals & water'),
+            tile(Symbols.local_dining, AppColors.secondaryFixed, AppColors.onSecondaryFixed, 'Nutrition Hub', 'Meals & water'),
             const SizedBox(width: Sp.xs),
-            tile(Symbols.lightbulb, AppColors.primaryFixed, AppColors.onPrimaryFixed, 'Learn', 'Campus tips'),
+            tile(Symbols.local_library, AppColors.primaryFixed, AppColors.onPrimaryFixed, 'Health Education', 'Campus tips'),
+          ]),
+          const SizedBox(height: Sp.xs),
+          Row(children: [
+            tile(Symbols.support_agent, AppColors.secondaryFixed, AppColors.onSecondaryFixed, 'Health Support', 'Help & experts'),
+            const SizedBox(width: Sp.xs),
+            tile(Symbols.bubble_chart, AppColors.tertiaryFixed, AppColors.onTertiaryFixed, 'My Progress', 'Trends & badges'),
           ]),
         ]),
-        VCard(
-          gradient: LinearGradient(colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh.withValues(alpha: 0.6)]),
-          shadow: Shadows.tiny,
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconCircle(Symbols.spa, size: 32, iconSize: 18, bg: AppColors.primaryContainer.withValues(alpha: 0.2)),
-            const SizedBox(width: Sp.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Sanctuary First', style: T.labelSm.s(12)),
-                const SizedBox(height: 2),
-                Text('Campus life gets busy. Whenever you open VitalU, take a deep breath. You are doing great.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-              ]),
-            ),
-          ]),
-        ),
         PrimaryButton('Go to My Dashboard', icon: Symbols.arrow_forward, color: AppColors.tertiaryContainer, shadowColor: AppColors.tertiary, onTap: () => context.go('/home')),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Symbols.favorite, size: 16, fill: 1, color: AppColors.tertiary),

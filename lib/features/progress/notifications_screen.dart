@@ -95,7 +95,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final unreadToday = today.where((n) => n['read_at'] == null).length;
 
     return VPage(
-      header: const MainHeader('Vitalu   Your Progress & Trends'),
+      header: const MainHeader('VitalU Your Progress & Trends'),
       nav: NavTab.progress,
       onRefresh: _load,
       children: [

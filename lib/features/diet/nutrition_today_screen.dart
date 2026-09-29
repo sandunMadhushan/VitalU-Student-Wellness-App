@@ -78,7 +78,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
     final carbT = (_target * 0.5 / 4).round(), protT = (_target * 0.18 / 4).round(), fatT = (_target * 0.3 / 9).round();
 
     return VPage(
-      header: const MainHeader('Vitalu   Diet & Nutrition'),
+      header: const MainHeader('VitalU Diet & Nutrition'),
       nav: NavTab.diet,
       onRefresh: _load,
       children: [

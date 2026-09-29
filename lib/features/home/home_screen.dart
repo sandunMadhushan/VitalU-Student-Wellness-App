@@ -61,6 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _water = 0;
   int _steps = 0;
   int _activeMinutes = 0;
+  int _mealsToday = 0;
+  int _diversityToday = 0;
   Rec? _sleep;
   Rec? _mood;
   Rec? _openWindow;
@@ -76,12 +78,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _load() async {
     try {
       final now = DateTime.now();
+      final today = isoDate(now);
       final results = await Future.wait([
         Repo.waterTotal(now),
         Repo.activityTotals(now),
         Repo.sleepLatest(),
         Repo.moodLatest(),
         Repo.currentAndNextWindow(),
+        Repo.mealsOn(now),
+        Repo.diversityBetween(weekStart(now), now),
       ]);
       _water = results[0] as int;
       final act = results[1] as Rec;
@@ -95,6 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _openWindow = open;
       _nextWindow = next;
       _assessment = open == null ? null : await Repo.assessmentFor(open['id']);
+      _mealsToday = (results[5] as List).length;
+      _diversityToday = (results[6] as List).where((r) => r['log_date'] == today).map((r) => r['food_group']).toSet().length;
       await AppState.instance.refreshUnread();
     } catch (e) {
       debugPrint('home load: $e');
@@ -176,13 +183,33 @@ class _HomeScreenState extends State<HomeScreen> {
     final sleepMin = _sleep == null ? 0 : Repo.sleepMinutes(_sleep!);
     final mood = _mood == null ? null : moodInfo(_mood!['mood']);
     final next = _openWindow ?? _nextWindow;
+    final bmi = p?.bmi;
+    final whr = p?.whr;
 
     return [
       Padding(padding: const EdgeInsets.only(top: 4), child: _greetingRow(emoji: '✨', subtitle: 'Ready for a balanced day?')),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Your Health, At a Glance', style: T.headlineLg),
-        const SizedBox(height: 2),
-        Text('Gentle nudges, quiet rest, zero pressure.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+      Row(children: [
+        Expanded(child: Text('My Health Metrics', style: T.headlineSm)),
+        Text(p?.measuredAt == null ? 'Not yet updated' : 'Updated ${DateFormat('d MMM').format(p!.measuredAt!.toLocal())}', style: T.labelSm.c(AppColors.onSurfaceVariant)),
+      ]),
+      Row(children: [
+        _bmiStat(bmi, () => _go('/tools/bmi')),
+        const SizedBox(width: 10),
+        _stat(Symbols.accessibility_new, AppColors.primaryFixed.withValues(alpha: 0.6), AppColors.primary, whr?.toStringAsFixed(2) ?? '—', 'WHR Ratio',
+            whr == null ? 0 : ((whr - 0.6) / 0.5).clamp(0, 1), () => _go('/tools/whr')),
+      ]),
+      Text("Today's Health Goals", style: T.headlineSm),
+      Row(children: [
+        _goalTile(Symbols.water_drop, AppColors.primaryFixed, AppColors.primary, '${(_water / 250).round()}/${(waterGoal / 250).round()}', 'Water (glasses)'),
+        const SizedBox(width: Sp.xs),
+        _goalTile(Symbols.restaurant, AppColors.secondaryFixed, AppColors.secondary, '$_mealsToday', 'Meals logged'),
+        const SizedBox(width: Sp.xs),
+        _goalTile(Symbols.nutrition, AppColors.tertiaryFixed, AppColors.tertiary, '$_diversityToday/8', 'Diet diversity'),
+      ]),
+      Row(children: [
+        _goalTile(Symbols.directions_walk, AppColors.butterWash, AppColors.butterAccent, Fmt.thousands(_steps), 'Activity (steps)'),
+        const SizedBox(width: Sp.xs),
+        _goalTile(Symbols.bedtime, AppColors.primaryFixed, AppColors.primary, _sleep == null ? '—' : Fmt.hm(sleepMin), 'Sleep'),
       ]),
       Row(children: [
         Expanded(child: _quickAction(Symbols.restaurant, 'Log a Meal', AppColors.surfaceContainerLow, AppColors.tertiary, AppColors.onSurface, () => _go('/diet/log'))),
@@ -317,6 +344,50 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(child: Text('Need help now? Emergency & support lines', style: T.labelLg.c(AppColors.onErrorContainer))),
           Icon(Symbols.chevron_right, color: AppColors.onErrorContainer),
         ]),
+      );
+
+  Widget _stat(IconData icon, Color bg, Color fg, String value, String label, double bar, VoidCallback onTap) => Expanded(
+        child: VCard(
+          padding: const EdgeInsets.all(14),
+          shadow: Shadows.soft,
+          onTap: onTap,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            IconCircle(icon, size: 28, iconSize: 16, bg: bg, fg: fg),
+            const SizedBox(height: 8),
+            Text(value, style: T.headlineMd.lh(1)),
+            const SizedBox(height: 4),
+            Text(label, style: T.labelSm.s(11).c(AppColors.onSurfaceVariant)),
+            const SizedBox(height: 10),
+            Bar(value: bar, height: 6, color: fg, track: AppColors.surfaceContainer),
+          ]),
+        ),
+      );
+
+  /// BMI tile with a status-coloured icon (underweight/normal/overweight/obese)
+  /// instead of a body photo.
+  Widget _bmiStat(double? bmi, VoidCallback onTap) {
+    final (icon, bg, fg) = switch (bmi == null ? null : Calc.bmiCategory(bmi)) {
+      null => (Symbols.scale, AppColors.surfaceContainerHigh, AppColors.onSurfaceVariant),
+      'Underweight' => (Symbols.trending_down, AppColors.skyWash, AppColors.skyAccent),
+      'Normal Weight' => (Symbols.check_circle, AppColors.tertiaryFixed, AppColors.tertiary),
+      'Overweight' => (Symbols.trending_up, AppColors.butterWash, AppColors.butterAccent),
+      _ => (Symbols.priority_high, AppColors.errorContainer, AppColors.error),
+    };
+    return _stat(icon, bg, fg, bmi?.toStringAsFixed(1) ?? '—', 'BMI Range', bmi == null ? 0 : ((bmi - 15) / 20).clamp(0, 1), onTap);
+  }
+
+  Widget _goalTile(IconData icon, Color bg, Color fg, String value, String label) => Expanded(
+        child: VCard(
+          color: AppColors.surfaceContainerLowest,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          shadow: Shadows.tiny,
+          child: Column(children: [
+            IconCircle(icon, size: 32, iconSize: 16, bg: bg, fg: fg, fill: 1),
+            const SizedBox(height: 6),
+            Text(value, style: T.labelLg.bold, maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(label, style: T.labelSm.s(10).c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+          ]),
+        ),
       );
 
   Widget _quickAction(IconData icon, String label, Color bg, Color iconColor, Color fg, VoidCallback onTap) => Pressable(

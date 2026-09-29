@@ -93,6 +93,15 @@ class Calc {
     final ml = ((weightKg * 35) / 100).round() * 100;
     return math.max(1800, math.min(ml, 4000));
   }
+
+  /// Extra water (ml) worth suggesting on hot days, on top of the base target.
+  static int heatAdjustmentMl(double? tempC) {
+    if (tempC == null) return 0;
+    if (tempC >= 34) return 750;
+    if (tempC >= 32) return 500;
+    if (tempC >= 30) return 300;
+    return 0;
+  }
 }
 
 class Fmt {

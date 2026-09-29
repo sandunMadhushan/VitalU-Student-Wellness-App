@@ -31,12 +31,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final List<String> _custom = [...p.customConditions];
   late final List<Map<String, dynamic>> _meds = [...p.medications];
   final _medCtrl = TextEditingController();
+  late final List<String> _allergies = [...p.allergies];
+  final _allergyCtrl = TextEditingController();
+  late final List<Map<String, dynamic>> _family = [...p.familyHistory];
   late double _water = p.waterGoalMl / 1000;
   late double _sleep = p.sleepGoalHours;
   late String _activity = p.activityLevel;
   bool _saving = false;
 
-  static const _editConds = ['asthma_allergies', 'migraine', 'gastritis', 'family_heart', 'family_diabetes', 'high_bp', 'anxiety_sleep', 'pcos', 'anaemia', 'constipation'];
+  static const _editConds = [
+    'asthma_allergies',
+    'allergies_intolerances',
+    'migraine',
+    'gastritis',
+    'family_heart',
+    'family_diabetes',
+    'family_cholesterol',
+    'family_obesity',
+    'high_bp',
+    'anxiety_sleep',
+    'pcos',
+    'anaemia',
+    'constipation',
+    'skin_disease',
+    'kidney_disease',
+    'liver_disease',
+    'hemorrhoids',
+    'std',
+  ];
 
   Future<void> _save() async {
     setState(() => _saving = true);
@@ -56,6 +78,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'health_conditions': _conds.toList(),
         'custom_conditions': _custom,
         'medications': _meds,
+        'allergies': _allergies,
+        'family_history': _family,
         'water_goal_ml': (_water * 1000).round(),
         'sleep_goal_hours': _sleep,
         'activity_level': _activity,
@@ -289,6 +313,65 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ]),
         ),
         _section(
+          'Allergies',
+          'Anything campus health staff should know before treating you',
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            if (_allergies.isNotEmpty)
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (final a in _allergies)
+                  Container(
+                    height: 38,
+                    padding: const EdgeInsets.only(left: 14, right: 6),
+                    decoration: BoxDecoration(color: AppColors.errorContainer, borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.tiny),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Symbols.warning, size: 16, color: AppColors.error),
+                      const SizedBox(width: 6),
+                      Text(a, style: T.labelMd.c(AppColors.onErrorContainer)),
+                      const SizedBox(width: 4),
+                      GestureDetector(onTap: () => setState(() => _allergies.remove(a)), child: Icon(Symbols.close, size: 16, color: AppColors.onErrorContainer)),
+                    ]),
+                  ),
+              ]),
+            if (_allergies.isNotEmpty) const SizedBox(height: Sp.md),
+            Container(
+              padding: const EdgeInsets.only(left: 16, right: 6),
+              decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
+              child: Row(children: [
+                Icon(Symbols.warning, size: 20, color: AppColors.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _allergyCtrl,
+                    style: T.bodyMd,
+                    onSubmitted: (_) => _addAllergy(),
+                    decoration: InputDecoration(border: InputBorder.none, hintText: 'e.g. Penicillin, peanuts, dust', hintStyle: T.bodyMd.c(AppColors.outline)),
+                  ),
+                ),
+                CircleButton(Symbols.add, size: 36, iconSize: 20, bg: AppColors.tertiary, fg: AppColors.onTertiary, onTap: _addAllergy),
+              ]),
+            ),
+          ]),
+        ),
+        _section(
+          'Family Health History',
+          'Confidential — helps tailor gentle preventative tips',
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            if (_family.isEmpty) Text('No records yet', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            for (final f in _family)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(children: [
+                  Expanded(child: Text('${f['relation']}', style: T.labelMd)),
+                  Flexible(child: Text('${f['condition']}', textAlign: TextAlign.right, style: T.labelSm.c(AppColors.onSurfaceVariant))),
+                  const SizedBox(width: 4),
+                  GestureDetector(onTap: () => setState(() => _family.remove(f)), child: Icon(Symbols.close, size: 16, color: AppColors.onSurfaceVariant)),
+                ]),
+              ),
+            const SizedBox(height: Sp.sm),
+            SoftButton('Add Family Record', icon: Symbols.add, color: AppColors.surfaceContainerLow, fg: AppColors.tertiary, height: 44, style: T.labelMd, onTap: _addFamilyRecord),
+          ]),
+        ),
+        _section(
           'Lifestyle Pacing & Goals',
           'Calibrate comfortable targets for your study-rest cadence',
           Column(children: [
@@ -311,6 +394,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ]),
       ],
     );
+  }
+
+  void _addAllergy() {
+    final t = _allergyCtrl.text.trim();
+    if (t.isEmpty) return;
+    setState(() {
+      _allergies.add(t);
+      _allergyCtrl.clear();
+    });
+  }
+
+  Future<void> _addFamilyRecord() async {
+    String relation = 'Mother';
+    String condition = 'High blood pressure';
+    await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text('Add Family Health Record', style: T.headlineMd),
+            const SizedBox(height: Sp.md),
+            Text('Relative', style: T.labelLg),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final r in const ['Mother', 'Father', 'Sibling', 'Grandparent']) VChip(r, selected: relation == r, selectedColor: AppColors.secondary, onTap: () => set(() => relation = r)),
+            ]),
+            const SizedBox(height: Sp.md),
+            Text('Condition', style: T.labelLg),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final c in const ['Heart disease', 'Stroke', 'High blood pressure', 'Diabetes', 'High cholesterol', 'Asthma', 'Other'])
+                VChip(c, selected: condition == c, selectedColor: AppColors.secondary, onTap: () => set(() => condition = c)),
+            ]),
+            const SizedBox(height: Sp.lg),
+            PrimaryButton('Save Record', color: AppColors.secondary, onTap: () {
+              setState(() {
+                _family.add({'relation': relation, 'condition': condition, 'added': DateFormat('yyyy-MM-dd').format(DateTime.now())});
+                if (condition == 'Heart disease' || condition == 'Stroke') _conds.add('family_heart');
+                if (condition == 'Diabetes') _conds.add('family_diabetes');
+                if (condition == 'High blood pressure') _conds.add('family_hypertension');
+                if (condition == 'High cholesterol') _conds.add('family_cholesterol');
+              });
+              Navigator.pop(ctx);
+            }),
+          ]);
+        }));
   }
 
   void _addMed() {

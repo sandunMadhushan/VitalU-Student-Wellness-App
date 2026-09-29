@@ -139,7 +139,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final explore = visible.where((a) => a != featured && !rec.contains(a)).toList();
 
     return VPage(
-      header: const MainHeader('Vitalu Health Education Library'),
+      header: const MainHeader('VitalU Health Education Library'),
       nav: NavTab.library,
       navVariantLibrary: true,
       spacing: Sp.lg - 4,

@@ -52,7 +52,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
     final typesLogged = mealTypes.where((t) => logged.any((m) => m['meal_type'] == t.$1)).length;
 
     return VPage(
-      header: const MainHeader('Vitalu   Diet & Nutrition'),
+      header: const MainHeader('VitalU Diet & Nutrition'),
       nav: NavTab.diet,
       onRefresh: _load,
       children: [
