@@ -9,7 +9,7 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
-const _slots = <(String, String, String, Color, Color)>[
+final _slots = <(String, String, String, Color, Color)>[
   ('breakfast', 'Breakfast', '08:30', AppColors.secondary, AppColors.secondaryFixed),
   ('lunch', 'Lunch', '12:45', AppColors.tertiary, AppColors.surfaceContainerHigh),
   ('dinner', 'Dinner', '19:30', AppColors.primary, AppColors.primaryFixed),
@@ -153,7 +153,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   _filling
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Symbols.auto_awesome, color: AppColors.tertiaryFixed, size: 22),
+                      : Icon(Symbols.auto_awesome, color: AppColors.tertiaryFixed, size: 22),
                   const SizedBox(width: 8),
                   Text('Smart Fill Open Slots', style: T.labelLg.c(AppColors.onPrimary)),
                 ]),
@@ -198,7 +198,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
               child: Stack(fit: StackFit.expand, children: [
                 const AssetImg('bento_planner'),
                 Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [AppColors.surfaceContainerLow, Color(0x33F7F1FF), Colors.transparent]),
                   ),
                 ),
@@ -209,7 +209,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
               padding: const EdgeInsets.fromLTRB(Sp.md, 8, Sp.md, Sp.md),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                   const SizedBox(width: 8),
                   Text('SANCTUARY ROUTINE', style: T.labelMd.c(AppColors.tertiary).tracking(1)),
                 ]),
@@ -245,7 +245,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
                     ),
                     child: Stack(children: [
                       if (_meals.any((m) => m['meal_date'] == isoDate(d)))
-                        Positioned(top: 8, right: 8, child: Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.secondaryContainer, shape: BoxShape.circle))),
+                        Positioned(top: 8, right: 8, child: Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.secondaryContainer, shape: BoxShape.circle))),
                       Center(
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
                           Text(DateFormat('EEE').format(d), style: T.labelSm.c(d == _day ? AppColors.primaryFixed : AppColors.onSurfaceVariant)),
@@ -302,7 +302,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
                   Text(s.$1 == 'dinner' ? 'What are you craving tonight?' : 'Add something nourishing', style: T.headlineSm),
                 ]),
               ),
-              const Icon(Symbols.chevron_right, color: AppColors.outline, size: 20),
+              Icon(Symbols.chevron_right, color: AppColors.outline, size: 20),
             ]),
             Padding(
               padding: const EdgeInsets.only(left: 48, top: 4),

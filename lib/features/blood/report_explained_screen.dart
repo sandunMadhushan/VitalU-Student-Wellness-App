@@ -241,7 +241,7 @@ class _ReportExplainedScreenState extends State<ReportExplainedScreen> {
             shadow: Shadows.tiny,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const IconCircle(Symbols.medical_services, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.secondary, radius: 12),
+                IconCircle(Symbols.medical_services, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.secondary, radius: 12),
                 const SizedBox(width: Sp.sm),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -266,7 +266,7 @@ class _ReportExplainedScreenState extends State<ReportExplainedScreen> {
           color: AppColors.surfaceContainer,
           child: Column(children: [
             Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Symbols.lock, size: 16, color: AppColors.onSurfaceVariant),
+              Icon(Symbols.lock, size: 16, color: AppColors.onSurfaceVariant),
               const SizedBox(width: 4),
               Text('Stored privately in your account', style: T.labelSm.c(AppColors.onSurfaceVariant)),
             ]),

@@ -1,12 +1,15 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/models.dart';
 
 SupabaseClient get db => Supabase.instance.client;
 String? get uid => db.auth.currentUser?.id;
+
+const _themeModePrefKey = 'theme_mode';
 
 /// Global session + profile state.
 class AppState extends ChangeNotifier {
@@ -17,7 +20,26 @@ class AppState extends ChangeNotifier {
   int unreadCount = 0;
   StreamSubscription<AuthState>? _sub;
 
+  /// The user's light/dark/system preference, persisted locally (it applies
+  /// app-wide regardless of sign-in state, so it lives here rather than on
+  /// the server profile).
+  ThemeMode themeMode = ThemeMode.system;
+
   bool get signedIn => db.auth.currentSession != null;
+
+  Future<void> loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_themeModePrefKey);
+    themeMode = ThemeMode.values.firstWhere((m) => m.name == saved, orElse: () => ThemeMode.system);
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModePrefKey, mode.name);
+  }
 
   Future<void> init() async {
     _sub?.cancel();

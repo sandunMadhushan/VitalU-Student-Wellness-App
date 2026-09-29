@@ -135,7 +135,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return VPage(
       header: const BrandBackHeader(chip: 'Edit Profile'),
-      backgroundDecoration: const BoxDecoration(
+      backgroundDecoration: BoxDecoration(
         gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surface, AppColors.surfaceContainerLow, AppColors.surfaceContainer]),
       ),
       background: Colors.transparent,
@@ -143,7 +143,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       children: [
         Column(children: [
           const SizedBox(height: 4),
-          const TagPill('Zero-Pressure Edits • Private & Encrypted', icon: Symbols.lock, iconColor: AppColors.tertiary),
+          TagPill('Zero-Pressure Edits • Private & Encrypted', icon: Symbols.lock, iconColor: AppColors.tertiary),
           const SizedBox(height: Sp.md),
           IconCircle(Symbols.tune, size: 48, iconSize: 24, bg: AppColors.surfaceContainerHigh, shadow: Shadows.tiny),
           const SizedBox(height: 8),
@@ -205,7 +205,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _measureRow(Symbols.accessibility_new, 'Hip', _hip),
             const SizedBox(height: Sp.sm),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(Symbols.magic_button, size: 16, color: AppColors.primary),
+              Icon(Symbols.magic_button, size: 16, color: AppColors.primary),
               const SizedBox(width: 6),
               Text('BMI & WHR recalculate automatically upon saving.', style: T.labelSm.c(AppColors.onSurfaceVariant)),
             ]),
@@ -250,11 +250,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     padding: const EdgeInsets.only(left: 14, right: 6),
                     decoration: BoxDecoration(color: AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.tiny),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Symbols.medication, size: 16, color: AppColors.tertiary),
+                      Icon(Symbols.medication, size: 16, color: AppColors.tertiary),
                       const SizedBox(width: 6),
                       Text('${m['name']}', style: T.labelMd),
                       const SizedBox(width: 4),
-                      GestureDetector(onTap: () => setState(() => _meds.remove(m)), child: const Icon(Symbols.close, size: 16, color: AppColors.onSurfaceVariant)),
+                      GestureDetector(onTap: () => setState(() => _meds.remove(m)), child: Icon(Symbols.close, size: 16, color: AppColors.onSurfaceVariant)),
                     ]),
                   ),
               ]),
@@ -263,7 +263,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               padding: const EdgeInsets.only(left: 16, right: 6),
               decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
               child: Row(children: [
-                const Icon(Symbols.vaccines, size: 20, color: AppColors.onSurfaceVariant),
+                Icon(Symbols.vaccines, size: 20, color: AppColors.onSurfaceVariant),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
@@ -281,7 +281,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: AppColors.surfaceContainerLow.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(Rad.base)),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Symbols.verified_user, size: 18, color: AppColors.tertiary),
+                Icon(Symbols.verified_user, size: 18, color: AppColors.tertiary),
                 const SizedBox(width: 8),
                 Expanded(child: Text('Campus health practitioners only see this if you choose to share it during a consultation.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
               ]),

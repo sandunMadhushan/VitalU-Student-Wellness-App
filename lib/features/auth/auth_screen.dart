@@ -89,7 +89,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _sso() {
     showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const IconCircle(Symbols.account_balance, bg: AppColors.primaryFixed),
+          IconCircle(Symbols.account_balance, bg: AppColors.primaryFixed),
           const SizedBox(height: Sp.sm),
           Text('Campus SSO', style: T.headlineMd),
           const SizedBox(height: 6),
@@ -164,7 +164,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(color: AppColors.tertiaryFixed, shape: BoxShape.circle, boxShadow: Shadows.tiny),
-                      child: const Icon(Symbols.auto_awesome, size: 14, color: AppColors.onTertiaryFixedVariant, fill: 1),
+                      child: Icon(Symbols.auto_awesome, size: 14, color: AppColors.onTertiaryFixedVariant, fill: 1),
                     ),
                   ),
                 ]),
@@ -173,7 +173,7 @@ class _AuthScreenState extends State<AuthScreen> {
               Text(_login ? 'Welcome Back' : 'Create Your Account', style: T.headlineXlMobile),
               const SizedBox(height: 4),
               Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Symbols.schedule, size: 16, color: AppColors.tertiary),
+                Icon(Symbols.schedule, size: 16, color: AppColors.tertiary),
                 const SizedBox(width: 6),
                 Text(_login ? 'Pick up right where you left off' : 'Takes less than a minute', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
               ]),
@@ -200,7 +200,7 @@ class _AuthScreenState extends State<AuthScreen> {
         _field(
           label: 'Password',
           badge: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Symbols.lock_reset, size: 14, color: AppColors.tertiary),
+            Icon(Symbols.lock_reset, size: 14, color: AppColors.tertiary),
             const SizedBox(width: 2),
             Text('Encrypted', style: T.labelSm.c(AppColors.tertiary)),
           ]),
@@ -234,7 +234,7 @@ class _AuthScreenState extends State<AuthScreen> {
             padding: const EdgeInsets.all(Sp.sm),
             decoration: BoxDecoration(color: AppColors.errorContainer, borderRadius: BorderRadius.circular(Rad.base)),
             child: Row(children: [
-              const Icon(Symbols.error, size: 18, color: AppColors.onErrorContainer),
+              Icon(Symbols.error, size: 18, color: AppColors.onErrorContainer),
               const SizedBox(width: 8),
               Expanded(child: Text(_error!, style: T.bodySm.c(AppColors.onErrorContainer))),
             ]),
@@ -256,11 +256,11 @@ class _AuthScreenState extends State<AuthScreen> {
           ]),
         ),
         Row(children: [
-          Expanded(child: _socialButton(const IconCircle(Symbols.account_balance, size: 32, iconSize: 18, bg: AppColors.primaryFixed), 'Campus SSO', _sso)),
+          Expanded(child: _socialButton(IconCircle(Symbols.account_balance, size: 32, iconSize: 18, bg: AppColors.primaryFixed), 'Campus SSO', _sso)),
           const SizedBox(width: Sp.sm),
           Expanded(
             child: _socialButton(
-              Container(width: 32, height: 32, decoration: const BoxDecoration(color: AppColors.surfaceContainerHigh, shape: BoxShape.circle), alignment: Alignment.center, child: const _GoogleG()),
+              Container(width: 32, height: 32, decoration: BoxDecoration(color: AppColors.surfaceContainerHigh, shape: BoxShape.circle), alignment: Alignment.center, child: const _GoogleG()),
               'Google',
               _google,
             ),
@@ -317,7 +317,7 @@ class _CheckEmail extends StatelessWidget {
   final String email;
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const IconCircle(Symbols.mark_email_read, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary, size: 52, iconSize: 26),
+        IconCircle(Symbols.mark_email_read, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary, size: 52, iconSize: 26),
         const SizedBox(height: Sp.sm),
         Text('Check your inbox', style: T.headlineMd),
         const SizedBox(height: 6),

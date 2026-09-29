@@ -23,7 +23,7 @@ class _Section {
   final String unit;
 }
 
-const _sections = [
+final _sections = [
   _Section('veggies', '🥦 Veggies (1/2)', 'Vegetables & Greens — Half Plate', 'Target: ~50% of your plate', Symbols.spa, AppColors.tertiaryContainer, 'Visual Ruler: 2 Loose Fists',
       'Load up on colourful vegetables, leafy mallum, salads and curries. Delivers vibrant micronutrients, sustained focus during long afternoon lectures, and happy gut motility.',
       [('🥬', 'Gotukola Mallum', 'Canteen curry counter'), ('🥗', 'Fresh Salad', 'Salad / sambol tray'), ('🥒', 'Cucumber Sambol', 'Rice & curry line'), ('🫑', 'Stir-fried Veg', 'Fried rice station')],
@@ -128,7 +128,7 @@ class _PlateScreenState extends State<PlateScreen> {
                     aspectRatio: 1,
                     child: Stack(children: [
                       Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surfaceContainerLow, Color(0x99EBE6F7)]),
                         ),
@@ -154,7 +154,7 @@ class _PlateScreenState extends State<PlateScreen> {
               ),
               const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Icon(Symbols.touch_app, size: 16, color: AppColors.primary),
+                Icon(Symbols.touch_app, size: 16, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Text("Tap categories to adapt for today's canteen run", style: T.labelSm.c(AppColors.onSurfaceVariant)),
               ]),
@@ -187,7 +187,7 @@ class _PlateScreenState extends State<PlateScreen> {
                 decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.base)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    const Icon(Symbols.front_hand, size: 18, color: AppColors.tertiary),
+                    Icon(Symbols.front_hand, size: 18, color: AppColors.tertiary),
                     const SizedBox(width: 8),
                     Text(_sel.ruler, style: T.labelMd),
                   ]),
@@ -237,7 +237,7 @@ class _PlateScreenState extends State<PlateScreen> {
         VCard(
           color: AppColors.surfaceContainerLow,
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const IconCircle(Symbols.lightbulb, size: 40, iconSize: 20, bg: AppColors.primaryFixed, fg: AppColors.onPrimaryFixed),
+            IconCircle(Symbols.lightbulb, size: 40, iconSize: 20, bg: AppColors.primaryFixed, fg: AppColors.onPrimaryFixed),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

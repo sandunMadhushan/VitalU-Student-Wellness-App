@@ -74,7 +74,7 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
           padding: const EdgeInsets.all(Sp.md),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Rad.xl),
-            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow, AppColors.primaryFixed]),
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow, AppColors.primaryFixed]),
             boxShadow: Shadows.tiny,
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -90,7 +90,7 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
                   Row(children: [
                     Text('$n of $total Unlocked', style: T.labelLg),
                     const SizedBox(width: 8),
-                    Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                   ]),
                   Text('No deadlines, take your time', style: T.bodySm.c(AppColors.outline)),
                 ]),
@@ -102,7 +102,7 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
               height: 10,
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(color: AppColors.surfaceContainerLowest.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(10)),
-              child: Bar(value: n / total, height: 6, track: Colors.transparent, gradient: const LinearGradient(colors: [AppColors.secondaryContainer, AppColors.primary])),
+              child: Bar(value: n / total, height: 6, track: Colors.transparent, gradient: LinearGradient(colors: [AppColors.secondaryContainer, AppColors.primary])),
             ),
           ]),
         ),
@@ -136,7 +136,7 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text('Log a gentle reflection', style: T.labelMd.c(AppColors.primary)),
                     const SizedBox(width: 4),
-                    const Icon(Symbols.arrow_forward, size: 16, color: AppColors.primary),
+                    Icon(Symbols.arrow_forward, size: 16, color: AppColors.primary),
                   ]),
                 ),
               ]),
@@ -147,11 +147,11 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
           padding: const EdgeInsets.all(Sp.md),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Rad.xl),
-            gradient: const LinearGradient(colors: [AppColors.surfaceContainerHigh, AppColors.surfaceContainer]),
+            gradient: LinearGradient(colors: [AppColors.surfaceContainerHigh, AppColors.surfaceContainer]),
             boxShadow: Shadows.tiny,
           ),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const IconCircle(Symbols.favorite, size: 36, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.secondary, fill: 1),
+            IconCircle(Symbols.favorite, size: 36, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.secondary, fill: 1),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

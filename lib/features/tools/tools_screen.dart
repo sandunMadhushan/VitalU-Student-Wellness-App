@@ -53,7 +53,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
       children: [
         VCard(
           clip: true,
-          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow, AppColors.primaryFixed]),
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow, AppColors.primaryFixed]),
           shadow: Shadows.card,
           child: Stack(clipBehavior: Clip.none, children: [
             Positioned(right: -52, bottom: -60, child: Glow(color: AppColors.surfaceContainerLowest.withValues(alpha: 0.4), size: 176)),
@@ -62,7 +62,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 color: AppColors.surfaceContainerLowest.withValues(alpha: 0.8),
                 shadow: Shadows.tiny,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiaryContainer, shape: BoxShape.circle)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiaryContainer, shape: BoxShape.circle)),
                   const SizedBox(width: 6),
                   Text('ZERO STRESS • STUDENT VITALS', style: T.labelSm.tracking(0.8)),
                 ]),
@@ -75,7 +75,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
               Container(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.2)),
               const SizedBox(height: 8),
               Row(children: [
-                const Icon(Symbols.spa, size: 18, color: AppColors.tertiary),
+                Icon(Symbols.spa, size: 18, color: AppColors.tertiary),
                 const SizedBox(width: 8),
                 Expanded(child: Text('Confidential, autonomous, and tuned for campus life', style: T.labelSm.c(AppColors.onSurfaceVariant))),
               ]),
@@ -112,7 +112,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   onTap: () => context.push('/professionals'),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text('Reach campus wellness counselor', style: T.labelMd.c(AppColors.primary)),
-                    const Icon(Symbols.chevron_right, size: 16, color: AppColors.primary),
+                    Icon(Symbols.chevron_right, size: 16, color: AppColors.primary),
                   ]),
                 ),
               ]),

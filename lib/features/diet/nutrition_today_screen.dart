@@ -87,7 +87,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
           const Spacer(),
           TagPill('🍊  Mindful Fuel • ${DateFormat('MMM d').format(DateTime.now())}', bg: AppColors.secondaryFixed, fg: AppColors.onSecondaryFixed),
           const SizedBox(width: 6),
-          const TagPill('Private', icon: Symbols.lock, bg: AppColors.surfaceContainerHigh),
+          TagPill('Private', icon: Symbols.lock, bg: AppColors.surfaceContainerHigh),
         ]),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -114,7 +114,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
                 size: 224,
                 stroke: 18,
                 track: AppColors.surfaceContainerHighest,
-                gradient: const [AppColors.secondaryContainer, AppColors.secondary, AppColors.primary, AppColors.secondaryContainer],
+                gradient: [AppColors.secondaryContainer, AppColors.secondary, AppColors.primary, AppColors.secondaryContainer],
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Stack(clipBehavior: Clip.none, children: [
                     Container(
@@ -124,7 +124,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
                       decoration: BoxDecoration(color: AppColors.secondaryFixed.withValues(alpha: 0.5), shape: BoxShape.circle),
                       child: const Text('🍑', style: TextStyle(fontSize: 24)),
                     ),
-                    Positioned(right: -2, bottom: -2, child: const IconCircle(Symbols.bolt, size: 16, iconSize: 10, bg: AppColors.tertiary, fg: AppColors.onTertiary)),
+                    Positioned(right: -2, bottom: -2, child: IconCircle(Symbols.bolt, size: 16, iconSize: 10, bg: AppColors.tertiary, fg: AppColors.onTertiary)),
                   ]),
                   const SizedBox(height: 4),
                   Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
@@ -139,7 +139,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
               Pill(
                 color: AppColors.surfaceContainerHigh,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                   const SizedBox(width: 6),
                   Text('${(pct * 100).round()}% of Gentle Daily Target', style: T.labelSm.c(AppColors.primary)),
                 ]),
@@ -198,7 +198,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
           decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.xl)),
           child: Column(children: [
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(Symbols.favorite, size: 15, color: AppColors.tertiary),
+              Icon(Symbols.favorite, size: 15, color: AppColors.tertiary),
               const SizedBox(width: 6),
               Text('Zero-Guilt Promise', style: T.labelSm.s(11).c(AppColors.onSurfaceVariant)),
             ]),
@@ -264,7 +264,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
     return Dismissible(
       key: ValueKey(m['id']),
       direction: DismissDirection.endToStart,
-      background: Container(alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 24), child: const Icon(Symbols.delete, color: AppColors.error)),
+      background: Container(alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 24), child: Icon(Symbols.delete, color: AppColors.error)),
       confirmDismiss: (_) async => await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(title: const Text('Remove this meal?'), actions: [
@@ -302,7 +302,7 @@ class _NutritionTodayScreenState extends State<NutritionTodayScreen> {
               const SizedBox(width: 6),
             ],
             const Spacer(),
-            const Icon(Symbols.check_circle, size: 14, color: AppColors.tertiary),
+            Icon(Symbols.check_circle, size: 14, color: AppColors.tertiary),
             const SizedBox(width: 2),
             Text('Nourished', style: T.labelSm.s(11).c(AppColors.tertiary)),
           ]),

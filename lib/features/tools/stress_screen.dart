@@ -132,7 +132,7 @@ class _StressScreenState extends State<StressScreen> {
         height: 10,
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(color: AppColors.surfaceContainerHigh, borderRadius: BorderRadius.circular(10)),
-        child: Bar(value: (_i + 1) / _items.length, height: 6, track: Colors.transparent, gradient: const LinearGradient(colors: [AppColors.primaryFixedDim, AppColors.primary, AppColors.tertiaryFixed])),
+        child: Bar(value: (_i + 1) / _items.length, height: 6, track: Colors.transparent, gradient: LinearGradient(colors: [AppColors.primaryFixedDim, AppColors.primary, AppColors.tertiaryFixed])),
       ),
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
@@ -264,7 +264,7 @@ class _StressScreenState extends State<StressScreen> {
     return [
       const SizedBox(height: 4),
       Column(children: [
-        const IconCircle(Symbols.spa, size: 56, iconSize: 28, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary),
+        IconCircle(Symbols.spa, size: 56, iconSize: 28, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary),
         const SizedBox(height: Sp.sm),
         Text('Thank you for checking in', style: T.headlineMd, textAlign: TextAlign.center),
         const SizedBox(height: 4),
@@ -275,7 +275,7 @@ class _StressScreenState extends State<StressScreen> {
           color: AppColors.errorContainer,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Symbols.favorite, color: AppColors.onErrorContainer, fill: 1),
+              Icon(Symbols.favorite, color: AppColors.onErrorContainer, fill: 1),
               const SizedBox(width: 8),
               Expanded(child: Text('You deserve support right now', style: T.labelLg.c(AppColors.onErrorContainer))),
             ]),

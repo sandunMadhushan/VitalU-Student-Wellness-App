@@ -24,7 +24,7 @@ class StepperMeasureCard extends StatelessWidget {
     this.step = 1,
     this.caption,
     this.scaleLabels,
-    this.accent = AppColors.tertiary,
+    this.accent,
   });
 
   final IconData icon;
@@ -42,15 +42,16 @@ class StepperMeasureCard extends StatelessWidget {
   final ValueChanged<double> onChanged;
   final String? caption;
   final List<String>? scaleLabels;
-  final Color accent;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
+    final accent0 = accent ?? AppColors.tertiary;
     return VCard(
       shadow: const [BoxShadow(color: Color(0x0A2D2B38), blurRadius: 28, offset: Offset(0, 12), spreadRadius: -8)],
       child: Column(children: [
         Row(children: [
-          IconCircle(icon, size: 36, iconSize: 20, bg: AppColors.surfaceContainer, fg: accent),
+          IconCircle(icon, size: 36, iconSize: 20, bg: AppColors.surfaceContainer, fg: accent0),
           const SizedBox(width: Sp.xs + 2),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -58,7 +59,7 @@ class StepperMeasureCard extends StatelessWidget {
               if (subtitle != null) Text(subtitle!, style: T.bodySm.c(AppColors.onSurfaceVariant)),
             ]),
           ),
-          _UnitToggle(units: units, unit: unit, onUnit: onUnit, accent: accent),
+          _UnitToggle(units: units, unit: unit, onUnit: onUnit, accent: accent0),
         ]),
         const SizedBox(height: Sp.md),
         Row(children: [
@@ -76,7 +77,7 @@ class StepperMeasureCard extends StatelessWidget {
           CircleButton(Symbols.add, bg: AppColors.surfaceContainerLow, fg: AppColors.onSurface, iconSize: 20, onTap: () => onChanged((value + step).clamp(min, max))),
         ]),
         const SizedBox(height: Sp.xs),
-        VSlider(value: value, min: min, max: max, color: accent, onChanged: onChanged),
+        VSlider(value: value, min: min, max: max, color: accent0, onChanged: onChanged),
         if (scaleLabels != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),

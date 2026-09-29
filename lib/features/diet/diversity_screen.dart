@@ -146,7 +146,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
               child: Row(children: [
-                const Icon(Symbols.psychiatry, size: 18, color: AppColors.tertiary),
+                Icon(Symbols.psychiatry, size: 18, color: AppColors.tertiary),
                 const SizedBox(width: 8),
                 Expanded(child: Text('Weekly Diversity', style: T.labelMd)),
                 Text('$weekPoints / 30', style: T.labelMd.c(AppColors.tertiary).bold),
@@ -194,7 +194,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
                         Text('+ ${g.suggestion}', style: T.labelLg),
                         const SizedBox(height: 4),
                         Row(children: [
-                          const Icon(Symbols.storefront, size: 14, color: AppColors.onSurfaceVariant),
+                          Icon(Symbols.storefront, size: 14, color: AppColors.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Text(g.where, style: T.bodySm.s(11).c(AppColors.onSurfaceVariant)),
                         ]),
@@ -211,7 +211,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Row(children: [
               Expanded(child: Text("Today's Spectrum", style: T.headlineSm)),
-              const Icon(Symbols.check_circle, size: 16, color: AppColors.tertiary),
+              Icon(Symbols.check_circle, size: 16, color: AppColors.tertiary),
               const SizedBox(width: 4),
               Text('${todayGroups.length} Colors Active', style: T.labelSm.c(AppColors.tertiary)),
             ]),

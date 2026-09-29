@@ -112,7 +112,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(color: AppColors.tertiaryFixed, shape: BoxShape.circle, border: Border.all(color: AppColors.surface, width: 3)),
-                  child: const Icon(Symbols.verified, size: 18, color: AppColors.tertiary, fill: 1),
+                  child: Icon(Symbols.verified, size: 18, color: AppColors.tertiary, fill: 1),
                 ),
               ),
             ]),
@@ -145,7 +145,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   Text(it.$5, style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
                 ]),
               ),
-              const Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
+              Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
             ]),
           ),
         VCard(
@@ -155,7 +155,7 @@ class _AboutScreenState extends State<AboutScreen> {
           padding: const EdgeInsets.all(Sp.md + 4),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const IconCircle(Symbols.support_agent, size: 40, iconSize: 22, bg: AppColors.primary, fg: AppColors.onPrimary),
+              IconCircle(Symbols.support_agent, size: 40, iconSize: 22, bg: AppColors.primary, fg: AppColors.onPrimary),
               const SizedBox(width: Sp.sm),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

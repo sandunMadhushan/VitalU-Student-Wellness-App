@@ -99,7 +99,7 @@ class _CycleScreenState extends State<CycleScreen> {
               VCard(
                 color: AppColors.secondaryFixed.withValues(alpha: 0.5),
                 child: Row(children: [
-                  const Icon(Symbols.water_drop, color: AppColors.secondary, fill: 1),
+                  Icon(Symbols.water_drop, color: AppColors.secondary, fill: 1),
                   const SizedBox(width: 10),
                   Expanded(child: Text('Period started ${DateFormat('d MMM').format(DateTime.parse(_cycles.first['start_date']))}. Has it ended?', style: T.bodyMd)),
                 ]),
@@ -122,7 +122,7 @@ class _CycleScreenState extends State<CycleScreen> {
                   if (d != null) set(() => start = d);
                 },
                 child: Row(children: [
-                  const Icon(Symbols.calendar_today, color: AppColors.secondary),
+                  Icon(Symbols.calendar_today, color: AppColors.secondary),
                   const SizedBox(width: 10),
                   Expanded(child: Text(DateFormat('EEEE, d MMMM').format(start), style: T.labelLg)),
                   const Icon(Symbols.edit, size: 18),
@@ -202,7 +202,7 @@ class _CycleScreenState extends State<CycleScreen> {
                 color: AppColors.surfaceContainerLow,
                 padding: const EdgeInsets.all(14),
                 child: Row(children: [
-                  const Icon(Symbols.water_drop, color: AppColors.secondary, fill: 1, size: 20),
+                  Icon(Symbols.water_drop, color: AppColors.secondary, fill: 1, size: 20),
                   const SizedBox(width: 10),
                   Expanded(child: Text(DateFormat('d MMM yyyy').format(DateTime.parse(starts[i]['start_date'])), style: T.labelLg)),
                   Text(
@@ -283,7 +283,7 @@ class _CycleScreenState extends State<CycleScreen> {
         padding: const EdgeInsets.all(Sp.md),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surfaceContainerLowest, AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh]),
+          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surfaceContainerLowest, AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh]),
           boxShadow: const [BoxShadow(color: Color(0x14984062), blurRadius: 36, offset: Offset(0, 16), spreadRadius: -10), BoxShadow(color: Color(0x0A2D2B38), blurRadius: 16, offset: Offset(0, 4))],
         ),
         child: Stack(clipBehavior: Clip.none, children: [
@@ -318,7 +318,7 @@ class _CycleScreenState extends State<CycleScreen> {
               Pill(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Symbols.calendar_clock, size: 15, color: AppColors.secondary),
+                  Icon(Symbols.calendar_clock, size: 15, color: AppColors.secondary),
                   const SizedBox(width: 6),
                   Text.rich(TextSpan(text: 'Next cycle predicted in ', children: [
                     TextSpan(text: '~$daysToNext days (${DateFormat('MMM d').format(next!)})', style: T.labelSm.c(AppColors.onSurface).semi),
@@ -385,7 +385,7 @@ class _CycleScreenState extends State<CycleScreen> {
           color: AppColors.secondaryFixed.withValues(alpha: 0.35),
           onTap: () => context.push('/library/article/pcos-awareness'),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Symbols.info, color: AppColors.secondary),
+            Icon(Symbols.info, color: AppColors.secondary),
             const SizedBox(width: 10),
             Expanded(
               child: Text('Your recent cycles have been irregular. This can happen with stress or routine changes, and is sometimes associated with conditions like PCOS. It is not a diagnosis — consider a check-up if it continues. Tap to learn more.',
@@ -399,7 +399,7 @@ class _CycleScreenState extends State<CycleScreen> {
           shadow: Shadows.soft,
           child: Column(children: [
             Row(children: [
-              const Icon(Symbols.date_range, color: AppColors.secondary, size: 20),
+              Icon(Symbols.date_range, color: AppColors.secondary, size: 20),
               const SizedBox(width: 8),
               Expanded(child: Text('${DateFormat('MMMM').format(last)} – ${DateFormat('MMMM').format(next!)}', style: T.headlineSm)),
               Text('$_cycleLen-Day Pattern', style: T.labelSm.c(AppColors.onSurfaceVariant)),
@@ -464,12 +464,12 @@ class _CycleWheel extends CustomPainter {
     const gap = 0.05;
     // Menstrual
     canvas.drawArc(rect, start + gap, a(periodLen) - 2 * gap, false,
-        p(AppColors.secondary, 12, shader: const SweepGradient(colors: [AppColors.secondaryContainer, AppColors.secondary]).createShader(rect)));
+        p(AppColors.secondary, 12, shader: SweepGradient(colors: [AppColors.secondaryContainer, AppColors.secondary]).createShader(rect)));
     // Follicular
     canvas.drawArc(rect, start + a(periodLen) + gap, a(ov - 2 - periodLen - 1) - 2 * gap, false, p(AppColors.primaryFixedDim, 12));
     // Ovulation
     canvas.drawArc(rect, start + a(ov - 3) + gap, a(5) - 2 * gap, false,
-        p(AppColors.secondaryFixedDim, 14, shader: const SweepGradient(colors: [AppColors.secondaryFixedDim, AppColors.primaryFixedDim]).createShader(rect)));
+        p(AppColors.secondaryFixedDim, 14, shader: SweepGradient(colors: [AppColors.secondaryFixedDim, AppColors.primaryFixedDim]).createShader(rect)));
     // Luteal
     canvas.drawArc(rect, start + a(ov + 2) + gap, a(cycleLen - ov - 2) - 2 * gap, false, p(AppColors.surfaceDim, 12));
     // Predicted dashed outer ring

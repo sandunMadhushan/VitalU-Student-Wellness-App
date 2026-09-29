@@ -92,7 +92,7 @@ class _BmiScreenState extends State<BmiScreen> {
 
     return VPage(
       header: const BrandBackHeader(chip: 'BMI'),
-      backgroundDecoration: const BoxDecoration(
+      backgroundDecoration: BoxDecoration(
         gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surface, AppColors.surfaceContainerLow, AppColors.surfaceContainer]),
       ),
       background: Colors.transparent,
@@ -112,7 +112,7 @@ class _BmiScreenState extends State<BmiScreen> {
           child: Stack(clipBehavior: Clip.none, children: [
             Positioned(right: -36, bottom: -36, child: Glow(color: AppColors.tertiaryFixed.withValues(alpha: 0.3), size: 96)),
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const IconCircle(Symbols.spa, size: 40, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixed, fill: 1),
+              IconCircle(Symbols.spa, size: 40, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixed, fill: 1),
               const SizedBox(width: Sp.sm),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -181,7 +181,7 @@ class _BmiScreenState extends State<BmiScreen> {
               ]),
               const SizedBox(height: Sp.md),
               SpectrumGauge(
-                segments: const [
+                segments: [
                   GaugeSegment(AppColors.primaryFixed, 1),
                   GaugeSegment(AppColors.tertiaryFixed, 1.6),
                   GaugeSegment(AppColors.secondaryFixed, 1.2),
@@ -202,7 +202,7 @@ class _BmiScreenState extends State<BmiScreen> {
                 padding: const EdgeInsets.all(Sp.sm),
                 decoration: BoxDecoration(color: AppColors.tertiaryFixed.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(Rad.base)),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Icon(Symbols.eco, size: 20, color: AppColors.tertiary, fill: 1),
+                  Icon(Symbols.eco, size: 20, color: AppColors.tertiary, fill: 1),
                   const SizedBox(width: Sp.xs),
                   Expanded(child: Text(st.$4, style: T.bodySm.c(AppColors.onTertiaryFixedVariant).lh(1.6))),
                 ]),
@@ -212,7 +212,7 @@ class _BmiScreenState extends State<BmiScreen> {
         VCard(
           color: AppColors.surfaceContainerLow,
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Symbols.lock, size: 18, color: AppColors.outline),
+            Icon(Symbols.lock, size: 18, color: AppColors.outline),
             const SizedBox(width: Sp.xs),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -230,10 +230,10 @@ class _BmiScreenState extends State<BmiScreen> {
             padding: const EdgeInsets.symmetric(horizontal: Sp.sm, vertical: Sp.xs + 2),
             decoration: BoxDecoration(color: AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.full)),
             child: Row(children: [
-              const IconCircle(Symbols.accessibility_new, size: 28, iconSize: 16, fg: AppColors.tertiary),
+              IconCircle(Symbols.accessibility_new, size: 28, iconSize: 16, fg: AppColors.tertiary),
               const SizedBox(width: 8),
               Expanded(child: Text('Explore Waist-to-Height Ratio (WHtR)', style: T.labelMd)),
-              const Icon(Symbols.chevron_right, size: 18, color: AppColors.onSurfaceVariant),
+              Icon(Symbols.chevron_right, size: 18, color: AppColors.onSurfaceVariant),
             ]),
           ),
         ),

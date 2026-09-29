@@ -190,7 +190,7 @@ class _WaterScreenState extends State<WaterScreen> {
                       color: AppColors.surfaceContainerLowest,
                       shadow: Shadows.soft,
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Symbols.eco, size: 15, color: AppColors.tertiary, fill: 1),
+                        Icon(Symbols.eco, size: 15, color: AppColors.tertiary, fill: 1),
                         const SizedBox(width: 4),
                         Text(pct >= 1 ? 'Goal Reached' : 'Optimal Pace', style: T.labelSm.c(AppColors.tertiary)),
                       ]),
@@ -217,7 +217,7 @@ class _WaterScreenState extends State<WaterScreen> {
         const SizedBox(height: 4),
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
-            const Icon(Symbols.local_drink, size: 20, color: AppColors.primary),
+            Icon(Symbols.local_drink, size: 20, color: AppColors.primary),
             const SizedBox(width: 6),
             Expanded(child: Text('Quick Log Sips', style: T.headlineSm)),
             Text('Tap to add', style: T.labelSm.c(AppColors.onSurfaceVariant)),
@@ -236,7 +236,7 @@ class _WaterScreenState extends State<WaterScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shadow: Shadows.tiny,
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Symbols.add_circle, size: 18, color: AppColors.primary),
+                  Icon(Symbols.add_circle, size: 18, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Text('Custom Amount', style: T.labelMd),
                 ]),
@@ -247,7 +247,7 @@ class _WaterScreenState extends State<WaterScreen> {
         const SizedBox(height: 4),
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
-            const Icon(Symbols.history, size: 20, color: AppColors.primary),
+            Icon(Symbols.history, size: 20, color: AppColors.primary),
             const SizedBox(width: 6),
             Expanded(child: Text("Today's Intake Timeline", style: T.headlineSm)),
             TagPill('${_logs.length} sip${_logs.length == 1 ? '' : 's'} recorded'),
@@ -271,7 +271,7 @@ class _WaterScreenState extends State<WaterScreen> {
                       Opacity(
                         opacity: 0.6,
                         child: Row(children: [
-                          const IconCircle(Symbols.alarm, size: 36, iconSize: 18, bg: AppColors.surfaceContainerHigh, fg: AppColors.outline),
+                          IconCircle(Symbols.alarm, size: 36, iconSize: 18, bg: AppColors.surfaceContainerHigh, fg: AppColors.outline),
                           const SizedBox(width: Sp.sm),
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -295,7 +295,7 @@ class _WaterScreenState extends State<WaterScreen> {
           shadow: Shadows.tiny,
           child: Column(children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const IconCircle(Symbols.lightbulb, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.onSecondaryFixed, fill: 1),
+              IconCircle(Symbols.lightbulb, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.onSecondaryFixed, fill: 1),
               const SizedBox(width: Sp.sm),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -311,7 +311,7 @@ class _WaterScreenState extends State<WaterScreen> {
               padding: const EdgeInsets.only(left: 16, right: 6),
               decoration: BoxDecoration(color: AppColors.surfaceContainerLowest.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(Rad.full)),
               child: Row(children: [
-                const Icon(Symbols.notifications_active, size: 16, color: AppColors.primary),
+                Icon(Symbols.notifications_active, size: 16, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Expanded(child: Text('Gentle nudge before classes', style: T.labelSm.medium)),
                 Transform.scale(
@@ -405,7 +405,7 @@ class _WaterScreenState extends State<WaterScreen> {
           ]),
         ),
         const SizedBox(width: 4),
-        GestureDetector(onTap: () => _delete(r), child: const Icon(Symbols.more_vert, size: 18, color: AppColors.outline)),
+        GestureDetector(onTap: () => _delete(r), child: Icon(Symbols.more_vert, size: 18, color: AppColors.outline)),
       ]),
     );
   }

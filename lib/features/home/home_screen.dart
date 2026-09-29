@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 16,
               height: 16,
               decoration: BoxDecoration(color: AppColors.tertiaryFixed, shape: BoxShape.circle, boxShadow: Shadows.tiny),
-              child: const Icon(Symbols.spa, size: 10, color: AppColors.onTertiaryFixed),
+              child: Icon(Symbols.spa, size: 10, color: AppColors.onTertiaryFixed),
             ),
           ),
       ]),
@@ -203,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, children: [
                   Text('CAMPUS SYNC', style: T.labelSm.c(AppColors.primary).bold.tracking(1)),
-                  Container(width: 4, height: 4, decoration: const BoxDecoration(color: AppColors.outlineVariant, shape: BoxShape.circle)),
+                  Container(width: 4, height: 4, decoration: BoxDecoration(color: AppColors.outlineVariant, shape: BoxShape.circle)),
                   Text(_assessment?['status'] == 'completed' ? 'Completed this term' : 'All forms ready', style: T.bodySm.c(AppColors.tertiary).medium),
                 ]),
                 const SizedBox(height: 2),
@@ -292,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: AppColors.surfaceContainerLow,
         shadow: Shadows.soft,
         child: Row(children: [
-          const IconCircle(Symbols.self_improvement, size: 40, bg: AppColors.secondaryFixed, fg: AppColors.secondary),
+          IconCircle(Symbols.self_improvement, size: 40, bg: AppColors.secondaryFixed, fg: AppColors.secondary),
           const SizedBox(width: Sp.sm),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -312,10 +312,10 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 14),
         onTap: () => _go('/help'),
         child: Row(children: [
-          const IconCircle(Symbols.emergency, size: 36, iconSize: 19, fg: AppColors.error),
+          IconCircle(Symbols.emergency, size: 36, iconSize: 19, fg: AppColors.error),
           const SizedBox(width: Sp.sm),
           Expanded(child: Text('Need help now? Emergency & support lines', style: T.labelLg.c(AppColors.onErrorContainer))),
-          const Icon(Symbols.chevron_right, color: AppColors.onErrorContainer),
+          Icon(Symbols.chevron_right, color: AppColors.onErrorContainer),
         ]),
       );
 
@@ -337,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     double iconFill = 0,
     required Color iconColor,
-    Color iconBg = AppColors.surfaceContainerLow,
+    Color? iconBg,
     required String label,
     required double ringValue,
     required Color ringColor,
@@ -350,12 +350,13 @@ class _HomeScreenState extends State<HomeScreen> {
     required String foot,
     VoidCallback? onTap,
   }) {
+    final iconBg0 = iconBg ?? AppColors.surfaceContainerLow;
     return VCard(
       shadow: Shadows.soft,
       onTap: onTap,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          IconCircle(icon, size: 36, iconSize: 20, bg: iconBg, fg: iconColor, fill: iconFill),
+          IconCircle(icon, size: 36, iconSize: 20, bg: iconBg0, fg: iconColor, fill: iconFill),
           const Spacer(),
           Text(label, style: T.labelSm.c(AppColors.onSurfaceVariant)),
         ]),
@@ -419,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow, AppColors.primaryFixed]),
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow, AppColors.primaryFixed]),
           boxShadow: Shadows.card,
         ),
         padding: const EdgeInsets.all(Sp.md),
@@ -432,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppColors.surfaceContainerLowest.withValues(alpha: 0.8),
                   shadow: Shadows.tiny,
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle)),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
                     Flexible(child: Text('Campus Milestone • Active Window', style: T.labelSm.c(AppColors.onSecondaryFixedVariant), overflow: TextOverflow.ellipsis)),
                   ]),
@@ -453,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                     gradient: LinearGradient(begin: Alignment.bottomLeft, end: Alignment.topRight, colors: [AppColors.secondaryFixed, AppColors.primaryFixed.withValues(alpha: 0.4)]),
                   ),
-                  child: const Icon(Symbols.assignment_turned_in, color: AppColors.secondary, size: 34, fill: 1),
+                  child: Icon(Symbols.assignment_turned_in, color: AppColors.secondary, size: 34, fill: 1),
                 ),
               ),
               const SizedBox(width: 14),
@@ -565,7 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _dotLabel(String t) => Row(children: [
-        Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+        Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
         const SizedBox(width: 4),
         Flexible(child: Text(t, style: T.labelSm.c(AppColors.tertiaryContainer), overflow: TextOverflow.ellipsis)),
       ]);

@@ -161,7 +161,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           padding: const EdgeInsets.all(Sp.md),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Rad.lg),
-            gradient: const LinearGradient(colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainer]),
+            gradient: LinearGradient(colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainer]),
             boxShadow: Shadows.tiny,
           ),
           child: Row(children: [
@@ -181,7 +181,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Text('Adjust', style: T.labelMd.c(AppColors.primary)),
-                  const Icon(Symbols.chevron_right, size: 16, color: AppColors.primary),
+                  Icon(Symbols.chevron_right, size: 16, color: AppColors.primary),
                 ]),
               ),
             ),

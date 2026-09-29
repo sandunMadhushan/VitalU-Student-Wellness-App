@@ -206,7 +206,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
       if (tips.isNotEmpty)
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
-            const Icon(Symbols.spa, size: 22, color: AppColors.primary),
+            Icon(Symbols.spa, size: 22, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(child: Text(b['tips_title'] ?? 'Gentle tips', style: T.headlineSm)),
           ]),
@@ -235,7 +235,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
         VCard(
           color: AppColors.surfaceContainer,
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Symbols.eco, size: 20, color: AppColors.primary),
+            Icon(Symbols.eco, size: 20, color: AppColors.primary),
             const SizedBox(width: Sp.sm),
             Expanded(child: Text('"${b['quote']}"', style: T.bodySm.c(AppColors.onSurfaceVariant).copyWith(fontStyle: FontStyle.italic).lh(1.6))),
           ]),

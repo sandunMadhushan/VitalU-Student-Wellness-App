@@ -90,7 +90,7 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
                 Text('Periodic student wellness reviews & check-in milestones', style: T.bodySm.c(AppColors.onSurfaceVariant)),
               ]),
               VCard(
-                gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainer, AppColors.surfaceContainerHigh]),
+                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainer, AppColors.surfaceContainerHigh]),
                 shadow: Shadows.tiny,
                 child: Row(children: [
                   Container(
@@ -103,7 +103,7 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        const Icon(Symbols.eco, size: 16, color: AppColors.tertiary),
+                        Icon(Symbols.eco, size: 16, color: AppColors.tertiary),
                         const SizedBox(width: 4),
                         Flexible(child: Text('Gentle Periodic Check-ins', style: T.labelMd.c(AppColors.tertiary))),
                       ]),
@@ -119,7 +119,7 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
                 shadow: Shadows.tiny,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Row(children: [
-                    const IconCircle(Symbols.calendar_today, size: 32, iconSize: 18, bg: AppColors.surfaceContainer),
+                    IconCircle(Symbols.calendar_today, size: 32, iconSize: 18, bg: AppColors.surfaceContainer),
                     const SizedBox(width: 8),
                     Expanded(child: Text(target == _open && _open != null ? 'Assessment Window Open' : 'Next Scheduled Assessment', style: T.labelMd.c(AppColors.onSurfaceVariant))),
                     TagPill(
@@ -175,7 +175,7 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
                         shadow: Shadows.tiny,
                         onTap: () => showAssessmentSummary(context, h),
                         child: Row(children: [
-                          const IconCircle(Symbols.check_circle, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.tertiary, fill: 1),
+                          IconCircle(Symbols.check_circle, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.tertiary, fill: 1),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -183,12 +183,12 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
                               const SizedBox(height: 2),
                               Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: 4, children: [
                                 Text(DateFormat('MMM d, yyyy').format(DateTime.parse(h['completed_at']).toLocal()), style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                                Container(width: 4, height: 4, decoration: const BoxDecoration(color: AppColors.outlineVariant, shape: BoxShape.circle)),
+                                Container(width: 4, height: 4, decoration: BoxDecoration(color: AppColors.outlineVariant, shape: BoxShape.circle)),
                                 Pill(color: AppColors.surfaceContainerLow, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), child: Text(h['result_label'] ?? 'Recorded', style: T.labelSm.c(AppColors.tertiary))),
                               ]),
                             ]),
                           ),
-                          const Icon(Symbols.chevron_right, color: AppColors.outlineVariant, size: 20),
+                          Icon(Symbols.chevron_right, color: AppColors.outlineVariant, size: 20),
                         ]),
                       ),
                     ),
@@ -197,7 +197,7 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
                 color: AppColors.surfaceContainerHigh,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const IconCircle(Symbols.favorite, size: 32, iconSize: 18, fg: AppColors.secondary),
+                    IconCircle(Symbols.favorite, size: 32, iconSize: 18, fg: AppColors.secondary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -220,7 +220,7 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Text('Explore Health Tools', style: T.labelMd.c(AppColors.primary)),
                           const SizedBox(width: 6),
-                          const Icon(Symbols.arrow_forward, size: 16, color: AppColors.primary),
+                          Icon(Symbols.arrow_forward, size: 16, color: AppColors.primary),
                         ]),
                       ),
                     ),
@@ -457,7 +457,7 @@ class _AssessmentRunScreenState extends State<AssessmentRunScreen> {
           padding: const EdgeInsets.all(Sp.sm),
           decoration: BoxDecoration(color: AppColors.surfaceContainer.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(Rad.lg)),
           child: Row(children: [
-            const Icon(Symbols.verified_user, size: 18, color: AppColors.onSurfaceVariant),
+            Icon(Symbols.verified_user, size: 18, color: AppColors.onSurfaceVariant),
             const SizedBox(width: 6),
             Expanded(child: Text('Your responses are confidential. Only anonymised, grouped results are shared with the university — and only with your consent.', style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.3))),
           ]),
@@ -551,7 +551,7 @@ class _AssessmentRunScreenState extends State<AssessmentRunScreen> {
             width: 24,
             height: 24,
             decoration: BoxDecoration(color: on ? AppColors.primary : AppColors.surfaceContainerHighest, shape: BoxShape.circle),
-            child: on ? const Icon(Symbols.check, size: 16, color: AppColors.onPrimary) : null,
+            child: on ? Icon(Symbols.check, size: 16, color: AppColors.onPrimary) : null,
           ),
         ]),
       ),
@@ -642,9 +642,9 @@ class AssessmentCompleteScreen extends StatelessWidget {
             Positioned(
               top: 4,
               right: 70,
-              child: const IconCircle(Symbols.auto_awesome, size: 28, iconSize: 16, bg: AppColors.surfaceContainerLow, fg: AppColors.primaryContainer, fill: 1),
+              child: IconCircle(Symbols.auto_awesome, size: 28, iconSize: 16, bg: AppColors.surfaceContainerLow, fg: AppColors.primaryContainer, fill: 1),
             ),
-            Positioned(bottom: 12, left: 70, child: const IconCircle(Symbols.favorite, size: 24, iconSize: 14, bg: AppColors.secondaryFixed, fg: AppColors.secondary, fill: 1)),
+            Positioned(bottom: 12, left: 70, child: IconCircle(Symbols.favorite, size: 24, iconSize: 14, bg: AppColors.secondaryFixed, fg: AppColors.secondary, fill: 1)),
           ]),
         ),
         Column(children: [
@@ -661,7 +661,7 @@ class AssessmentCompleteScreen extends StatelessWidget {
           shadow: Shadows.tiny,
           child: Column(children: [
             Row(children: [
-              const IconCircle(Symbols.event_available, size: 36, iconSize: 19, bg: AppColors.surfaceContainerHighest),
+              IconCircle(Symbols.event_available, size: 36, iconSize: 19, bg: AppColors.surfaceContainerHighest),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -681,7 +681,7 @@ class AssessmentCompleteScreen extends StatelessWidget {
         SoftButton('View Assessment Summary', icon: Symbols.menu_book, color: AppColors.surfaceContainer, fg: AppColors.onSurfaceVariant, height: 48, style: T.labelMd, onTap: assessment == null ? null : () => showAssessmentSummary(context, assessment!)),
         Column(children: [
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Symbols.verified_user, size: 15, color: AppColors.outline),
+            Icon(Symbols.verified_user, size: 15, color: AppColors.outline),
             const SizedBox(width: 4),
             Text('CAMPUS PRIVACY GUARANTEE', style: T.labelSm.c(AppColors.outline).tracking(1)),
           ]),

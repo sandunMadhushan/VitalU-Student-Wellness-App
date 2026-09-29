@@ -97,7 +97,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
-                  const Icon(Symbols.check_box_outline_blank, size: 20, color: AppColors.primary),
+                  Icon(Symbols.check_box_outline_blank, size: 20, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Expanded(child: Text('${l['name']} × ${l['servings']}', style: T.bodyMd)),
                   Text(money(l['total'] as num), style: T.labelMd),
@@ -161,7 +161,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
                       shadow: Shadows.tiny,
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiaryFixedDim, shape: BoxShape.circle)),
+                        Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiaryFixedDim, shape: BoxShape.circle)),
                         const SizedBox(width: 6),
                         Text('Guilt-Free Spending', style: T.labelSm),
                       ]),
@@ -219,7 +219,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
             ]),
             const SizedBox(height: 8),
             Row(children: [
-              const Icon(Symbols.check_circle, size: 16, color: AppColors.tertiary),
+              Icon(Symbols.check_circle, size: 16, color: AppColors.tertiary),
               const SizedBox(width: 6),
               Expanded(child: Text('Based on 3 campus meals + 1 study snack per day. Adjust freely anytime.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
             ]),

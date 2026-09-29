@@ -72,7 +72,7 @@ class VCard extends StatelessWidget {
   const VCard({
     super.key,
     required this.child,
-    this.color = AppColors.surfaceContainerLowest,
+    this.color,
     this.radius = Rad.lg,
     this.padding = const EdgeInsets.all(Sp.md),
     this.shadow,
@@ -83,7 +83,7 @@ class VCard extends StatelessWidget {
     this.clip = false,
   });
   final Widget child;
-  final Color color;
+  final Color? color;
   final double radius;
   final EdgeInsetsGeometry padding;
   final List<BoxShadow>? shadow;
@@ -106,7 +106,7 @@ class VCard extends StatelessWidget {
       margin: margin,
       clipBehavior: clip ? Clip.antiAlias : Clip.none,
       decoration: BoxDecoration(
-        color: gradient == null ? color : null,
+        color: gradient == null ? (color ?? AppColors.surfaceContainerLowest) : null,
         gradient: gradient,
         borderRadius: BorderRadius.circular(radius),
         boxShadow: shadow,
@@ -118,12 +118,12 @@ class VCard extends StatelessWidget {
 }
 
 class IconCircle extends StatelessWidget {
-  const IconCircle(this.icon, {super.key, this.size = 44, this.iconSize = 22, this.bg = AppColors.surfaceContainerLowest, this.fg = AppColors.primary, this.fill = 0, this.shadow, this.radius});
+  const IconCircle(this.icon, {super.key, this.size = 44, this.iconSize = 22, this.bg, this.fg, this.fill = 0, this.shadow, this.radius});
   final IconData icon;
   final double size;
   final double iconSize;
-  final Color bg;
-  final Color fg;
+  final Color? bg;
+  final Color? fg;
   final double fill;
   final List<BoxShadow>? shadow;
   final double? radius;
@@ -134,50 +134,53 @@ class IconCircle extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: bg,
+        color: bg ?? AppColors.surfaceContainerLowest,
         shape: radius == null ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: radius == null ? null : BorderRadius.circular(radius!),
         boxShadow: shadow,
       ),
       alignment: Alignment.center,
-      child: Icon(icon, size: iconSize, color: fg, fill: fill),
+      child: Icon(icon, size: iconSize, color: fg ?? AppColors.primary, fill: fill),
     );
   }
 }
 
 class Pill extends StatelessWidget {
-  const Pill({super.key, required this.child, this.color = AppColors.surfaceContainer, this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 4), this.border, this.shadow});
+  const Pill({super.key, required this.child, this.color, this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 4), this.border, this.shadow});
   final Widget child;
-  final Color color;
+  final Color? color;
   final EdgeInsetsGeometry padding;
   final BoxBorder? border;
   final List<BoxShadow>? shadow;
   @override
   Widget build(BuildContext context) => Container(
         padding: padding,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(Rad.full), border: border, boxShadow: shadow),
+        decoration: BoxDecoration(color: color ?? AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.full), border: border, boxShadow: shadow),
         child: child,
       );
 }
 
 /// Small pill with icon + label, e.g. "🔒 FERPA Private".
 class TagPill extends StatelessWidget {
-  const TagPill(this.label, {super.key, this.icon, this.bg = AppColors.surfaceContainer, this.fg = AppColors.onSurfaceVariant, this.iconColor, this.upper = false, this.fill = 0});
+  const TagPill(this.label, {super.key, this.icon, this.bg, this.fg, this.iconColor, this.upper = false, this.fill = 0});
   final String label;
   final IconData? icon;
-  final Color bg;
-  final Color fg;
+  final Color? bg;
+  final Color? fg;
   final Color? iconColor;
   final bool upper;
   final double fill;
   @override
-  Widget build(BuildContext context) => Pill(
-        color: bg,
+  Widget build(BuildContext context) {
+    final fg0 = fg ?? AppColors.onSurfaceVariant;
+    return Pill(
+        color: bg ?? AppColors.surfaceContainer,
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (icon != null) ...[Icon(icon, size: 14, color: iconColor ?? fg, fill: fill), const SizedBox(width: 5)],
-          Flexible(child: Text(upper ? label.toUpperCase() : label, style: T.labelSm.c(fg).tracking(upper ? 0.8 : 0.2), overflow: TextOverflow.ellipsis)),
+          if (icon != null) ...[Icon(icon, size: 14, color: iconColor ?? fg0, fill: fill), const SizedBox(width: 5)],
+          Flexible(child: Text(upper ? label.toUpperCase() : label, style: T.labelSm.c(fg0).tracking(upper ? 0.8 : 0.2), overflow: TextOverflow.ellipsis)),
         ]),
       );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -214,13 +217,13 @@ class _PressableState extends State<Pressable> {
 }
 
 class PrimaryButton extends StatelessWidget {
-  const PrimaryButton(this.label, {super.key, this.onTap, this.icon, this.leadingIcon, this.color = AppColors.primary, this.fg = AppColors.onPrimary, this.height = 56, this.loading = false, this.shadowColor, this.expand = true, this.textStyle});
+  const PrimaryButton(this.label, {super.key, this.onTap, this.icon, this.leadingIcon, this.color, this.fg, this.height = 56, this.loading = false, this.shadowColor, this.expand = true, this.textStyle});
   final String label;
   final VoidCallback? onTap;
   final IconData? icon;
   final IconData? leadingIcon;
-  final Color color;
-  final Color fg;
+  final Color? color;
+  final Color? fg;
   final double height;
   final bool loading;
   final Color? shadowColor;
@@ -230,6 +233,8 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = onTap == null || loading;
+    final color0 = color ?? AppColors.primary;
+    final fg0 = fg ?? AppColors.onPrimary;
     return Pressable(
       onTap: disabled ? null : onTap,
       child: AnimatedOpacity(
@@ -240,19 +245,19 @@ class PrimaryButton extends StatelessWidget {
           width: expand ? double.infinity : null,
           padding: const EdgeInsets.symmetric(horizontal: 24),
           decoration: BoxDecoration(
-            color: color,
+            color: color0,
             borderRadius: BorderRadius.circular(Rad.full),
-            boxShadow: Shadows.tinted(shadowColor ?? color, opacity: 0.3, blur: 24, y: 10, spread: -6),
+            boxShadow: Shadows.tinted(shadowColor ?? color0, opacity: 0.3, blur: 24, y: 10, spread: -6),
           ),
           child: Row(
             mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: loading
-                ? [SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: fg))]
+                ? [SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: fg0))]
                 : [
-                    if (leadingIcon != null) ...[Icon(leadingIcon, color: fg, size: 20), const SizedBox(width: 8)],
-                    Flexible(child: Text(label, style: (textStyle ?? T.labelLg).c(fg).semi, overflow: TextOverflow.ellipsis)),
-                    if (icon != null) ...[const SizedBox(width: 8), Icon(icon, color: fg, size: 20)],
+                    if (leadingIcon != null) ...[Icon(leadingIcon, color: fg0, size: 20), const SizedBox(width: 8)],
+                    Flexible(child: Text(label, style: (textStyle ?? T.labelLg).c(fg0).semi, overflow: TextOverflow.ellipsis)),
+                    if (icon != null) ...[const SizedBox(width: 8), Icon(icon, color: fg0, size: 20)],
                   ],
           ),
         ),
@@ -262,13 +267,13 @@ class PrimaryButton extends StatelessWidget {
 }
 
 class SoftButton extends StatelessWidget {
-  const SoftButton(this.label, {super.key, this.onTap, this.icon, this.trailingIcon, this.color = AppColors.surfaceContainerLow, this.fg = AppColors.onSurface, this.iconColor, this.height = 52, this.border, this.expand = true, this.style});
+  const SoftButton(this.label, {super.key, this.onTap, this.icon, this.trailingIcon, this.color, this.fg, this.iconColor, this.height = 52, this.border, this.expand = true, this.style});
   final String label;
   final VoidCallback? onTap;
   final IconData? icon;
   final IconData? trailingIcon;
-  final Color color;
-  final Color fg;
+  final Color? color;
+  final Color? fg;
   final Color? iconColor;
   final double height;
   final BoxBorder? border;
@@ -277,20 +282,21 @@ class SoftButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fg0 = fg ?? AppColors.onSurface;
     return Pressable(
       onTap: onTap,
       child: Container(
         height: height,
         width: expand ? double.infinity : null,
         padding: const EdgeInsets.symmetric(horizontal: 18),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(Rad.full), border: border),
+        decoration: BoxDecoration(color: color ?? AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full), border: border),
         child: Row(
           mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) ...[Icon(icon, color: iconColor ?? fg, size: 20), const SizedBox(width: 8)],
-            Flexible(child: Text(label, style: (style ?? T.labelLg).c(fg), overflow: TextOverflow.ellipsis)),
-            if (trailingIcon != null) ...[const SizedBox(width: 6), Icon(trailingIcon, color: iconColor ?? fg, size: 18)],
+            if (icon != null) ...[Icon(icon, color: iconColor ?? fg0, size: 20), const SizedBox(width: 8)],
+            Flexible(child: Text(label, style: (style ?? T.labelLg).c(fg0), overflow: TextOverflow.ellipsis)),
+            if (trailingIcon != null) ...[const SizedBox(width: 6), Icon(trailingIcon, color: iconColor ?? fg0, size: 18)],
           ],
         ),
       ),
@@ -299,33 +305,36 @@ class SoftButton extends StatelessWidget {
 }
 
 class TextLinkButton extends StatelessWidget {
-  const TextLinkButton(this.label, {super.key, this.onTap, this.icon, this.color = AppColors.onSurfaceVariant, this.leading});
+  const TextLinkButton(this.label, {super.key, this.onTap, this.icon, this.color, this.leading});
   final String label;
   final VoidCallback? onTap;
   final IconData? icon;
   final IconData? leading;
-  final Color color;
+  final Color? color;
   @override
-  Widget build(BuildContext context) => Pressable(
+  Widget build(BuildContext context) {
+    final color0 = color ?? AppColors.onSurfaceVariant;
+    return Pressable(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (leading != null) ...[Icon(leading, size: 18, color: color), const SizedBox(width: 6)],
-            Text(label, style: T.labelLg.c(color)),
-            if (icon != null) ...[const SizedBox(width: 6), Icon(icon, size: 18, color: color)],
+            if (leading != null) ...[Icon(leading, size: 18, color: color0), const SizedBox(width: 6)],
+            Text(label, style: T.labelLg.c(color0)),
+            if (icon != null) ...[const SizedBox(width: 6), Icon(icon, size: 18, color: color0)],
           ]),
         ),
       );
+  }
 }
 
 class CircleButton extends StatelessWidget {
-  const CircleButton(this.icon, {super.key, this.onTap, this.size = 44, this.bg = Colors.transparent, this.fg = AppColors.onSurfaceVariant, this.iconSize = 24, this.shadow, this.badge = false});
+  const CircleButton(this.icon, {super.key, this.onTap, this.size = 44, this.bg = Colors.transparent, this.fg, this.iconSize = 24, this.shadow, this.badge = false});
   final IconData icon;
   final VoidCallback? onTap;
   final double size;
   final Color bg;
-  final Color fg;
+  final Color? fg;
   final double iconSize;
   final List<BoxShadow>? shadow;
   final bool badge;
@@ -338,12 +347,12 @@ class CircleButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(color: bg, shape: BoxShape.circle, boxShadow: shadow),
           child: Stack(alignment: Alignment.center, children: [
-            Icon(icon, size: iconSize, color: fg),
+            Icon(icon, size: iconSize, color: fg ?? AppColors.onSurfaceVariant),
             if (badge)
               Positioned(
                 top: size * 0.22,
                 right: size * 0.22,
-                child: Container(width: 9, height: 9, decoration: const BoxDecoration(color: AppColors.secondaryContainer, shape: BoxShape.circle)),
+                child: Container(width: 9, height: 9, decoration: BoxDecoration(color: AppColors.secondaryContainer, shape: BoxShape.circle)),
               ),
           ]),
         ),
@@ -352,21 +361,25 @@ class CircleButton extends StatelessWidget {
 
 /// Filter chip (38px pill).
 class VChip extends StatelessWidget {
-  const VChip(this.label, {super.key, this.selected = false, this.onTap, this.icon, this.emoji, this.selectedColor = AppColors.primary, this.selectedFg = AppColors.onPrimary, this.color = AppColors.surfaceContainerLow, this.fg = AppColors.onSurfaceVariant, this.height = 38});
+  const VChip(this.label, {super.key, this.selected = false, this.onTap, this.icon, this.emoji, this.selectedColor, this.selectedFg, this.color, this.fg, this.height = 38});
   final String label;
   final bool selected;
   final VoidCallback? onTap;
   final IconData? icon;
   final String? emoji;
-  final Color selectedColor;
-  final Color selectedFg;
-  final Color color;
-  final Color fg;
+  final Color? selectedColor;
+  final Color? selectedFg;
+  final Color? color;
+  final Color? fg;
   final double height;
 
   @override
   Widget build(BuildContext context) {
-    final c = selected ? selectedFg : fg;
+    final selectedColor0 = selectedColor ?? AppColors.primary;
+    final selectedFg0 = selectedFg ?? AppColors.onPrimary;
+    final color0 = color ?? AppColors.surfaceContainerLow;
+    final fg0 = fg ?? AppColors.onSurfaceVariant;
+    final c = selected ? selectedFg0 : fg0;
     return Pressable(
       onTap: onTap,
       child: AnimatedContainer(
@@ -374,9 +387,9 @@ class VChip extends StatelessWidget {
         height: height,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: selected ? selectedColor : color,
+          color: selected ? selectedColor0 : color0,
           borderRadius: BorderRadius.circular(Rad.full),
-          boxShadow: selected ? Shadows.tinted(selectedColor, opacity: 0.22, blur: 16, y: 6) : null,
+          boxShadow: selected ? Shadows.tinted(selectedColor0, opacity: 0.22, blur: 16, y: 6) : null,
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           if (icon != null) ...[Icon(icon, size: 17, color: c), const SizedBox(width: 6)],
@@ -405,12 +418,12 @@ class ChipRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class Ring extends StatelessWidget {
-  const Ring({super.key, required this.value, this.size = 56, this.stroke = 5, this.color = AppColors.primary, this.track = AppColors.surfaceContainerHigh, this.child, this.gradient});
+  const Ring({super.key, required this.value, this.size = 56, this.stroke = 5, this.color, this.track, this.child, this.gradient});
   final double value;
   final double size;
   final double stroke;
-  final Color color;
-  final Color track;
+  final Color? color;
+  final Color? track;
   final Widget? child;
   final List<Color>? gradient;
 
@@ -423,7 +436,7 @@ class Ring extends StatelessWidget {
           duration: const Duration(milliseconds: 900),
           curve: Curves.easeOutCubic,
           builder: (_, v, __) => CustomPaint(
-            painter: _RingPainter(v, stroke, color, track, gradient),
+            painter: _RingPainter(v, stroke, color ?? AppColors.primary, track ?? AppColors.surfaceContainerHigh, gradient),
             child: Center(child: child),
           ),
         ),
@@ -464,17 +477,17 @@ class _RingPainter extends CustomPainter {
 }
 
 class Bar extends StatelessWidget {
-  const Bar({super.key, required this.value, this.height = 8, this.color = AppColors.primary, this.track = AppColors.surfaceContainerHigh, this.gradient});
+  const Bar({super.key, required this.value, this.height = 8, this.color, this.track, this.gradient});
   final double value;
   final double height;
-  final Color color;
-  final Color track;
+  final Color? color;
+  final Color? track;
   final Gradient? gradient;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (_, cons) => Container(
           height: height,
-          decoration: BoxDecoration(color: track, borderRadius: BorderRadius.circular(height)),
+          decoration: BoxDecoration(color: track ?? AppColors.surfaceContainerHigh, borderRadius: BorderRadius.circular(height)),
           alignment: Alignment.centerLeft,
           child: TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: value.clamp(0, 1)),
@@ -483,7 +496,7 @@ class Bar extends StatelessWidget {
             builder: (_, v, __) => Container(
               width: cons.maxWidth * v,
               height: height,
-              decoration: BoxDecoration(color: gradient == null ? color : null, gradient: gradient, borderRadius: BorderRadius.circular(height)),
+              decoration: BoxDecoration(color: gradient == null ? (color ?? AppColors.primary) : null, gradient: gradient, borderRadius: BorderRadius.circular(height)),
             ),
           ),
         ),
@@ -492,26 +505,29 @@ class Bar extends StatelessWidget {
 
 /// Thick pill slider (14px track, 32px thumb) from DESIGN.md.
 class VSlider extends StatelessWidget {
-  const VSlider({super.key, required this.value, required this.min, required this.max, required this.onChanged, this.divisions, this.color = AppColors.primary});
+  const VSlider({super.key, required this.value, required this.min, required this.max, required this.onChanged, this.divisions, this.color});
   final double value;
   final double min;
   final double max;
   final int? divisions;
   final ValueChanged<double> onChanged;
-  final Color color;
+  final Color? color;
   @override
-  Widget build(BuildContext context) => SliderTheme(
+  Widget build(BuildContext context) {
+    final color0 = color ?? AppColors.primary;
+    return SliderTheme(
         data: SliderTheme.of(context).copyWith(
           trackHeight: 10,
-          activeTrackColor: color,
+          activeTrackColor: color0,
           inactiveTrackColor: AppColors.surfaceContainerHigh,
           thumbColor: Colors.white,
-          overlayColor: color.withValues(alpha: 0.12),
+          overlayColor: color0.withValues(alpha: 0.12),
           thumbShape: const _ThumbShape(),
           trackShape: const RoundedRectSliderTrackShape(),
         ),
         child: Slider(value: value.clamp(min, max), min: min, max: max, divisions: divisions, onChanged: onChanged),
       );
+  }
 }
 
 class _ThumbShape extends SliderComponentShape {
@@ -554,7 +570,7 @@ class VPage extends StatelessWidget {
     this.navVariantLibrary = false,
     this.padding = const EdgeInsets.symmetric(horizontal: Sp.margin),
     this.bottom,
-    this.background = AppColors.surface,
+    this.background,
     this.spacing = Sp.md,
     this.onRefresh,
     this.backgroundDecoration,
@@ -567,7 +583,7 @@ class VPage extends StatelessWidget {
   final bool navVariantLibrary;
   final EdgeInsetsGeometry padding;
   final Widget? bottom;
-  final Color background;
+  final Color? background;
   final double spacing;
   final Future<void> Function()? onRefresh;
   final Decoration? backgroundDecoration;
@@ -592,7 +608,7 @@ class VPage extends StatelessWidget {
       list = RefreshIndicator(color: AppColors.primary, edgeOffset: top, onRefresh: onRefresh!, child: list);
     }
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: background ?? AppColors.surface,
       body: Container(
         decoration: backgroundDecoration,
         child: Stack(children: [
@@ -682,7 +698,7 @@ class PersonDot extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle, boxShadow: Shadows.tinted(AppColors.lavenderInteractive, opacity: 0.25, blur: 12, y: 4, spread: -2)),
-          child: const Icon(Symbols.person, color: AppColors.onPrimary, size: 18),
+          child: Icon(Symbols.person, color: AppColors.onPrimary, size: 18),
         ),
       );
 }
@@ -947,8 +963,8 @@ void toast(BuildContext context, String msg, {bool error = false}) {
 class Loading extends StatelessWidget {
   const Loading({super.key});
   @override
-  Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.all(40),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(40),
         child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.6)),
       );
 }
@@ -962,7 +978,7 @@ Future<T?> showVSheet<T>(BuildContext context, {required Widget Function(BuildCo
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
         ),
@@ -1019,8 +1035,8 @@ class VTextField extends StatelessWidget {
           borderRadius: BorderRadius.circular(maxLines > 1 ? 24 : Rad.full),
           borderSide: BorderSide(color: AppColors.lavenderInteractive.withValues(alpha: 0.45), width: 2),
         ),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Rad.full), borderSide: const BorderSide(color: AppColors.error, width: 1.5)),
-        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Rad.full), borderSide: const BorderSide(color: AppColors.error, width: 2)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Rad.full), borderSide: BorderSide(color: AppColors.error, width: 1.5)),
+        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Rad.full), borderSide: BorderSide(color: AppColors.error, width: 2)),
       ),
     );
   }

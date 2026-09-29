@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/app_state.dart';
+import '../../core/config.dart';
 import '../../data/catalog.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
@@ -46,9 +48,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     if (x == null) return;
     try {
+      // A backgrounded app can miss its automatic token refresh, leaving a stale
+      // session that Storage would otherwise reject. Force a fresh one first.
+      try {
+        await db.auth.refreshSession();
+      } catch (_) {
+        /* fall through to the session check below */
+      }
+      final id = uid;
+      final session = db.auth.currentSession;
+      if (id == null || session == null) {
+        if (mounted) toast(context, 'Your session expired — please sign out and sign in again.', error: true);
+        return;
+      }
       final bytes = await x.readAsBytes();
-      final path = '$uid/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      await db.storage.from('avatars').uploadBinary(path, bytes, fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true));
+      final path = '$id/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      // supabase_flutter's storage client kept returning a row-level-security 403
+      // for this exact upload even with a fresh, valid, matching-user session —
+      // while the same request built and sent by hand succeeds. Bypass the
+      // package for this call and post the multipart upload directly.
+      final uri = Uri.parse('${Env.supabaseUrl}/storage/v1/object/avatars/$path');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer ${session.accessToken}'
+        ..headers['apikey'] = Env.supabaseKey
+        ..headers['x-upsert'] = 'true'
+        ..files.add(http.MultipartFile.fromBytes('', bytes, filename: '', contentType: MediaType('image', 'jpeg')));
+      final response = await http.Response.fromStream(await request.send());
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Upload failed (${response.statusCode}): ${response.body}');
+      }
       final url = db.storage.from('avatars').getPublicUrl(path);
       await AppState.instance.updateProfile({'avatar_url': url});
     } catch (e) {
@@ -166,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           width: 24,
                           height: 24,
                           decoration: BoxDecoration(color: AppColors.tertiaryContainer, shape: BoxShape.circle, boxShadow: Shadows.tinted(AppColors.tertiary, opacity: 0.3, blur: 8, y: 2, spread: 0)),
-                          child: const Icon(Symbols.photo_camera, size: 13, color: AppColors.onTertiary, fill: 1),
+                          child: Icon(Symbols.photo_camera, size: 13, color: AppColors.onTertiary, fill: 1),
                         ),
                       ),
                     ]),
@@ -179,7 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
                     shadow: Shadows.tiny,
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+                      Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                       const SizedBox(width: 6),
                       Text('Private & Encrypted Profile', style: T.labelSm.tracking(0.4)),
                     ]),
@@ -201,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () => context.push('/assessments'),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      const IconCircle(Symbols.sync_saved_locally, size: 28, iconSize: 16, bg: AppColors.secondaryFixed, fg: AppColors.secondary),
+                      IconCircle(Symbols.sync_saved_locally, size: 28, iconSize: 16, bg: AppColors.secondaryFixed, fg: AppColors.secondary),
                       const Spacer(),
                       Flexible(child: TagPill('Synced', bg: AppColors.secondaryFixed.withValues(alpha: 0.4), fg: AppColors.secondary)),
                     ]),
@@ -210,7 +238,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text('Checkup Due', style: T.labelSm.s(11).c(AppColors.onSurfaceVariant)),
                     const SizedBox(height: 10),
                     Row(children: [
-                      Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+                      Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                       const SizedBox(width: 4),
                       Text('Campus Link', style: T.labelSm.s(10).c(AppColors.onSurfaceVariant)),
                     ]),
@@ -283,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.surfaceContainer,
               shadow: Shadows.tiny,
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const IconCircle(Symbols.lock, size: 36, iconSize: 20, bg: AppColors.primaryFixed, fill: 1),
+                IconCircle(Symbols.lock, size: 36, iconSize: 20, bg: AppColors.primaryFixed, fill: 1),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -300,11 +328,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(vertical: 6),
               shadow: Shadows.soft,
               child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Sp.md, 10, Sp.md, 4),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                    IconCircle(AppState.instance.themeMode == ThemeMode.dark ? Symbols.dark_mode : Symbols.light_mode, size: 36, iconSize: 18, bg: AppColors.surfaceContainerLow, fg: AppColors.primary),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Appearance', style: T.labelLg),
+                        Text('Light, dark or match your device', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                      ]),
+                    ),
+                  ]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Sp.md, 8, Sp.md, 10),
+                  child: Segmented(
+                    small: false,
+                    options: const ['Light', 'Dark', 'System'],
+                    value: _themeModeLabel(AppState.instance.themeMode),
+                    onChanged: (v) => AppState.instance.setThemeMode(_themeModeFromLabel(v)),
+                  ),
+                ),
+                Container(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.3), margin: const EdgeInsets.symmetric(horizontal: Sp.md)),
                 SwitchListTile(
                   value: p.researchConsent,
                   onChanged: _consent,
                   activeTrackColor: AppColors.tertiary,
-                  secondary: const IconCircle(Symbols.science, size: 36, iconSize: 18, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary),
+                  secondary: IconCircle(Symbols.science, size: 36, iconSize: 18, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary),
                   title: Text('Research participation', style: T.labelLg),
                   subtitle: Text('Share anonymised assessment results', style: T.bodySm.c(AppColors.onSurfaceVariant)),
                 ),
@@ -355,12 +406,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ]));
   }
 
-  Widget _link(IconData icon, String label, VoidCallback onTap, {Color color = AppColors.primary}) => ListTile(
-        onTap: onTap,
-        leading: IconCircle(icon, size: 36, iconSize: 18, bg: AppColors.surfaceContainerLow, fg: color),
-        title: Text(label, style: T.labelLg.c(color == AppColors.error ? AppColors.error : AppColors.onSurface)),
-        trailing: const Icon(Symbols.chevron_right, color: AppColors.outline),
-      );
+  Widget _link(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    final color0 = color ?? AppColors.primary;
+    return ListTile(
+      onTap: onTap,
+      leading: IconCircle(icon, size: 36, iconSize: 18, bg: AppColors.surfaceContainerLow, fg: color0),
+      title: Text(label, style: T.labelLg.c(color0 == AppColors.error ? AppColors.error : AppColors.onSurface)),
+      trailing: Icon(Symbols.chevron_right, color: AppColors.outline),
+    );
+  }
 
   Widget _stat(IconData icon, Color bg, Color fg, String chip, String value, String label, double bar, VoidCallback onTap) => Expanded(
         child: VCard(
@@ -412,7 +466,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(sub, style: T.bodySm.c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
                 ]),
               ),
-              AnimatedRotation(turns: open ? 0.5 : 0, duration: const Duration(milliseconds: 300), child: const Icon(Symbols.expand_more, color: AppColors.onSurfaceVariant)),
+              AnimatedRotation(turns: open ? 0.5 : 0, duration: const Duration(milliseconds: 300), child: Icon(Symbols.expand_more, color: AppColors.onSurfaceVariant)),
             ]),
           ),
         ),
@@ -442,6 +496,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ]),
     );
   }
+
+  String _themeModeLabel(ThemeMode m) => switch (m) {
+        ThemeMode.light => 'Light',
+        ThemeMode.dark => 'Dark',
+        ThemeMode.system => 'System',
+      };
+
+  ThemeMode _themeModeFromLabel(String l) => switch (l) {
+        'Light' => ThemeMode.light,
+        'Dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
 }
 
 extension on String {

@@ -134,7 +134,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
   Widget build(BuildContext context) {
     return VPage(
       header: const TitleHeader('Heart Health Check'),
-      backgroundDecoration: const BoxDecoration(
+      backgroundDecoration: BoxDecoration(
         gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFEEF7FF), AppColors.surface, AppColors.surface]),
       ),
       background: Colors.transparent,
@@ -174,7 +174,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
         shadow: Shadows.soft,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const IconCircle(Symbols.monitor_heart, size: 36, iconSize: 20, bg: AppColors.surfaceContainer),
+            IconCircle(Symbols.monitor_heart, size: 36, iconSize: 20, bg: AppColors.surfaceContainer),
             const SizedBox(width: 10),
             Expanded(child: Text('Recent blood pressure', style: T.labelLg)),
           ]),
@@ -197,7 +197,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
         shadow: Shadows.soft,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const IconCircle(Symbols.diversity_1, size: 36, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.secondary),
+            IconCircle(Symbols.diversity_1, size: 36, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.secondary),
             const SizedBox(width: 10),
             Expanded(child: Text('Family history (parents or siblings)', style: T.labelLg)),
           ]),
@@ -223,7 +223,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
           color: AppColors.surfaceContainerLow,
           onTap: () => context.push('/tools/bmi'),
           child: Row(children: [
-            const Icon(Symbols.info, size: 18, color: AppColors.primary),
+            Icon(Symbols.info, size: 18, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(child: Text('Add your height & weight (BMI tool) for a more personal result.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
             const Icon(Symbols.chevron_right, size: 18),
@@ -293,7 +293,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
         child: Row(children: [
           TagPill('Confidential', icon: Symbols.lock, iconColor: AppColors.tertiary, bg: AppColors.surfaceContainerLow),
           const Spacer(),
-          const Icon(Symbols.verified, size: 16, color: AppColors.secondary),
+          Icon(Symbols.verified, size: 16, color: AppColors.secondary),
           const SizedBox(width: 4),
           Text('Young-Adult Baseline', style: T.labelSm.c(AppColors.onSurfaceVariant.withValues(alpha: 0.8))),
         ]),
@@ -389,10 +389,10 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
           padding: const EdgeInsets.symmetric(horizontal: Sp.md),
           decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.tiny),
           child: Row(children: [
-            const Icon(Symbols.support_agent, size: 20, color: AppColors.secondary),
+            Icon(Symbols.support_agent, size: 20, color: AppColors.secondary),
             const SizedBox(width: 10),
             Expanded(child: Text('Talk to a Campus Wellness Counselor', style: T.labelMd, overflow: TextOverflow.ellipsis)),
-            const Icon(Symbols.arrow_forward_ios, size: 16, color: AppColors.onSurfaceVariant),
+            Icon(Symbols.arrow_forward_ios, size: 16, color: AppColors.onSurfaceVariant),
           ]),
         ),
       ),

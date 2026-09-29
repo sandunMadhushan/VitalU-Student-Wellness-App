@@ -183,7 +183,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                   Text('On-campus clinic & same-day urgent student triage', style: T.bodySm.c(AppColors.onSurfaceVariant)),
                   const SizedBox(height: 6),
                   Row(children: [
-                    const Icon(Symbols.location_on, size: 16, color: AppColors.onSurfaceVariant),
+                    Icon(Symbols.location_on, size: 16, color: AppColors.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Flexible(child: Text('University Health Centre • Main Campus', style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w500))),
                   ]),
@@ -237,7 +237,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
             shadow: Shadows.card,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                const Icon(Symbols.groups, color: AppColors.secondary),
+                Icon(Symbols.groups, color: AppColors.secondary),
                 const SizedBox(width: 8),
                 Expanded(child: Text(p['name'], style: T.headlineSm)),
               ]),
@@ -245,7 +245,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
               TagPill(p['specialty'] ?? '', bg: AppColors.secondaryFixed.withValues(alpha: 0.5), fg: AppColors.onSecondaryFixedVariant),
               const SizedBox(height: Sp.sm),
               Row(children: [
-                const Icon(Symbols.bolt, size: 18, color: AppColors.tertiary),
+                Icon(Symbols.bolt, size: 18, color: AppColors.tertiary),
                 const SizedBox(width: 6),
                 Expanded(child: Text(p['availability'] ?? '', style: T.bodySm.c(AppColors.onSurfaceVariant))),
                 PrimaryButton('Live Chat', leadingIcon: Symbols.forum, height: 44, expand: false, color: AppColors.inverseSurface, textStyle: T.labelMd.c(AppColors.inverseOnSurface), onTap: () => _request(pro: p, service: 'Peer chat', chat: true)),
@@ -286,7 +286,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
           border: Border.all(color: AppColors.secondaryFixed),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Symbols.emergency, color: AppColors.error),
+              Icon(Symbols.emergency, color: AppColors.error),
               const SizedBox(width: 8),
               Text('24/7 Student Safety Net', style: T.headlineSm.c(AppColors.onSecondaryFixedVariant)),
             ]),
@@ -335,7 +335,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
             child: Stack(fit: StackFit.expand, children: [
               p['photo_key'] != null
                   ? AssetImg(p['photo_key'], alignment: Alignment.topCenter)
-                  : Container(color: AppColors.primaryFixed, child: const Icon(Symbols.person, size: 64, color: AppColors.primary)),
+                  : Container(color: AppColors.primaryFixed, child: Icon(Symbols.person, size: 64, color: AppColors.primary)),
               Positioned(
                 right: 14,
                 bottom: 14,

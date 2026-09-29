@@ -204,7 +204,7 @@ class _MealLogScreenState extends State<MealLogScreen> {
                   style: T.bodyMd,
                   decoration: InputDecoration(
                     border: InputBorder.none,
-                    prefixIcon: const Icon(Symbols.search, color: AppColors.outline, size: 20),
+                    prefixIcon: Icon(Symbols.search, color: AppColors.outline, size: 20),
                     hintText: 'Search canteen menus, snacks...',
                     hintStyle: T.bodyMd.c(AppColors.outline),
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -220,7 +220,7 @@ class _MealLogScreenState extends State<MealLogScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(color: AppColors.secondaryFixed, borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.tiny),
                 child: Row(children: [
-                  const Icon(Symbols.photo_camera, size: 20, color: AppColors.onSecondaryFixed, fill: 1),
+                  Icon(Symbols.photo_camera, size: 20, color: AppColors.onSecondaryFixed, fill: 1),
                   const SizedBox(width: 6),
                   Text('Snap', style: T.labelMd.c(AppColors.onSecondaryFixed)),
                 ]),

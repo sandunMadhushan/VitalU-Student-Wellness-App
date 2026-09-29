@@ -238,7 +238,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 Text('Plain-English insights for routine lab panels', style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
               ]),
             ),
-            const Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
+            Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
           ]),
         ),
         VCard(
@@ -268,14 +268,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _bookmarkBtn(Rec a, {double size = 32, Color bg = AppColors.surfaceContainerLowest}) {
+  Widget _bookmarkBtn(Rec a, {double size = 32, Color? bg}) {
+    final bg0 = bg ?? AppColors.surfaceContainerLowest;
     final on = _saved.contains(a['id']);
     return GestureDetector(
       onTap: () => _toggle(a),
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(color: bg, shape: BoxShape.circle, boxShadow: bg == Colors.transparent ? null : Shadows.tiny),
+        decoration: BoxDecoration(color: bg0, shape: BoxShape.circle, boxShadow: bg0 == Colors.transparent ? null : Shadows.tiny),
         child: Icon(Symbols.bookmark, size: size * 0.5, fill: on ? 1 : 0, color: on ? AppColors.primary : AppColors.onSurfaceVariant),
       ),
     );
@@ -291,7 +292,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               height: 208,
               child: Stack(fit: StackFit.expand, children: [
                 AssetImg(articleImage(a)),
-                const DecoratedBox(
+                DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
@@ -315,7 +316,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               padding: const EdgeInsets.all(Sp.md),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  const Icon(Symbols.schedule, size: 16, color: AppColors.primary),
+                  Icon(Symbols.schedule, size: 16, color: AppColors.primary),
                   const SizedBox(width: 6),
                   Flexible(child: Text('${a['read_minutes']} min read • ${a['category_label']}', style: T.labelSm.c(AppColors.primary))),
                 ]),
@@ -329,12 +330,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     width: 24,
                     height: 24,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: AppColors.primaryFixed, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: AppColors.primaryFixed, shape: BoxShape.circle),
                     child: Text('VU', style: T.labelSm.s(10).bold.c(AppColors.onPrimaryFixed)),
                   ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(a['author'] ?? 'VitalU', style: T.labelSm.c(AppColors.onSurfaceVariant))),
-                  const Icon(Symbols.arrow_forward, size: 20, color: AppColors.primary),
+                  Icon(Symbols.arrow_forward, size: 20, color: AppColors.primary),
                 ]),
               ]),
             ),

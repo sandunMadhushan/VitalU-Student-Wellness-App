@@ -182,7 +182,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   value: pct,
                   size: 256,
                   stroke: 16,
-                  gradient: const [AppColors.secondaryContainer, AppColors.secondary, AppColors.primaryContainer, AppColors.secondaryContainer],
+                  gradient: [AppColors.secondaryContainer, AppColors.secondary, AppColors.primaryContainer, AppColors.secondaryContainer],
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Container(
                       width: 80,
@@ -202,7 +202,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 color: AppColors.secondaryFixed,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle)),
                   const SizedBox(width: 6),
                   Text('${(pct * 100).round()}% of Daily Pace', style: T.labelMd.c(AppColors.onSecondaryFixed)),
                 ]),
@@ -212,7 +212,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.lg)),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Icon(Symbols.auto_awesome, size: 18, color: AppColors.secondary, fill: 1),
+                  Icon(Symbols.auto_awesome, size: 18, color: AppColors.secondary, fill: 1),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -295,7 +295,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
               ),
               _syncing
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Symbols.chevron_right, color: AppColors.outline, size: 20),
+                  : Icon(Symbols.chevron_right, color: AppColors.outline, size: 20),
             ]),
           ),
         ),

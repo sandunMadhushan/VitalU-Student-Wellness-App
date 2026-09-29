@@ -178,7 +178,7 @@ class _BloodUploadScreenState extends State<BloodUploadScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(color: AppColors.tertiaryFixed.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(Rad.base)),
                     child: Row(children: [
-                      const Icon(Symbols.check_circle, size: 20, color: AppColors.tertiary, fill: 1),
+                      Icon(Symbols.check_circle, size: 20, color: AppColors.tertiary, fill: 1),
                       const SizedBox(width: 8),
                       Expanded(child: Text(_name!, style: T.labelMd, overflow: TextOverflow.ellipsis)),
                       Text('${(_bytes!.length / 1024 / 1024).toStringAsFixed(1)} MB', style: T.labelSm.c(AppColors.onSurfaceVariant)),
@@ -270,7 +270,7 @@ class _BloodUploadScreenState extends State<BloodUploadScreen> {
                             style: T.bodySm.c(AppColors.onSurfaceVariant)),
                       ]),
                     ),
-                    const Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
+                    Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
                   ]),
                 ),
               ),

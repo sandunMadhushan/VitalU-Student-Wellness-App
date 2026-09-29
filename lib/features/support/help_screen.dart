@@ -59,7 +59,7 @@ class _HelpScreenState extends State<HelpScreen> {
             color: AppColors.surfaceContainerLow,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
               const SizedBox(width: 6),
               Text('24/7 Active', style: T.labelSm),
             ]),
@@ -69,7 +69,7 @@ class _HelpScreenState extends State<HelpScreen> {
           padding: const EdgeInsets.all(Sp.md),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Rad.lg),
-            gradient: const LinearGradient(colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow]),
+            gradient: LinearGradient(colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow]),
             boxShadow: Shadows.soft,
           ),
           child: Row(children: [
@@ -92,7 +92,7 @@ class _HelpScreenState extends State<HelpScreen> {
             padding: const EdgeInsets.all(Sp.md + 4),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(Rad.lg),
-              gradient: const LinearGradient(colors: [Color(0xFF9B3E63), AppColors.pinkAccent]),
+              gradient: LinearGradient(colors: [Color(0xFF9B3E63), AppColors.pinkAccent]),
               boxShadow: Shadows.tinted(AppColors.secondary, opacity: 0.35, blur: 28, y: 12),
             ),
             child: Row(children: [
@@ -100,7 +100,7 @@ class _HelpScreenState extends State<HelpScreen> {
                 width: 68,
                 height: 68,
                 decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: const Icon(Symbols.call, size: 30, color: AppColors.secondary),
+                child: Icon(Symbols.call, size: 30, color: AppColors.secondary),
               ),
               const SizedBox(width: Sp.md),
               Expanded(
@@ -116,7 +116,7 @@ class _HelpScreenState extends State<HelpScreen> {
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Text(hero['action_label'] ?? 'Tap to Call', style: T.labelMd.c(AppColors.secondary)),
                   const SizedBox(width: 4),
-                  const Icon(Symbols.arrow_forward, size: 16, color: AppColors.secondary),
+                  Icon(Symbols.arrow_forward, size: 16, color: AppColors.secondary),
                 ]),
               ),
             ]),
@@ -127,7 +127,7 @@ class _HelpScreenState extends State<HelpScreen> {
           shadow: Shadows.card,
           padding: const EdgeInsets.all(Sp.lg),
           child: Column(children: [
-            const IconCircle(Symbols.favorite, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.secondary),
+            IconCircle(Symbols.favorite, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.secondary),
             const SizedBox(height: Sp.sm),
             Text('You are not alone.', style: T.headlineSm.s(20)),
             const SizedBox(height: 6),

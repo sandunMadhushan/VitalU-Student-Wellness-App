@@ -148,7 +148,7 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
           decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
           child: Row(children: [
             Expanded(child: Text(text, style: T.labelLg.c(placeholder ? AppColors.outline : AppColors.onSurface), overflow: TextOverflow.ellipsis)),
-            const Icon(Symbols.expand_more, size: 20, color: AppColors.onSurfaceVariant),
+            Icon(Symbols.expand_more, size: 20, color: AppColors.onSurfaceVariant),
           ]),
         ),
       );
@@ -167,7 +167,7 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
                 onTap: () => Navigator.pop(ctx, o),
                 child: Row(children: [
                   Expanded(child: Text(o, style: T.labelLg)),
-                  if (o == current) const Icon(Symbols.check_circle, color: AppColors.tertiary, fill: 1),
+                  if (o == current) Icon(Symbols.check_circle, color: AppColors.tertiary, fill: 1),
                 ]),
               ),
             ),
@@ -203,7 +203,7 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
         _card(
           label: 'Date of Birth',
           badge: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Symbols.lock, size: 13, color: AppColors.tertiary),
+            Icon(Symbols.lock, size: 13, color: AppColors.tertiary),
             const SizedBox(width: 2),
             Text('Private', style: T.labelSm.c(AppColors.tertiary)),
           ]),
@@ -383,7 +383,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
           ]),
         ]),
         Row(children: [
-          const Icon(Symbols.info, size: 16, color: AppColors.primary),
+          Icon(Symbols.info, size: 16, color: AppColors.primary),
           const SizedBox(width: 8),
           Expanded(child: Text('You can update or remove any of these details at any time in your Health Profile.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
         ]),
@@ -415,7 +415,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
           IconCircle(c.icon, size: 32, iconSize: 18, bg: on ? Colors.white.withValues(alpha: 0.15) : AppColors.surfaceContainerLow, fg: on ? AppColors.onTertiary : (c.secondaryTint ? AppColors.secondary : AppColors.primary)),
           const SizedBox(width: 10),
           Text(c.label, style: T.bodyMd.c(on ? AppColors.onTertiary : AppColors.onSurface).w(on ? FontWeight.w600 : FontWeight.w500)),
-          if (on) ...[const SizedBox(width: 6), const Icon(Symbols.check_circle, size: 18, fill: 1, color: AppColors.tertiaryFixed)],
+          if (on) ...[const SizedBox(width: 6), Icon(Symbols.check_circle, size: 18, fill: 1, color: AppColors.tertiaryFixed)],
         ]),
       ),
     );
@@ -427,15 +427,17 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
 // ---------------------------------------------------------------------------
 
 class MeasureField extends StatelessWidget {
-  const MeasureField({super.key, required this.controller, required this.units, required this.unit, required this.onUnit, this.hint, this.accent = AppColors.tertiary});
+  const MeasureField({super.key, required this.controller, required this.units, required this.unit, required this.onUnit, this.hint, this.accent});
   final TextEditingController controller;
   final List<String> units;
   final String unit;
   final ValueChanged<String> onUnit;
   final String? hint;
-  final Color accent;
+  final Color? accent;
   @override
-  Widget build(BuildContext context) => Row(children: [
+  Widget build(BuildContext context) {
+    final accent0 = accent ?? AppColors.tertiary;
+    return Row(children: [
         Expanded(
           child: Container(
             height: 52,
@@ -464,13 +466,14 @@ class MeasureField extends StatelessWidget {
                   duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: u == unit ? accent : Colors.transparent, borderRadius: BorderRadius.circular(Rad.full)),
+                  decoration: BoxDecoration(color: u == unit ? accent0 : Colors.transparent, borderRadius: BorderRadius.circular(Rad.full)),
                   child: Text(u, style: T.labelMd.c(u == unit ? Colors.white : AppColors.onSurfaceVariant)),
                 ),
               ),
           ]),
         ),
       ]);
+  }
 }
 
 /// Unit-aware numeric measurement controller (stores metric).
@@ -588,7 +591,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
           radius: Rad.md,
           shadow: Shadows.tiny,
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const IconCircle(Symbols.auto_awesome, size: 36, iconSize: 20, bg: AppColors.tertiaryContainer, fg: AppColors.onTertiaryContainer),
+            IconCircle(Symbols.auto_awesome, size: 36, iconSize: 20, bg: AppColors.tertiaryContainer, fg: AppColors.onTertiaryContainer),
             const SizedBox(width: Sp.sm),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -637,7 +640,7 @@ class RegistrationComplete extends StatelessWidget {
         );
     return VPage(
       header: const BrandBackHeader(chip: 'All set'),
-      backgroundDecoration: const BoxDecoration(
+      backgroundDecoration: BoxDecoration(
         gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surface, AppColors.surfaceContainerLow, AppColors.surfaceContainer]),
       ),
       background: Colors.transparent,
@@ -649,7 +652,7 @@ class RegistrationComplete extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             shadow: Shadows.tiny,
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
               const SizedBox(width: 8),
               Text('PROFILE READY', style: T.labelSm.c(AppColors.tertiary).tracking(1)),
             ]),
@@ -670,7 +673,7 @@ class RegistrationComplete extends StatelessWidget {
           Text.rich(
             TextSpan(children: [
               const TextSpan(text: "You're All Set, "),
-              TextSpan(text: '$name!', style: const TextStyle(color: AppColors.primary)),
+              TextSpan(text: '$name!', style: TextStyle(color: AppColors.primary)),
             ]),
             textAlign: TextAlign.center,
             style: T.headlineXlMobile,
@@ -712,7 +715,7 @@ class RegistrationComplete extends StatelessWidget {
         ),
         PrimaryButton('Go to My Dashboard', icon: Symbols.arrow_forward, color: AppColors.tertiaryContainer, shadowColor: AppColors.tertiary, onTap: () => context.go('/home')),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Symbols.favorite, size: 16, fill: 1, color: AppColors.tertiary),
+          Icon(Symbols.favorite, size: 16, fill: 1, color: AppColors.tertiary),
           const SizedBox(width: 6),
           Text('No streaks, no pressure. Just supportive daily care.', style: T.labelSm.c(AppColors.onSurfaceVariant.withValues(alpha: 0.8))),
         ]),

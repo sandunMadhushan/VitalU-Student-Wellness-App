@@ -52,7 +52,7 @@ class _BreathingDialogState extends State<_BreathingDialog> with SingleTickerPro
           decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(36), boxShadow: Shadows.floating),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Align(alignment: Alignment.topRight, child: CircleButton(Symbols.close, size: 36, iconSize: 20, bg: AppColors.surfaceContainer, onTap: () => Navigator.pop(context))),
-            const IconCircle(Symbols.air, bg: AppColors.skyWash, fg: AppColors.skyAccent),
+            IconCircle(Symbols.air, bg: AppColors.skyWash, fg: AppColors.skyAccent),
             const SizedBox(height: Sp.sm),
             Text('Paced Breathing', style: T.headlineMd),
             const SizedBox(height: 4),
@@ -72,7 +72,7 @@ class _BreathingDialogState extends State<_BreathingDialog> with SingleTickerPro
                         child: Container(
                           width: 200,
                           height: 200,
-                          decoration: const BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [AppColors.pinkWash, AppColors.skyWash])),
+                          decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [AppColors.pinkWash, AppColors.skyWash])),
                         ),
                       ),
                       Transform.scale(

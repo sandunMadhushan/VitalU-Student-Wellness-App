@@ -92,7 +92,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
                   Text('$typesLogged of 4 mindful meals logged', style: T.bodySm.c(AppColors.onSurfaceVariant)),
                 ]),
               ),
-              const IconCircle(Symbols.restaurant, size: 40, iconSize: 22, bg: AppColors.surfaceContainerLow),
+              IconCircle(Symbols.restaurant, size: 40, iconSize: 22, bg: AppColors.surfaceContainerLow),
             ]),
             const SizedBox(height: Sp.sm),
             Container(
@@ -100,7 +100,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(Rad.lg),
-                gradient: const LinearGradient(begin: Alignment.bottomLeft, end: Alignment.topRight, colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh]),
+                gradient: LinearGradient(begin: Alignment.bottomLeft, end: Alignment.topRight, colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh]),
                 boxShadow: Shadows.tiny,
               ),
               padding: const EdgeInsets.all(12),
@@ -131,7 +131,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
                     stroke: 7,
                     color: AppColors.tertiary,
                     track: AppColors.surfaceContainerHighest,
-                    child: const Icon(Symbols.bolt, size: 22, color: AppColors.tertiary, fill: 1),
+                    child: Icon(Symbols.bolt, size: 22, color: AppColors.tertiary, fill: 1),
                   ),
                   const SizedBox(width: Sp.md),
                   Expanded(
@@ -145,14 +145,14 @@ class _DietHubScreenState extends State<DietHubScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                         shadow: Shadows.tiny,
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+                          Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                           const SizedBox(width: 6),
                           Text(kcal > target * 1.1 ? 'Above gentle target' : 'On Track for Study Energy', style: T.labelSm.s(11).c(AppColors.tertiary)),
                         ]),
                       ),
                     ]),
                   ),
-                  const Icon(Symbols.chevron_right, color: AppColors.onSurfaceVariant),
+                  Icon(Symbols.chevron_right, color: AppColors.onSurfaceVariant),
                 ]),
               ),
             ),
@@ -174,7 +174,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
           _hubItem(Symbols.savings, AppColors.secondaryFixed, AppColors.secondary, 'Budget Meal Planner', 'Nutritious hostel-friendly meals within your weekly budget', '/diet/budget'),
         ]),
         VCard(
-          gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF2F9F5), AppColors.surfaceContainerLow]),
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF2F9F5), AppColors.surfaceContainerLow]),
           shadow: Shadows.card,
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             IconCircle(Symbols.lightbulb, size: 40, iconSize: 22, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixed, shadow: Shadows.tiny),
@@ -191,7 +191,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text('Explore campus menu', style: T.labelMd.c(AppColors.primary)),
                     const SizedBox(width: 4),
-                    const Icon(Symbols.arrow_forward, size: 16, color: AppColors.primary),
+                    Icon(Symbols.arrow_forward, size: 16, color: AppColors.primary),
                   ]),
                 ),
               ]),
@@ -224,7 +224,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
           if (m != null)
             TagPill(logged ? 'Logged' : 'Planned', icon: logged ? Symbols.check : Symbols.schedule, bg: logged ? AppColors.tertiaryFixed : AppColors.surfaceContainerHighest, fg: logged ? AppColors.onTertiaryFixed : AppColors.onSurfaceVariant)
           else
-            const Icon(Symbols.add_circle, color: AppColors.primary, size: 22),
+            Icon(Symbols.add_circle, color: AppColors.primary, size: 22),
         ]),
       ),
     );
@@ -245,7 +245,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
                 Text(sub, style: T.bodySm.c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
               ]),
             ),
-            const Icon(Symbols.chevron_right, size: 20, color: AppColors.onSurfaceVariant),
+            Icon(Symbols.chevron_right, size: 20, color: AppColors.onSurfaceVariant),
           ]),
         ),
       );

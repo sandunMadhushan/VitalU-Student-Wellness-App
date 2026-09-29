@@ -229,10 +229,10 @@ class _SleepScreenState extends State<SleepScreen> {
                 ]),
               ),
               VCard(
-                gradient: const LinearGradient(colors: [AppColors.surfaceContainerHigh, AppColors.surfaceContainerLow]),
+                gradient: LinearGradient(colors: [AppColors.surfaceContainerHigh, AppColors.surfaceContainerLow]),
                 shadow: Shadows.tiny,
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const IconCircle(Symbols.light_mode, size: 40, iconSize: 20, bg: AppColors.primaryFixed, fg: AppColors.onPrimaryFixedVariant, radius: 16),
+                  IconCircle(Symbols.light_mode, size: 40, iconSize: 20, bg: AppColors.primaryFixed, fg: AppColors.onPrimaryFixedVariant, radius: 16),
                   const SizedBox(width: Sp.sm),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -279,7 +279,7 @@ class _SleepScreenState extends State<SleepScreen> {
       ),
       alignment: Alignment.topCenter,
       padding: const EdgeInsets.only(top: 4),
-      child: highlight && r != null ? Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.surfaceContainerLowest, shape: BoxShape.circle)) : null,
+      child: highlight && r != null ? Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, shape: BoxShape.circle)) : null,
     );
   }
 
@@ -301,7 +301,7 @@ class _SleepScreenState extends State<SleepScreen> {
     final (d, rem, l, est) = _stages(last);
     return VCard(
       clip: true,
-      gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh, AppColors.surfaceContainerHighest]),
+      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh, AppColors.surfaceContainerHighest]),
       shadow: Shadows.card,
       onTap: () => _logSleep(existing: last),
       child: Stack(clipBehavior: Clip.none, children: [

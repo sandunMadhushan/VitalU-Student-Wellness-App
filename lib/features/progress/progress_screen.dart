@@ -279,14 +279,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 Text(weekAvgs.every((x) => x == 0) ? 'Start logging water to see your rhythm' : 'Peak consistency achieved during Week $best', style: T.bodySm.c(AppColors.onSurfaceVariant)),
               ]),
             ),
-            const TagPill('Past 4 Weeks', bg: AppColors.surfaceContainerHigh),
+            TagPill('Past 4 Weeks', bg: AppColors.surfaceContainerHigh),
           ]),
           const SizedBox(height: Sp.md),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.base)),
             child: Row(children: [
-              const IconCircle(Symbols.verified, size: 32, iconSize: 18, bg: AppColors.primaryFixed),
+              IconCircle(Symbols.verified, size: 32, iconSize: 18, bg: AppColors.primaryFixed),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -405,7 +405,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           shadow: Shadows.tiny,
           onTap: () => showAssessmentSummary(context, a),
           child: Row(children: [
-            const IconCircle(Symbols.check_circle, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.tertiary, fill: 1),
+            IconCircle(Symbols.check_circle, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.tertiary, fill: 1),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -413,7 +413,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 Text('${DateFormat('MMM d, yyyy').format(DateTime.parse(a['completed_at']).toLocal())} • ${a['result_label'] ?? ''}', style: T.bodySm.c(AppColors.onSurfaceVariant)),
               ]),
             ),
-            const Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
+            Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
           ]),
         ),
     ];

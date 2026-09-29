@@ -96,7 +96,7 @@ class _WhrScreenState extends State<WhrScreen> {
           shadow: Shadows.card,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const IconCircle(Symbols.straighten, size: 40, bg: AppColors.primaryFixed, fg: AppColors.primary),
+              IconCircle(Symbols.straighten, size: 40, bg: AppColors.primaryFixed, fg: AppColors.primary),
               const SizedBox(width: Sp.sm),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -191,7 +191,7 @@ class _WhrScreenState extends State<WhrScreen> {
                   color: AppColors.tertiaryFixed,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
+                    Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
                     Text('WHO Guide', style: T.labelSm.c(AppColors.onTertiaryFixedVariant)),
                   ]),
@@ -204,7 +204,7 @@ class _WhrScreenState extends State<WhrScreen> {
                 child: Container(
                   width: 150,
                   height: 150,
-                  decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.surfaceContainerLow),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surfaceContainerLow),
                   padding: const EdgeInsets.all(14),
                   child: Container(
                     decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surfaceContainerLowest, boxShadow: Shadows.soft),
@@ -235,10 +235,10 @@ class _WhrScreenState extends State<WhrScreen> {
               ]),
               SpectrumGauge(
                 height: 10,
-                segments: const [
+                segments: [
                   GaugeSegment(AppColors.mintAccent, 2),
                   GaugeSegment(AppColors.pinkWash, 1),
-                  GaugeSegment(Color(0xFFFFD6CC), 1),
+                  const GaugeSegment(Color(0xFFFFD6CC), 1),
                 ],
                 position: pos(ratio),
                 markerLabel: 'You: ${ratio.toStringAsFixed(2)}',
@@ -253,7 +253,7 @@ class _WhrScreenState extends State<WhrScreen> {
                 padding: const EdgeInsets.all(Sp.md),
                 decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.lg)),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const IconCircle(Symbols.spa, size: 32, iconSize: 18, fg: AppColors.tertiary),
+                  IconCircle(Symbols.spa, size: 32, iconSize: 18, fg: AppColors.tertiary),
                   const SizedBox(width: Sp.sm),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
