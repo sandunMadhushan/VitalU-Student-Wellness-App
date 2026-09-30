@@ -7,147 +7,130 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
-class _Tool {
-  const _Tool(this.kicker, this.title, this.desc, this.icon, this.accent, this.bg, this.cta, this.route, this.cats, {this.femaleOnly = false});
-  final String kicker;
-  final String title;
-  final String desc;
-  final IconData icon;
-  final Color accent;
-  final Color bg;
-  final String cta;
-  final String route;
-  final Set<String> cats;
-  final bool femaleOnly;
-}
-
-final _tools = <_Tool>[
-  _Tool('Biometric', 'BMI Calculator', 'Calibrate comfortable body baselines without clinical pressure.', Symbols.scale, AppColors.tertiary, AppColors.tertiaryFixed.withValues(alpha: 0.2), 'View', '/tools/bmi', {'calculators'}),
-  _Tool('Proportion', 'WHR Calculator', 'Waist-to-hip balance and healthy body composition.', Symbols.straighten, AppColors.primary, AppColors.primaryFixed.withValues(alpha: 0.35), 'View', '/tools/whr', {'calculators'}),
-  _Tool('Cardio', 'CVD Risk Check', 'Gentle cardiovascular screening for student routines.', Symbols.favorite, AppColors.secondary, AppColors.secondaryFixed.withValues(alpha: 0.4), 'Start', '/tools/heart-risk', {'calculators', 'daily'}),
-  _Tool('Hydration', 'Water Intake', 'Log daily sips and beat lecture hall dehydration.', Symbols.water_drop, AppColors.primaryContainer, AppColors.surfaceContainerHigh, 'Start', '/tools/water', {'daily'}),
-  _Tool('Mindset', 'Stress Checker', 'Quick exam-season check-in using the DASS-21 scale.', Symbols.wb_sunny, AppColors.onSecondaryFixedVariant, AppColors.surfaceContainerLow, 'Start', '/tools/stress', {'rest'}),
-  _Tool('Mobility', 'Activity Tracker', 'Campus strolls, bike rides & low-intensity movement.', Symbols.directions_walk, AppColors.tertiary, AppColors.tertiaryFixedDim.withValues(alpha: 0.2), 'View', '/tools/activity', {'daily'}),
-  _Tool('Rest', 'Sleep Quality', 'Track restful hours between lectures and late study sessions.', Symbols.bedtime, AppColors.primary, AppColors.surfaceContainerHighest.withValues(alpha: 0.6), 'View', '/tools/sleep', {'daily', 'rest'}),
-  _Tool('Hormonal', 'Cycle & Rhythm', 'Mindful energy tracking and gentle phase sync.', Symbols.local_florist, AppColors.secondary, AppColors.secondaryFixed.withValues(alpha: 0.25), 'Start', '/tools/cycle', {'daily'}, femaleOnly: true),
-];
-
-class ToolsScreen extends StatefulWidget {
+class ToolsScreen extends StatelessWidget {
   const ToolsScreen({super.key});
-  @override
-  State<ToolsScreen> createState() => _ToolsScreenState();
-}
-
-class _ToolsScreenState extends State<ToolsScreen> {
-  String _filter = 'all';
 
   @override
   Widget build(BuildContext context) {
-    final male = AppState.instance.profile?.sex == 'male';
-    final available = _tools.where((t) => !(t.femaleOnly && male)).toList();
-    final shown = available.where((t) => _filter == 'all' || t.cats.contains(_filter)).toList();
+    final female = AppState.instance.profile?.sex != 'male';
+    void go(String r) => context.push(r);
 
     return VPage(
-      header: const MainHeader('VitalU Health Tools'),
+      header: const MainHeader('Tools'),
       nav: NavTab.tools,
+      topPadding: 0,
       children: [
-        VCard(
-          clip: true,
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondaryFixed, AppColors.surfaceContainerLow, AppColors.primaryFixed]),
-          shadow: Shadows.card,
-          child: Stack(clipBehavior: Clip.none, children: [
-            Positioned(right: -52, bottom: -60, child: Glow(color: AppColors.surfaceContainerLowest.withValues(alpha: 0.4), size: 176)),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Pill(
-                color: AppColors.surfaceContainerLowest.withValues(alpha: 0.8),
-                shadow: Shadows.tiny,
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiaryContainer, shape: BoxShape.circle)),
-                  const SizedBox(width: 6),
-                  Text('ZERO STRESS • STUDENT VITALS', style: T.labelSm.tracking(0.8)),
-                ]),
-              ),
-              const SizedBox(height: 8),
-              Text('Health Tools', style: T.headlineLg),
-              const SizedBox(height: 4),
-              Text('Simple checks, whenever you need them. No judgment, no streaks. Explore at your own pace.', style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.6)),
-              const SizedBox(height: 10),
-              Container(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.2)),
-              const SizedBox(height: 8),
-              Row(children: [
-                Icon(Symbols.spa, size: 18, color: AppColors.tertiary),
-                const SizedBox(width: 8),
-                Expanded(child: Text('Confidential, autonomous, and tuned for campus life', style: T.labelSm.c(AppColors.onSurfaceVariant))),
-              ]),
-            ]),
-          ]),
+        Text('Quick checks and daily trackers. Results stay private to you.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        const SectionHeader('Track daily'),
+        TileGrid(children: [
+          ToolBlock(icon: Symbols.water_drop_rounded, color: AppColors.water, kind: 'Hydration', title: 'Water', text: 'Log glasses against your daily target', action: 'Log', onTap: () => go('/tools/water')),
+          ToolBlock(icon: Symbols.directions_walk_rounded, color: AppColors.activity, kind: 'Movement', title: 'Activity', text: 'Steps and active minutes', action: 'Log', onTap: () => go('/tools/activity')),
+          ToolBlock(icon: Symbols.bedtime_rounded, color: AppColors.sleep, kind: 'Rest', title: 'Sleep', text: 'Bedtime, wake time and quality', action: 'Log', wide: !female, onTap: () => go('/tools/sleep')),
+          if (female) ToolBlock(icon: Symbols.menstrual_health_rounded, color: AppColors.cycle, kind: 'Cycle', title: 'Period tracker', text: 'Phases, symptoms and predictions', action: 'Track', onTap: () => go('/tools/cycle')),
+        ]),
+        const SectionHeader('Check-ups'),
+        TileGrid(children: [
+          ToolBlock(icon: Symbols.monitor_weight_rounded, color: AppColors.body, kind: 'Body', title: 'BMI', text: 'Body mass index from height and weight', action: 'Check', onTap: () => go('/tools/bmi')),
+          ToolBlock(icon: Symbols.straighten_rounded, color: AppColors.water, kind: 'Proportion', title: 'Waist-to-hip', text: 'Where your body stores weight', action: 'Check', onTap: () => go('/tools/whr')),
+          ToolBlock(icon: Symbols.cardiology_rounded, color: AppColors.heart, kind: 'Heart', title: 'Heart risk', text: 'Cardiovascular risk estimate', action: 'Check', onTap: () => go('/tools/heart-risk')),
+          ToolBlock(icon: Symbols.psychology_rounded, color: AppColors.mind, kind: 'Mind', title: 'Stress check', text: 'DASS-21 self-assessment', action: 'Start', onTap: () => go('/tools/stress')),
+        ]),
+        ToolBlock(
+          icon: Symbols.stethoscope_rounded,
+          color: AppColors.primary,
+          kind: 'Support',
+          title: 'Talk to a professional',
+          text: 'Free campus counsellors and doctors',
+          action: 'Book',
+          wide: true,
+          onTap: () => go('/professionals'),
         ),
-        FullBleed(
-          child: ChipRow(children: [
-            for (final f in [('all', 'All (${available.length})'), ('calculators', 'Calculators'), ('daily', 'Daily Habits'), ('rest', 'Mental Rest')])
-              VChip(f.$2, selected: _filter == f.$1, color: AppColors.surfaceContainerHigh, onTap: () => setState(() => _filter = f.$1)),
-          ]),
-        ),
-        LayoutBuilder(builder: (context, c) {
-          final w = (c.maxWidth - 12) / 2;
-          return Wrap(spacing: 12, runSpacing: 12, children: [for (final t in shown) SizedBox(width: w, child: _card(t))]);
-        }),
-        VCard(
-          color: AppColors.surfaceContainerLow,
-          shadow: Shadows.card,
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconCircle(Symbols.lock, size: 40, fg: AppColors.tertiary, fill: 1, shadow: Shadows.tiny),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: 4, children: [
-                  Text('Campus Support Ready', style: T.headlineSm),
-                  TagPill('100% Private', bg: AppColors.surfaceContainerHighest),
-                ]),
-                const SizedBox(height: 4),
-                Text('All tools are completely confidential. If you ever feel overwhelmed by deadlines or health stress, campus support is one gentle tap away.',
-                    style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6)),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => context.push('/professionals'),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text('Reach campus wellness counselor', style: T.labelMd.c(AppColors.primary)),
-                    Icon(Symbols.chevron_right, size: 16, color: AppColors.primary),
-                  ]),
-                ),
-              ]),
-            ),
-          ]),
-        ),
+        const PrivacyNote('These tools are for self-awareness, not diagnosis.'),
       ],
     );
   }
+}
 
-  Widget _card(_Tool t) => Pressable(
-        onTap: () => context.push(t.route),
-        child: Container(
-          height: 232,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: t.bg, borderRadius: BorderRadius.circular(Rad.lg), boxShadow: const [BoxShadow(color: Color(0x0D2D2B38), blurRadius: 24, offset: Offset(0, 8), spreadRadius: -6)]),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconCircle(t.icon, iconSize: 24, fg: t.accent, fill: 1, shadow: Shadows.tiny),
-            const SizedBox(height: 12),
-            Text(t.kicker.toUpperCase(), style: T.labelSm.c(t.accent).tracking(0.8)),
-            const SizedBox(height: 2),
-            Text(t.title, style: T.headlineSm.lh(1.3)),
-            const SizedBox(height: 4),
-            Expanded(child: Text(t.desc, style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis)),
-            Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.full)),
-              child: Row(children: [
-                Text(t.cta, style: T.labelMd),
-                const Spacer(),
-                const Icon(Symbols.arrow_forward, size: 16),
-              ]),
-            ),
-          ]),
+/// Tinted tool card: icon badge, category, title, one-line description and
+/// an action pill.
+class ToolBlock extends StatelessWidget {
+  const ToolBlock({super.key, required this.icon, required this.color, required this.kind, required this.title, required this.text, required this.action, required this.onTap, this.wide = false});
+  final IconData icon;
+  final Color color;
+  final String kind;
+  final String title;
+  final String text;
+  final String action;
+  final VoidCallback onTap;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = AppColors.isDark;
+    final bg = Color.alphaBlend(color.withValues(alpha: dark ? 0.16 : 0.10), AppColors.surfaceContainerLowest);
+    final raised = dark ? Colors.white.withValues(alpha: 0.07) : Colors.white;
+    final badge = Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: raised,
+        shape: BoxShape.circle,
+        boxShadow: dark ? null : [BoxShadow(color: color.withValues(alpha: 0.18), blurRadius: 12, offset: const Offset(0, 4), spreadRadius: -4)],
+      ),
+      child: Icon(icon, size: 24, color: color, fill: 1),
+    );
+    final pill = Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(color: raised, borderRadius: BorderRadius.circular(19)),
+      child: Row(mainAxisSize: wide ? MainAxisSize.min : MainAxisSize.max, children: [
+        Text(action, style: T.labelMd.c(AppColors.onSurface).w(FontWeight.w700)),
+        if (wide) const SizedBox(width: 8) else const Spacer(),
+        Icon(Symbols.arrow_forward_rounded, size: 18, color: AppColors.onSurface),
+      ]),
+    );
+    final label = Text(kind, style: T.labelSm.c(color).w(FontWeight.w700).tracking(0.2));
+    final heading = Text(title, style: T.headlineSm.s(17), maxLines: 1, overflow: TextOverflow.ellipsis);
+    final desc = Text(text, style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis);
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(Rad.xl),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: wide
+              ? Row(children: [
+                  badge,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      label,
+                      const SizedBox(height: 2),
+                      heading,
+                      const SizedBox(height: 2),
+                      desc,
+                    ]),
+                  ),
+                  const SizedBox(width: 10),
+                  pill,
+                ])
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  badge,
+                  const SizedBox(height: 14),
+                  label,
+                  const SizedBox(height: 2),
+                  heading,
+                  const SizedBox(height: 4),
+                  desc,
+                  const Spacer(),
+                  const SizedBox(height: 14),
+                  pill,
+                ]),
         ),
-      );
+      ),
+    );
+  }
 }

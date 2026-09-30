@@ -5,16 +5,9 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
-/// Paced (box) breathing overlay: inhale 4 • hold 4 • exhale 4 • hold 4.
-Future<void> showBreathing(BuildContext context, {String cta = 'I feel ready to continue'}) {
-  return showGeneralDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Breathing',
-    barrierColor: AppColors.onSurface.withValues(alpha: 0.35),
-    pageBuilder: (ctx, _, __) => _BreathingDialog(cta: cta),
-    transitionBuilder: (ctx, a, _, child) => FadeTransition(opacity: a, child: ScaleTransition(scale: Tween(begin: 0.96, end: 1.0).animate(a), child: child)),
-  );
+/// Box breathing: inhale 4 • hold 4 • exhale 4 • hold 4.
+Future<void> showBreathing(BuildContext context, {String cta = 'Done'}) {
+  return showDialog(context: context, builder: (_) => _BreathingDialog(cta: cta));
 }
 
 class _BreathingDialog extends StatefulWidget {
@@ -33,66 +26,54 @@ class _BreathingDialogState extends State<_BreathingDialog> with SingleTickerPro
     super.dispose();
   }
 
-  (String, double) _phase(double t) {
+  (String, double, int) _phase(double t) {
     final s = t * 16;
-    if (s < 4) return ('Inhale...', 0.6 + 0.4 * (s / 4));
-    if (s < 8) return ('Hold gently', 1.0);
-    if (s < 12) return ('Exhale slowly...', 1.0 - 0.4 * ((s - 8) / 4));
-    return ('Rest', 0.6);
+    final left = 4 - (s % 4).floor();
+    if (s < 4) return ('Breathe in', 0.55 + 0.45 * Curves.easeInOut.transform(s / 4), left);
+    if (s < 8) return ('Hold', 1.0, left);
+    if (s < 12) return ('Breathe out', 1.0 - 0.45 * Curves.easeInOut.transform((s - 8) / 4), left);
+    return ('Hold', 0.55, left);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          margin: const EdgeInsets.all(Sp.margin),
-          padding: const EdgeInsets.all(Sp.lg),
-          decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(36), boxShadow: Shadows.floating),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Align(alignment: Alignment.topRight, child: CircleButton(Symbols.close, size: 36, iconSize: 20, bg: AppColors.surfaceContainer, onTap: () => Navigator.pop(context))),
-            IconCircle(Symbols.air, bg: AppColors.skyWash, fg: AppColors.skyAccent),
-            const SizedBox(height: Sp.sm),
-            Text('Paced Breathing', style: T.headlineMd),
-            const SizedBox(height: 4),
-            Text('Inhale calm, release campus pressure.', style: T.bodyMd.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
-            const SizedBox(height: Sp.lg),
-            AnimatedBuilder(
-              animation: _c,
-              builder: (_, __) {
-                final (label, scale) = _phase(_c.value);
-                return Column(children: [
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Stack(alignment: Alignment.center, children: [
-                      Transform.scale(
-                        scale: scale,
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [AppColors.pinkWash, AppColors.skyWash])),
-                        ),
-                      ),
-                      Transform.scale(
-                        scale: scale * 0.72,
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.7), boxShadow: Shadows.soft),
-                        ),
-                      ),
-                      Text(label, style: T.headlineSm.c(AppColors.primary)),
-                    ]),
-                  ),
-                ]);
-              },
-            ),
-            const SizedBox(height: Sp.lg),
-            PrimaryButton(widget.cta, onTap: () => Navigator.pop(context)),
+    final c = AppColors.mind;
+    return Dialog(
+      insetPadding: const EdgeInsets.all(Sp.lg),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Sp.lg, Sp.md, Sp.lg, Sp.lg),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Row(children: [
+            Expanded(child: Text('Box breathing', style: T.headlineMd)),
+            CircleButton(Symbols.close_rounded, iconSize: 22, fg: AppColors.onSurfaceVariant, onTap: () => Navigator.pop(context)),
           ]),
-        ),
+          Align(alignment: Alignment.centerLeft, child: Text('Four seconds in, hold, out, hold. Repeat a few rounds.', style: T.bodyMd.c(AppColors.onSurfaceVariant))),
+          const SizedBox(height: Sp.lg),
+          AnimatedBuilder(
+            animation: _c,
+            builder: (_, _) {
+              final (label, scale, left) = _phase(_c.value);
+              return SizedBox(
+                width: 220,
+                height: 220,
+                child: Stack(alignment: Alignment.center, children: [
+                  Container(width: 220, height: 220, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.outlineVariant, width: 1.5))),
+                  Transform.scale(
+                    scale: scale,
+                    child: Container(width: 212, height: 212, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.tint(c))),
+                  ),
+                  Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(label, style: T.headlineSm.c(c)),
+                    const SizedBox(height: 2),
+                    Text('$left', style: T.metric(40).c(AppColors.onSurface)),
+                  ]),
+                ]),
+              );
+            },
+          ),
+          const SizedBox(height: Sp.lg),
+          PrimaryButton(widget.cta, onTap: () => Navigator.pop(context)),
+        ]),
       ),
     );
   }

@@ -21,10 +21,10 @@ String defaultMealType() {
 }
 
 const _tabs = <(String, String, IconData)>[
-  ('breakfast', 'Breakfast', Symbols.wb_twilight),
-  ('lunch', 'Lunch', Symbols.wb_sunny),
-  ('dinner', 'Dinner', Symbols.dark_mode),
-  ('snack', 'Snack', Symbols.cookie),
+  ('breakfast', 'Breakfast', Symbols.wb_twilight_rounded),
+  ('lunch', 'Lunch', Symbols.wb_sunny_rounded),
+  ('dinner', 'Dinner', Symbols.dark_mode_rounded),
+  ('snack', 'Snack', Symbols.cookie_rounded),
 ];
 
 class MealLogScreen extends StatefulWidget {
@@ -74,11 +74,11 @@ class _MealLogScreenState extends State<MealLogScreen> {
     final src = await showVSheet<ImageSource>(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text('Snap your plate', style: T.headlineMd),
           const SizedBox(height: 4),
-          Text('VitalU uses AI to estimate the dish, food groups and approximate energy. Always adjust if it looks off.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+          Text('VitalU estimates the dish, food groups and energy from your photo. Adjust it if something looks off.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
           const SizedBox(height: Sp.md),
-          SoftButton('Take Photo', icon: Symbols.photo_camera, iconColor: AppColors.secondary, onTap: () => Navigator.pop(ctx, ImageSource.camera)),
+          SoftButton('Take photo', icon: Symbols.photo_camera_rounded, onTap: () => Navigator.pop(ctx, ImageSource.camera)),
           const SizedBox(height: Sp.sm),
-          SoftButton('Choose from Gallery', icon: Symbols.image, iconColor: AppColors.primary, onTap: () => Navigator.pop(ctx, ImageSource.gallery)),
+          SoftButton('Choose from gallery', icon: Symbols.image_rounded, onTap: () => Navigator.pop(ctx, ImageSource.gallery)),
         ]));
     if (src == null) return;
     final x = await ImagePicker().pickImage(source: src, maxWidth: 1024, imageQuality: 80);
@@ -109,7 +109,7 @@ class _MealLogScreenState extends State<MealLogScreen> {
         throw Exception(data is Map ? data['error'] : 'No result');
       }
     } catch (e) {
-      if (mounted) toast(context, 'Could not recognise this plate. Add it with “Custom food” instead.', error: true);
+      if (mounted) toast(context, 'Could not recognise this plate. Add it as a custom food instead.', error: true);
     } finally {
       if (mounted) setState(() => _analyzing = false);
     }
@@ -123,17 +123,17 @@ class _MealLogScreenState extends State<MealLogScreen> {
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('Custom food', style: T.headlineMd),
             const SizedBox(height: Sp.md),
-            VTextField(controller: name, hint: 'e.g. Rice & curry with dhal', icon: Symbols.restaurant),
+            VTextField(controller: name, hint: 'e.g. Rice & curry with dhal', icon: Symbols.restaurant_rounded),
             const SizedBox(height: Sp.sm),
-            VTextField(controller: kcal, hint: 'Approx. calories (optional)', icon: Symbols.bolt, keyboard: TextInputType.number),
+            VTextField(controller: kcal, hint: 'Approx. calories (optional)', icon: Symbols.bolt_rounded, keyboard: TextInputType.number),
             const SizedBox(height: Sp.md),
             Text('Food groups in this meal', style: T.labelLg),
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final g in foodGroups) VChip(g.label, icon: g.icon, selected: groups.contains(g.key), selectedColor: AppColors.tertiary, onTap: () => set(() => groups.contains(g.key) ? groups.remove(g.key) : groups.add(g.key))),
+              for (final g in foodGroups) VChip(g.label, icon: g.icon, selected: groups.contains(g.key), selectedColor: AppColors.nutrition, onTap: () => set(() => groups.contains(g.key) ? groups.remove(g.key) : groups.add(g.key))),
             ]),
             const SizedBox(height: Sp.md),
-            PrimaryButton('Add to Tray', color: AppColors.tertiary, onTap: () {
+            PrimaryButton('Add', onTap: () {
               if (name.text.trim().isEmpty) return toast(ctx, 'Give your food a name', error: true);
               _toggle({'id': null, 'name': name.text.trim(), 'source': 'Custom', 'kcal': int.tryParse(kcal.text) ?? 0, 'carbs_g': 0, 'protein_g': 0, 'fat_g': 0, 'food_groups': groups.toList(), 'icon': 'restaurant'});
               Navigator.pop(ctx);
@@ -150,7 +150,7 @@ class _MealLogScreenState extends State<MealLogScreen> {
         await Repo.addMealFromItem(item, _type);
       }
       if (mounted) {
-        toast(context, '${_tray.length} food${_tray.length == 1 ? '' : 's'} logged for ${_tabs.firstWhere((t) => t.$1 == _type).$2} 🌿');
+        toast(context, '${_tray.length} food${_tray.length == 1 ? '' : 's'} logged for ${_tabs.firstWhere((t) => t.$1 == _type).$2.toLowerCase()}');
         setState(() => _tray.clear());
       }
     } catch (_) {
@@ -162,7 +162,6 @@ class _MealLogScreenState extends State<MealLogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hero = _detected ?? _items.where((i) => i['name'] == 'Avocado Harvest Wrap & Sprout Slaw').firstOrNull;
     final filtered = _items.where((i) {
       if (_cat != 'All' && i['category'] != _cat) return false;
       if (_q.isNotEmpty && !(i['name'] as String).toLowerCase().contains(_q.toLowerCase())) return false;
@@ -171,212 +170,123 @@ class _MealLogScreenState extends State<MealLogScreen> {
     }).toList();
 
     return VPage(
-      header: const MainHeader('VitalU Diet & Nutrition'),
-      nav: NavTab.diet,
+      header: TitleHeader('Log a meal', onLeading: () => goBack(context, '/diet')),
       bottom: _tray.isEmpty ? null : _trayBar(),
       children: [
+        SizedBox(
+          width: double.infinity,
+          child: Segmented(small: false, options: [for (final t in _tabs) t.$2], value: _tabs.firstWhere((t) => t.$1 == _type).$2, onChanged: (v) => setState(() => _type = _tabs.firstWhere((t) => t.$2 == v).$1)),
+        ),
         Row(children: [
-          CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.onSurface, shadow: Shadows.tiny, onTap: () => goBack(context, '/diet')),
-          const SizedBox(width: 8),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Log a Meal', style: T.headlineSm.lh(1.2)),
-              Text('Mindful Campus Fueling', style: T.labelSm.c(AppColors.outline)),
-            ]),
+            child: TextField(
+              onChanged: (v) => setState(() => _q = v),
+              style: T.bodyLg,
+              decoration: InputDecoration(
+                prefixIcon: Icon(Symbols.search_rounded, color: AppColors.onSurfaceVariant, size: 20),
+                hintText: 'Search foods',
+              ),
+            ),
           ),
-          TagPill('Private Log', icon: Symbols.lock, iconColor: AppColors.tertiary, bg: AppColors.surfaceContainerLow),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: 'Snap your plate',
+            onPressed: _snap,
+            style: IconButton.styleFrom(minimumSize: const Size(52, 52), backgroundColor: AppColors.tint(AppColors.nutrition), foregroundColor: AppColors.nutrition, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Rad.base))),
+            icon: const Icon(Symbols.photo_camera_rounded),
+          ),
         ]),
-        Text('Nourish your body between lectures. Quick-search canteen favourites, hostel snacks, or snap your plate for effortless tracking.', style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.4)),
+        if (_photo != null || _analyzing) _snapCard(),
         FullBleed(
           child: ChipRow(children: [
-            for (final t in _tabs)
-              VChip(t.$2, icon: t.$3, selected: _type == t.$1, color: AppColors.surfaceContainerHigh, height: 40, onTap: () => setState(() => _type = t.$1)),
+            for (final c in const ['All', 'Dining Hall', 'Dorm Quick-Fix', 'Grab & Go'])
+              VChip(c == 'Dining Hall' ? 'Canteen' : (c == 'Dorm Quick-Fix' ? 'Hostel' : c), selected: _cat == c, onTap: () => setState(() => _cat = c)),
           ]),
         ),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.tiny),
-                child: TextField(
-                  onChanged: (v) => setState(() => _q = v),
-                  style: T.bodyMd,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    prefixIcon: Icon(Symbols.search, color: AppColors.outline, size: 20),
-                    hintText: 'Search canteen menus, snacks...',
-                    hintStyle: T.bodyMd.c(AppColors.outline),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Pressable(
-              onTap: _snap,
-              child: Container(
-                height: 50,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(color: AppColors.secondaryFixed, borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.tiny),
-                child: Row(children: [
-                  Icon(Symbols.photo_camera, size: 20, color: AppColors.onSecondaryFixed, fill: 1),
-                  const SizedBox(width: 6),
-                  Text('Snap', style: T.labelMd.c(AppColors.onSecondaryFixed)),
-                ]),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 8),
-          TagPill('Tip: Snap your plate for automatic food-group notes', icon: Symbols.auto_awesome, bg: AppColors.surfaceContainerLow, fg: AppColors.primary),
-        ]),
-        if (hero != null || _analyzing) _heroCard(hero),
-        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            Expanded(child: Text('Frequently Added on Campus', style: T.headlineSm)),
-            GestureDetector(onTap: () => setState(() => _cat = 'All'), child: Text('See Full Menu', style: T.labelSm.c(AppColors.primary))),
-          ]),
-          const SizedBox(height: Sp.sm),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: [
-              for (final c in const ['All', 'Dining Hall', 'Dorm Quick-Fix', 'Grab & Go']) ...[
-                VChip(c == 'Dining Hall' ? 'Canteen' : (c == 'Dorm Quick-Fix' ? 'Hostel Quick-Fix' : c),
-                    selected: _cat == c, selectedColor: AppColors.onSurface, selectedFg: AppColors.surface, color: AppColors.surfaceContainerHigh, height: 32, onTap: () => setState(() => _cat = c)),
-                const SizedBox(width: 8),
-              ],
-            ]),
-          ),
-          const SizedBox(height: Sp.sm),
-          if (_loading) const Loading(),
-          for (final i in filtered) Padding(padding: const EdgeInsets.only(bottom: 10), child: _foodCard(i)),
-          if (!_loading && filtered.isEmpty) Padding(padding: const EdgeInsets.all(8), child: Text('No matches — add it as a custom food.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
-          SoftButton('Custom food', icon: Symbols.add_circle, iconColor: AppColors.primary, onTap: _custom),
-        ]),
+        if (_loading)
+          const Loading()
+        else if (filtered.isEmpty)
+          Text('No matches. Add it as a custom food.', style: T.bodyMd.c(AppColors.onSurfaceVariant))
+        else
+          ListGroup(children: [for (final i in filtered) _foodRow(i)]),
+        SoftButton('Custom food', icon: Symbols.add_rounded, onTap: _custom),
+        const PrivacyNote('Photos are analysed to estimate food groups and energy. Adjust if something looks off.'),
       ],
     );
   }
 
-  Widget _heroCard(Rec? hero) => VCard(
-        padding: const EdgeInsets.all(14),
-        shadow: Shadows.tiny,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: SizedBox(
-              height: 176,
-              child: Stack(fit: StackFit.expand, children: [
-                _photo != null ? Image.memory(_photo!, fit: BoxFit.cover) : const AssetImg('meal_wrap'),
-                if (_analyzing) Container(color: Colors.black26, child: const Center(child: CircularProgressIndicator(color: Colors.white))),
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: TagPill(_analyzing ? 'Analysing plate…' : (_detected != null ? 'Auto-detected Plate' : "Today's Canteen Pick"),
-                      icon: Symbols.check_circle, iconColor: AppColors.tertiary, bg: AppColors.surface.withValues(alpha: 0.9), fg: AppColors.onSurface),
-                ),
-                if (hero != null)
-                  Positioned(
-                    bottom: 10,
-                    right: 10,
-                    child: Pill(color: AppColors.inverseSurface.withValues(alpha: 0.85), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), child: Text('${hero['kcal']} kcal • ${hero['source'] ?? ''}', style: T.labelSm.s(11).c(AppColors.inverseOnSurface))),
-                  ),
-              ]),
-            ),
-          ),
-          if (hero != null) ...[
-            const SizedBox(height: 12),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget _snapCard() {
+    final d = _detected;
+    return VCard(
+      padding: EdgeInsets.zero,
+      clip: true,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        SizedBox(
+          height: 180,
+          child: Stack(fit: StackFit.expand, children: [
+            if (_photo != null) Image.memory(_photo!, fit: BoxFit.cover),
+            if (_analyzing)
+              Container(
+                color: Colors.black45,
+                child: const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 12),
+                  Text('Analysing your plate…', style: TextStyle(color: Colors.white)),
+                ])),
+              ),
+          ]),
+        ),
+        if (d != null)
+          Padding(
+            padding: const EdgeInsets.all(Sp.md),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(hero['name'], style: T.headlineSm),
-                  const SizedBox(height: 6),
+                  Text(d['name'], style: T.headlineSm),
+                  const SizedBox(height: 2),
+                  Text('About ${d['kcal']} kcal', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 8),
                   Wrap(spacing: 6, runSpacing: 6, children: [
-                    for (final (i, g) in List<String>.from(hero['food_groups'] ?? const []).take(3).indexed)
-                      TagPill(groupByKey(g)?.label ?? g, bg: [AppColors.tertiaryFixed, AppColors.secondaryFixed, AppColors.surfaceContainer][i], fg: [AppColors.onTertiaryFixed, AppColors.onSecondaryFixed, AppColors.onSurfaceVariant][i]),
+                    for (final g in List<String>.from(d['food_groups'] ?? const []).take(4)) TagPill(groupByKey(g)?.label ?? g, bg: AppColors.tint(AppColors.nutrition), fg: AppColors.nutrition),
                   ]),
                 ]),
               ),
-              CircleButton(_inTray(hero) ? Symbols.check : Symbols.add, size: 36, iconSize: 20, bg: _inTray(hero) ? AppColors.primary : AppColors.tertiary, fg: Colors.white, onTap: () => _toggle(hero)),
-            ]),
-          ],
-        ]),
-      );
-
-  Widget _foodCard(Rec i) {
-    final on = _inTray(i);
-    return Pressable(
-      onTap: () => _toggle(i),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: on ? AppColors.surfaceContainerLow : AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.r2xl), boxShadow: Shadows.tiny),
-        child: Row(children: [
-          IconCircle(iconByName(i['icon']), bg: on ? AppColors.primaryFixed : AppColors.surfaceContainerLow),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(i['name'], style: T.headlineSm.s(15), overflow: TextOverflow.ellipsis),
-              Text('${i['source'] ?? ''} • ${i['description'] ?? ''}', style: T.bodySm.c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 4),
-              Row(children: [
-                Pill(
-                  color: on ? AppColors.primaryFixed : AppColors.tertiaryFixed,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  child: Text(on ? 'Added to Tray' : (i['tag'] ?? '${i['kcal']} kcal'), style: T.labelSm.s(10).c(on ? AppColors.onPrimaryFixed : AppColors.onTertiaryFixed)),
-                ),
-                const SizedBox(width: 6),
-                Text('${i['kcal']} kcal', style: T.labelSm.s(10).c(AppColors.outline)),
-              ]),
+              _addButton(d),
             ]),
           ),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: on ? AppColors.primary : AppColors.surfaceContainerHigh, shape: BoxShape.circle),
-            child: Icon(on ? Symbols.check : Symbols.add, size: 20, color: on ? AppColors.onPrimary : AppColors.onSurfaceVariant),
-          ),
-        ]),
-      ),
+      ]),
     );
   }
 
+  Widget _addButton(Rec item) {
+    final on = _inTray(item);
+    return IconButton(
+      tooltip: on ? 'Remove from tray' : 'Add to tray',
+      onPressed: () => _toggle(item),
+      icon: Icon(on ? Symbols.check_circle_rounded : Symbols.add_circle_rounded, size: 28, fill: on ? 1 : 0, color: on ? AppColors.primary : AppColors.onSurfaceVariant),
+    );
+  }
+
+  Widget _foodRow(Rec i) => ListRow(
+        icon: iconByName(i['icon']),
+        color: AppColors.nutrition,
+        title: i['name'],
+        subtitle: '${i['kcal']} kcal${i['source'] != null ? ' · ${i['source']}' : ''}',
+        trailing: _addButton(i),
+        onTap: () => _toggle(i),
+      );
+
   Widget _trayBar() {
-    final emojis = _tray.map((t) => (t['emoji'] as String?) ?? '🍽️').take(3).toList();
     final kcal = _tray.fold<int>(0, (a, t) => a + ((t['kcal'] as num?)?.toInt() ?? 0));
     final label = _tabs.firstWhere((t) => t.$1 == _type).$2;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Sp.margin),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        decoration: BoxDecoration(color: AppColors.surfaceContainerLowest.withValues(alpha: 0.97), borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.floating),
-        child: Row(children: [
-          SizedBox(
-            width: 20.0 * emojis.length + 8,
-            height: 28,
-            child: Stack(children: [
-              for (int i = 0; i < emojis.length; i++)
-                Positioned(
-                  left: i * 20.0,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: [AppColors.primaryFixed, AppColors.secondaryFixed, AppColors.tertiaryFixed][i], shape: BoxShape.circle, boxShadow: Shadows.tiny),
-                    child: Text(emojis[i], style: const TextStyle(fontSize: 12)),
-                  ),
-                ),
-            ]),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Text('${_tray.length} food${_tray.length == 1 ? '' : 's'} in tray', style: T.labelMd),
-              Text('~$kcal kcal • ${AppState.instance.profile == null ? '' : 'Balanced study nourishment'}', style: T.bodySm.s(11).c(AppColors.tertiary).medium, overflow: TextOverflow.ellipsis),
-            ]),
-          ),
-          PrimaryButton('Log $label', icon: Symbols.arrow_forward, color: AppColors.onSurface, fg: AppColors.surface, height: 44, expand: false, loading: _saving, textStyle: T.labelMd, onTap: _logTray),
+    return Row(children: [
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text('${_tray.length} ${_tray.length == 1 ? 'food' : 'foods'} selected', style: T.labelLg.semi),
+          Text('About $kcal kcal', style: T.bodySm.c(AppColors.onSurfaceVariant)),
         ]),
       ),
-    );
+      PrimaryButton('Log ${label.toLowerCase()}', expand: false, loading: _saving, onTap: _logTray),
+    ]);
   }
 }

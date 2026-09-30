@@ -70,7 +70,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   Future<void> _generate() async {
     final chosen = _items.where((i) => _plan.containsKey(i['id'])).toList();
-    if (chosen.isEmpty) return toast(context, 'Add a few meals to your plan first 🌿');
+    if (chosen.isEmpty) return toast(context, 'Add a few meals to your plan first.');
     setState(() => _saving = true);
     try {
       await _persistBudget();
@@ -86,29 +86,22 @@ class _BudgetScreenState extends State<BudgetScreen> {
       text.writeln('\nShopping list:');
       final groups = <String>{for (final i in chosen) ...List<String>.from(i['food_groups'] ?? const [])};
       for (final g in groups) {
-        text.writeln('☐ ${groupByKey(g)?.suggestion ?? g}');
+        text.writeln('- ${groupByKey(g)?.suggestion ?? g}');
       }
       await showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Your Grocery List', style: T.headlineMd),
+            Text('Grocery list', style: T.headlineMd),
             const SizedBox(height: 4),
-            Text('Saved to your weekly plan.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            Text("Saved to this week's plan.", style: T.bodyMd.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
-            for (final l in lines)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(children: [
-                  Icon(Symbols.check_box_outline_blank, size: 20, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text('${l['name']} × ${l['servings']}', style: T.bodyMd)),
-                  Text(money(l['total'] as num), style: T.labelMd),
-                ]),
-              ),
-            const Divider(),
-            Text('Ingredients to pick up', style: T.labelLg),
+            ListGroup(dividerIndent: 16, children: [
+              for (final l in lines) ListRow(title: '${l['name']}', subtitle: '${l['servings']} servings', value: money(l['total'] as num), chevron: false),
+            ]),
+            const SizedBox(height: Sp.md),
+            Text('Ingredients to pick up', style: T.headlineSm),
             const SizedBox(height: 6),
-            for (final g in groups) Text('• ${groupByKey(g)?.suggestion ?? g}', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            for (final g in groups) Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('• ${groupByKey(g)?.suggestion ?? g}', style: T.bodyMd.c(AppColors.onSurfaceVariant))),
             const SizedBox(height: Sp.md),
-            PrimaryButton('Share List', leadingIcon: Symbols.share, onTap: () => SharePlus.instance.share(ShareParams(text: text.toString(), subject: 'VitalU grocery list'))),
+            PrimaryButton('Share list', leadingIcon: Symbols.share_rounded, onTap: () => SharePlus.instance.share(ShareParams(text: text.toString(), subject: 'VitalU grocery list'))),
           ]));
     } catch (e) {
       if (mounted) toast(context, 'Could not save your plan. Please try again.', error: true);
@@ -126,156 +119,56 @@ class _BudgetScreenState extends State<BudgetScreen> {
     }).toList();
     final planned = _planned;
     final cushion = _budget - planned;
-    final under = _budget == 0 ? 0 : ((cushion / _budget) * 100).round();
+    final over = cushion < 0;
 
     return VPage(
-      header: const MainHeader('VitalU Diet & Nutrition'),
-      nav: NavTab.diet,
+      header: TitleHeader('Budget planner', onLeading: () => goBack(context, '/diet')),
+      bottom: PrimaryButton('Save and make grocery list', loading: _saving, onTap: _generate),
       children: [
-        Row(children: [
-          CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLow, fg: AppColors.onSurface, shadow: Shadows.tiny, onTap: () => goBack(context, '/diet')),
-          const SizedBox(width: Sp.sm),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Budget Meal Planner', style: T.headlineSm),
-              Text('Mindful nourishment on a student budget', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-            ]),
-          ),
-          TagPill('Weekly Safe', icon: Symbols.savings, iconColor: AppColors.tertiary, bg: AppColors.surfaceContainerHighest),
-        ]),
         VCard(
-          radius: Rad.xl,
-          shadow: Shadows.card,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(Rad.lg),
-              child: SizedBox(
-                height: 176,
-                child: Stack(fit: StackFit.expand, children: [
-                  const AssetImg('piggy_bank'),
-                  Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [AppColors.surfaceContainerLowest.withValues(alpha: 0.8), Colors.transparent]))),
-                  Positioned(
-                    bottom: 12,
-                    left: 12,
-                    child: Pill(
-                      color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
-                      shadow: Shadows.tiny,
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiaryFixedDim, shape: BoxShape.circle)),
-                        const SizedBox(width: 6),
-                        Text('Guilt-Free Spending', style: T.labelSm),
-                      ]),
-                    ),
-                  ),
-                ]),
-              ),
-            ),
-            const SizedBox(height: Sp.sm),
-            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Weekly Food Allowance', style: T.labelSm.c(AppColors.onSurfaceVariant)),
-                  Wrap(crossAxisAlignment: WrapCrossAlignment.end, spacing: 6, children: [
-                    Text(money(_budget), style: T.headlineXlMobile),
-                    Padding(padding: const EdgeInsets.only(bottom: 6), child: Text('(~${money((_budget / 7).round())}/day)', style: T.labelMd.c(AppColors.onSurfaceVariant))),
-                  ]),
-                ]),
-              ),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
-                child: Row(children: [
-                  CircleButton(Symbols.remove, size: 32, iconSize: 18, bg: AppColors.surfaceContainerLowest, fg: AppColors.onSurface, onTap: () {
-                    _setBudget(_budget - 250);
-                    _persistBudget();
-                  }),
-                  const SizedBox(width: 4),
-                  CircleButton(Symbols.add, size: 32, iconSize: 18, bg: AppColors.surfaceContainerLowest, fg: AppColors.onSurface, onTap: () {
-                    _setBudget(_budget + 250);
-                    _persistBudget();
-                  }),
-                ]),
-              ),
-            ]),
-            VSlider(value: _budget, min: 1500, max: 15000, divisions: 54, onChanged: _setBudget),
-            Row(children: [
-              for (final p in const [3000.0, 5000.0, 7500.0, 10000.0]) ...[
-                Expanded(
-                  child: Pressable(
-                    onTap: () {
-                      _setBudget(p);
-                      _persistBudget();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: _budget == p ? AppColors.primaryFixed : AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
-                      child: Text(money(p), style: T.labelSm.c(_budget == p ? AppColors.onPrimaryFixed : AppColors.onSurface)),
-                    ),
-                  ),
-                ),
-                if (p != 10000) const SizedBox(width: 6),
-              ],
-            ]),
+            CategoryLabel('Weekly food budget', icon: Symbols.savings_rounded, color: AppColors.warning),
             const SizedBox(height: 8),
-            Row(children: [
-              Icon(Symbols.check_circle, size: 16, color: AppColors.tertiary),
-              const SizedBox(width: 6),
-              Expanded(child: Text('Based on 3 campus meals + 1 study snack per day. Adjust freely anytime.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
+            MetricValue(money(_budget), unit: 'about ${money((_budget / 7).round())} a day', size: 30),
+            const SizedBox(height: Sp.sm),
+            VSlider(value: _budget, min: 1500, max: 15000, divisions: 54, color: AppColors.warning, onChanged: _setBudget),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final p in const [3000.0, 5000.0, 7500.0, 10000.0])
+                VChip(money(p), selected: _budget == p, selectedColor: AppColors.warning, onTap: () {
+                  _setBudget(p);
+                  _persistBudget();
+                }),
             ]),
+            const SizedBox(height: Sp.sm),
+            Text('Based on three meals and a snack a day.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
           ]),
         ),
-        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            Expanded(child: Text('Meals Within Budget', style: T.headlineSm)),
-            Text('${list.length} Available', style: T.labelSm.c(AppColors.primary)),
+        VCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(children: [
+              Expanded(child: Text('This week', style: T.headlineSm)),
+              Text(over ? '${money(-cushion)} over' : '${money(cushion)} left', style: T.labelLg.semi.c(over ? AppColors.error : AppColors.tertiary)),
+            ]),
+            const SizedBox(height: 4),
+            Text('${money(planned)} planned of ${money(_budget)}', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            const SizedBox(height: Sp.sm),
+            Bar(value: _budget == 0 ? 0 : planned / _budget, height: 8, color: over ? AppColors.error : AppColors.primary),
+            if (over) ...[
+              const SizedBox(height: Sp.sm),
+              Text('Swap in a batch-cooked dhal or reduce servings to get back under budget.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ],
           ]),
-          Text('Balanced student recipes & canteen options', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-          const SizedBox(height: 6),
-        ]),
+        ),
+        SectionHeader('Meals within budget', trailing: Text('${list.length}', style: T.labelMd.c(AppColors.onSurfaceVariant))),
         FullBleed(
           child: ChipRow(children: [
             for (final f in const ['All Plans', 'Dining Hall Sync', '10-Min Dorm Prep', 'Batch Cooking'])
-              VChip(f == 'Dining Hall Sync' ? 'Canteen Sync' : (f == '10-Min Dorm Prep' ? '10-Min Hostel Prep' : f),
-                  selected: _filter == f, selectedColor: AppColors.inverseSurface, selectedFg: AppColors.inverseOnSurface, height: 36, onTap: () => setState(() => _filter = f)),
+              VChip(f == 'All Plans' ? 'All' : (f == 'Dining Hall Sync' ? 'Canteen' : (f == '10-Min Dorm Prep' ? '10-min hostel prep' : 'Batch cooking')),
+                  selected: _filter == f, onTap: () => setState(() => _filter = f)),
           ]),
         ),
         if (_loading) const Loading(),
         for (final i in list) _mealCard(i),
-        VCard(
-          color: AppColors.surfaceContainer,
-          radius: Rad.xl,
-          shadow: Shadows.tiny,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              IconCircle(Symbols.verified, size: 32, iconSize: 18, bg: cushion >= 0 ? AppColors.tertiaryContainer : AppColors.error, fg: AppColors.onTertiary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Plan Status', style: T.labelSm.c(AppColors.onSurfaceVariant)),
-                  Text('${money(planned)} planned of ${money(_budget)}', style: T.labelLg),
-                ]),
-              ),
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text(cushion >= 0 ? '${money(cushion)} cushion' : '${money(-cushion)} over', style: T.labelSm.c(cushion >= 0 ? AppColors.tertiary : AppColors.error)),
-                Text(cushion >= 0 ? 'Tea & treats' : 'Try fewer servings', style: T.bodySm.s(11).c(AppColors.onSurfaceVariant)),
-              ]),
-            ]),
-            const SizedBox(height: Sp.sm),
-            Bar(value: _budget == 0 ? 0 : planned / _budget, height: 10, color: cushion >= 0 ? AppColors.primary : AppColors.error, track: AppColors.surfaceContainerHighest),
-            const SizedBox(height: Sp.sm),
-            Text(
-              planned == 0
-                  ? 'Add meals to see how your week fits your budget.'
-                  : cushion >= 0
-                      ? "You're staying $under% under your weekly target. Mindful eating feels effortless when scheduled ahead."
-                      : 'Your plan is above budget — swap in a batch-cooked dhal or reduce servings.',
-              style: T.bodySm.c(AppColors.onSurfaceVariant),
-            ),
-            const SizedBox(height: Sp.sm),
-            PrimaryButton('Save & Generate Grocery List', icon: Symbols.arrow_forward, color: AppColors.inverseSurface, fg: AppColors.inverseOnSurface, height: 52, loading: _saving, onTap: _generate),
-          ]),
-        ),
       ],
     );
   }
@@ -284,67 +177,55 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final on = _plan.containsKey(i['id']);
     final c = (i['carbs_g'] as num).toDouble(), p = (i['protein_g'] as num).toDouble(), f = (i['fat_g'] as num).toDouble();
     final tot = (c * 4 + p * 4 + f * 9).clamp(1, 99999);
+    Widget legend(String t, Color col) => Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: col, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(width: 4),
+          Text(t, style: T.labelSm.c(AppColors.onSurfaceVariant)),
+        ]);
     return VCard(
-      shadow: Shadows.card,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          IconCircle(iconByName(i['icon']), bg: on ? AppColors.primaryFixed : AppColors.secondaryFixed, fg: AppColors.onSecondaryFixed),
-          const SizedBox(width: Sp.xs + 2),
+          IconCircle(iconByName(i['icon']), size: 40, fg: AppColors.nutrition),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Expanded(child: Text(i['name'], style: T.headlineSm, overflow: TextOverflow.ellipsis)),
-                const SizedBox(width: 8),
-                Pill(color: AppColors.primaryFixed, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2), child: Text(money(i['price']), style: T.labelLg.c(AppColors.primary))),
-              ]),
-              Text('${i['source']} • ${i['description']}', style: T.bodySm.c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
+              Text(i['name'], style: T.labelLg.semi, maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text('${i['source']} · ${i['kcal']} kcal', style: T.bodySm.c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
             ]),
           ),
+          const SizedBox(width: 8),
+          Text(money(i['price']), style: T.labelLg.semi.tnum),
         ]),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.base)),
-          child: Column(children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                height: 6,
-                child: Row(children: [
-                  Expanded(flex: (c * 4 / tot * 100).round().clamp(1, 100), child: Container(color: AppColors.secondaryContainer)),
-                  Expanded(flex: (p * 4 / tot * 100).round().clamp(1, 100), child: Container(color: AppColors.primaryContainer)),
-                  Expanded(flex: (f * 9 / tot * 100).round().clamp(1, 100), child: Container(color: AppColors.tertiaryFixedDim)),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(children: [
-              Expanded(child: Text('Macros: ${c.round()}g C • ${p.round()}g P • ${f.round()}g F', style: T.labelSm.c(AppColors.onSurfaceVariant))),
-              Text('${i['kcal']} kcal', style: T.labelSm.c(AppColors.tertiary)),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: SizedBox(
+            height: 6,
+            child: Row(children: [
+              Expanded(flex: (c * 4 / tot * 100).round().clamp(1, 100), child: Container(color: AppColors.warning)),
+              const SizedBox(width: 2),
+              Expanded(flex: (p * 4 / tot * 100).round().clamp(1, 100), child: Container(color: AppColors.heart)),
+              const SizedBox(width: 2),
+              Expanded(flex: (f * 9 / tot * 100).round().clamp(1, 100), child: Container(color: AppColors.water)),
             ]),
-          ]),
-        ),
-        const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: Text(i['prep_note'] ?? '', style: T.labelSm.c(AppColors.onSurfaceVariant))),
-          if (on) ...[
-            CircleButton(Symbols.remove, size: 30, iconSize: 16, bg: AppColors.surfaceContainer, onTap: () => _servings(i, -1)),
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text('×${_plan[i['id']]}/wk', style: T.labelMd)),
-            CircleButton(Symbols.add, size: 30, iconSize: 16, bg: AppColors.surfaceContainer, onTap: () => _servings(i, 1)),
-            const SizedBox(width: 8),
-          ],
-          Pressable(
-            onTap: () => _toggle(i),
-            child: Pill(
-              color: on ? AppColors.tertiaryFixed : AppColors.surfaceContainer,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(on ? Symbols.check : Symbols.add, size: 16, color: on ? AppColors.onTertiaryFixed : AppColors.onSurface),
-                const SizedBox(width: 4),
-                Text(on ? 'Added' : 'Add to Plan', style: T.labelMd.c(on ? AppColors.onTertiaryFixed : AppColors.onSurface)),
-              ]),
-            ),
           ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(spacing: 12, children: [
+          legend('Carbs ${c.round()} g', AppColors.warning),
+          legend('Protein ${p.round()} g', AppColors.heart),
+          legend('Fat ${f.round()} g', AppColors.water),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          if (i['prep_note'] != null) Expanded(child: Text(i['prep_note'], style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis)) else const Spacer(),
+          if (on) ...[
+            IconButton(tooltip: 'Fewer servings', icon: const Icon(Symbols.remove_rounded, size: 18), onPressed: () => _servings(i, -1)),
+            Text('${_plan[i['id']]}× a week', style: T.labelMd.tnum),
+            IconButton(tooltip: 'More servings', icon: const Icon(Symbols.add_rounded, size: 18), onPressed: () => _servings(i, 1)),
+          ],
+          SoftButton(on ? 'Added' : 'Add', icon: on ? Symbols.check_rounded : Symbols.add_rounded, expand: false, height: 40,
+              color: on ? AppColors.tertiaryContainer : AppColors.surfaceContainer, fg: on ? AppColors.onTertiaryContainer : AppColors.onSurface, onTap: () => _toggle(i)),
         ]),
       ]),
     );

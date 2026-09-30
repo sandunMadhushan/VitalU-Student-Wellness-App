@@ -87,210 +87,113 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  Widget _field({required String label, required Widget badge, required IconData icon, required Color iconBg, required Color iconFg, required Widget input, Widget? trailing}) {
-    return Container(
-      padding: const EdgeInsets.all(Sp.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(Rad.lg),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0D2D2B38), blurRadius: 28, offset: Offset(0, 10), spreadRadius: -6),
-          BoxShadow(color: Color(0x085B3CDD), blurRadius: 8, offset: Offset(0, 2), spreadRadius: -2),
-        ],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text(label.toUpperCase(), style: T.labelSm.c(AppColors.onSurfaceVariant).tracking(0.8)),
-          const Spacer(),
-          badge,
-        ]),
-        const SizedBox(height: 6),
-        Row(children: [
-          IconCircle(icon, size: 40, iconSize: 20, bg: iconBg, fg: iconFg, fill: 1),
-          const SizedBox(width: Sp.sm),
-          Expanded(child: input),
-          if (trailing != null) trailing,
-        ]),
-      ]),
-    );
-  }
-
-  InputDecoration get _bare => InputDecoration(
-        isDense: true,
-        border: InputBorder.none,
-        hintStyle: T.bodyLg.c(AppColors.outlineVariant).medium,
-        contentPadding: const EdgeInsets.symmetric(vertical: 8),
-      );
+  Widget _labeled(String label, Widget field) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.only(left: 4, bottom: 6), child: Text(label, style: T.labelMd.c(AppColors.onSurfaceVariant))),
+        field,
+      ]);
 
   @override
   Widget build(BuildContext context) {
     return VPage(
       header: BrandBackHeader(onBack: () => context.canPop() ? context.pop() : context.go('/onboarding')),
-      spacing: Sp.sm,
+      spacing: Sp.md,
+      topPadding: Sp.sm,
       children: [
-        // Mascot + heading
-        SizedBox(
-          height: 200,
-          child: Stack(alignment: Alignment.topCenter, clipBehavior: Clip.none, children: [
-            Positioned(top: -24, child: Glow(color: AppColors.secondaryFixed.withValues(alpha: 0.5), size: 176)),
-            Positioned(top: 16, right: 24, child: Glow(color: AppColors.primaryFixed.withValues(alpha: 0.4), size: 144)),
-            Column(children: [
-              const SizedBox(height: 6),
-              SizedBox(
-                width: 96,
-                height: 96,
-                child: Stack(clipBehavior: Clip.none, children: [
-                  Positioned.fill(child: Container(
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(28), boxShadow: const [BoxShadow(color: Color(0x2E984062), blurRadius: 24, offset: Offset(0, 12))]),
-                    child: const AssetImg('heart_embrace', radius: 28),
-                  )),
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(color: AppColors.tertiaryFixed, shape: BoxShape.circle, boxShadow: Shadows.tiny),
-                      child: Icon(Symbols.auto_awesome, size: 14, color: AppColors.onTertiaryFixedVariant, fill: 1),
-                    ),
-                  ),
-                ]),
-              ),
-              const SizedBox(height: Sp.sm),
-              Text(_login ? 'Welcome Back' : 'Create Your Account', style: T.headlineXlMobile),
-              const SizedBox(height: 4),
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Symbols.schedule, size: 16, color: AppColors.tertiary),
-                const SizedBox(width: 6),
-                Text(_login ? 'Pick up right where you left off' : 'Takes less than a minute', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-              ]),
-            ]),
-          ]),
-        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const AppIconTile(size: 52),
+          const SizedBox(height: Sp.md),
+          Text(_login ? 'Welcome back' : 'Create your account', style: T.headlineXlMobile),
+          const SizedBox(height: 4),
+          Text(_login ? 'Log in to continue.' : 'Use your university email. It takes a minute.', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+        ]),
+        const SizedBox(height: Sp.xs),
         if (!_login)
-          _field(
-            label: 'Full Name',
-            badge: Text('Preferred name is fine', style: T.labelSm.c(AppColors.onSurfaceVariant.withValues(alpha: 0.6))),
-            icon: Symbols.person_pin,
-            iconBg: AppColors.primaryFixed.withValues(alpha: 0.6),
-            iconFg: AppColors.primary,
-            input: TextField(controller: _name, textCapitalization: TextCapitalization.words, autofillHints: const [AutofillHints.name], style: T.bodyLg.medium, decoration: _bare.copyWith(hintText: 'Nimal Perera')),
+          _labeled(
+            'Name',
+            TextField(
+              controller: _name,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.name],
+              style: T.bodyLg,
+              decoration: InputDecoration(hintText: 'Nimal Perera', prefixIcon: Icon(Symbols.person_rounded, size: 20, color: AppColors.onSurfaceVariant)),
+            ),
           ),
-        _field(
-          label: 'University Email',
-          badge: TagPill('Student Verified', icon: Symbols.verified, fill: 1, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixedVariant),
-          icon: Symbols.school,
-          iconBg: AppColors.surfaceContainerHigh,
-          iconFg: AppColors.tertiary,
-          input: TextField(controller: _email, keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], style: T.bodyLg.medium, decoration: _bare.copyWith(hintText: 'fst*****@agri.pdn.ac.lk')),
+        _labeled(
+          'University email',
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email],
+            style: T.bodyLg,
+            decoration: InputDecoration(hintText: 'fst*****@agri.pdn.ac.lk', prefixIcon: Icon(Symbols.mail_rounded, size: 20, color: AppColors.onSurfaceVariant)),
+          ),
         ),
-        _field(
-          label: 'Password',
-          badge: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Symbols.lock_reset, size: 14, color: AppColors.tertiary),
-            const SizedBox(width: 2),
-            Text('Encrypted', style: T.labelSm.c(AppColors.tertiary)),
-          ]),
-          icon: Symbols.lock,
-          iconBg: AppColors.secondaryFixed.withValues(alpha: 0.7),
-          iconFg: AppColors.secondary,
-          input: TextField(
+        _labeled(
+          'Password',
+          TextField(
             controller: _password,
             obscureText: _obscure,
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _submit(),
             autofillHints: [_login ? AutofillHints.password : AutofillHints.newPassword],
-            style: T.bodyLg.medium,
-            decoration: _bare.copyWith(hintText: _login ? 'Your password' : 'Create a strong password'),
+            style: T.bodyLg,
+            decoration: InputDecoration(
+              hintText: _login ? 'Your password' : 'At least 8 characters',
+              prefixIcon: Icon(Symbols.lock_rounded, size: 20, color: AppColors.onSurfaceVariant),
+              suffixIcon: IconButton(
+                tooltip: _obscure ? 'Show password' : 'Hide password',
+                icon: Icon(_obscure ? Symbols.visibility_rounded : Symbols.visibility_off_rounded, size: 20, color: AppColors.onSurfaceVariant),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
           ),
-          trailing: CircleButton(_obscure ? Symbols.visibility : Symbols.visibility_off, size: 36, iconSize: 19, bg: AppColors.surfaceContainerLow, onTap: () => setState(() => _obscure = !_obscure)),
         ),
         if (!_login)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Sp.xs),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(Symbols.check_circle, size: 16, fill: 1, color: _passwordOk ? AppColors.tertiary : AppColors.outlineVariant),
-              const SizedBox(width: 6),
-              Expanded(child: Text('At least 8 characters with a healthy mix of letters and numbers.', style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.3))),
-            ]),
-          )
+          Row(children: [
+            Icon(_passwordOk ? Symbols.check_circle_rounded : Symbols.radio_button_unchecked_rounded, size: 16, fill: 1, color: _passwordOk ? AppColors.tertiary : AppColors.outline),
+            const SizedBox(width: 6),
+            Expanded(child: Text('8+ characters with letters and numbers', style: T.bodySm.c(AppColors.onSurfaceVariant))),
+          ])
         else
-          Align(alignment: Alignment.centerRight, child: TextLinkButton('Forgot password?', color: AppColors.primary, onTap: _forgot)),
+          Align(alignment: Alignment.centerRight, child: TextLinkButton('Forgot password?', onTap: _forgot)),
         if (_error != null)
           Container(
-            padding: const EdgeInsets.all(Sp.sm),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: AppColors.errorContainer, borderRadius: BorderRadius.circular(Rad.base)),
             child: Row(children: [
-              Icon(Symbols.error, size: 18, color: AppColors.onErrorContainer),
+              Icon(Symbols.error_rounded, size: 18, color: AppColors.onErrorContainer, fill: 1),
               const SizedBox(width: 8),
               Expanded(child: Text(_error!, style: T.bodySm.c(AppColors.onErrorContainer))),
             ]),
           ),
-        Padding(
-          padding: const EdgeInsets.only(top: Sp.sm),
-          child: PrimaryButton(_login ? 'Log In' : 'Create Account', icon: Symbols.arrow_forward, color: AppColors.tertiary, loading: _busy, onTap: _submit),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: Sp.md),
-          child: Stack(alignment: Alignment.center, children: [
-            Container(height: 1, color: AppColors.surfaceContainerHighest),
-            Pill(
-              color: AppColors.surfaceContainerLow,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              shadow: Shadows.tiny,
-              child: Text('OR CONTINUE WITH', style: T.labelSm.c(AppColors.onSurfaceVariant).tracking(1)),
-            ),
+        PrimaryButton(_login ? 'Log in' : 'Create account', loading: _busy, onTap: _submit),
+        Row(children: [
+          const Expanded(child: Divider()),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text('or', style: T.bodySm.c(AppColors.onSurfaceVariant))),
+          const Expanded(child: Divider()),
+        ]),
+        OutlinedButton(
+          onPressed: _google,
+          style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 52)),
+          child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _GoogleG(),
+            SizedBox(width: 12),
+            Text('Continue with Google'),
           ]),
         ),
-        _socialButton(
-          Container(width: 32, height: 32, decoration: BoxDecoration(color: AppColors.surfaceContainerHigh, shape: BoxShape.circle), alignment: Alignment.center, child: const _GoogleG()),
-          'Google',
-          _google,
-        ),
-        Container(
-          margin: const EdgeInsets.only(top: Sp.sm),
-          padding: const EdgeInsets.all(Sp.sm),
-          decoration: BoxDecoration(color: AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.lg)),
-          child: Row(children: [
-            const IconCircle(Symbols.health_and_safety, size: 32, iconSize: 17),
-            const SizedBox(width: 12),
-            Expanded(child: Text('Encrypted & private. Your wellness data remains private to you.', style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.3))),
-          ]),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: Sp.md),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(_login ? 'New to VitalU?' : 'Already have an account?', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-            GestureDetector(
-              onTap: () => setState(() {
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Text(_login ? 'New to VitalU?' : 'Already have an account?', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+          TextLinkButton(_login ? 'Create account' : 'Log in', onTap: () => setState(() {
                 _login = !_login;
                 _error = null;
-              }),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Text(_login ? 'Create account' : 'Log in',
-                    style: T.labelLg.bold.c(AppColors.primary).copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.primary.withValues(alpha: 0.4))),
-              ),
-            ),
-          ]),
-        ),
+              })),
+        ]),
+        const PrivacyNote('Your health data stays private to your account.'),
       ],
     );
   }
-
-  Widget _socialButton(Widget leading, String label, VoidCallback onTap) => Pressable(
-        onTap: onTap,
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.lg), boxShadow: Shadows.soft),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            leading,
-            const SizedBox(width: 8),
-            Flexible(child: Text(label, style: T.labelMd, overflow: TextOverflow.ellipsis)),
-          ]),
-        ),
-      );
 }
 
 class _CheckEmail extends StatelessWidget {
@@ -298,20 +201,20 @@ class _CheckEmail extends StatelessWidget {
   final String email;
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        IconCircle(Symbols.mark_email_read, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary, size: 52, iconSize: 26),
-        const SizedBox(height: Sp.sm),
+        IconCircle(Symbols.mark_email_read_rounded, fg: AppColors.primary, size: 52, iconSize: 26),
+        const SizedBox(height: Sp.md),
         Text('Check your inbox', style: T.headlineMd),
         const SizedBox(height: 6),
-        Text('We sent a confirmation link to $email. Open it on this phone, then log in to continue setting up your space.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-        const SizedBox(height: Sp.md),
-        PrimaryButton('Got it', color: AppColors.tertiary, onTap: () => Navigator.pop(context)),
+        Text('We sent a confirmation link to $email. Open it on this phone, then log in to finish setting up.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        const SizedBox(height: Sp.lg),
+        PrimaryButton('OK', onTap: () => Navigator.pop(context)),
       ]);
 }
 
 class _GoogleG extends StatelessWidget {
   const _GoogleG();
   @override
-  Widget build(BuildContext context) => SizedBox(width: 16, height: 16, child: CustomPaint(painter: _GPainter()));
+  Widget build(BuildContext context) => SizedBox(width: 18, height: 18, child: CustomPaint(painter: _GPainter()));
 }
 
 class _GPainter extends CustomPainter {

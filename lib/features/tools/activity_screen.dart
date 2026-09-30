@@ -11,21 +11,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/app_state.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
+import '../../ui/charts.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
 /// MET values (Compendium of Physical Activities, approximate).
 const activityTypes = <(String, IconData, double)>[
-  ('Walk', Symbols.directions_walk, 3.5),
-  ('Brisk walk', Symbols.hiking, 4.3),
-  ('Run', Symbols.sprint, 8.0),
-  ('Cycle', Symbols.pedal_bike, 6.0),
-  ('Sports', Symbols.sports_cricket, 7.0),
-  ('Gym', Symbols.fitness_center, 5.0),
-  ('Yoga / Stretch', Symbols.self_improvement, 2.5),
-  ('Dance', Symbols.music_note, 5.0),
-  ('Stairs', Symbols.stairs, 4.0),
+  ('Walk', Symbols.directions_walk_rounded, 3.5),
+  ('Brisk walk', Symbols.hiking_rounded, 4.3),
+  ('Run', Symbols.sprint_rounded, 8.0),
+  ('Cycle', Symbols.pedal_bike_rounded, 6.0),
+  ('Sports', Symbols.sports_cricket_rounded, 7.0),
+  ('Gym', Symbols.fitness_center_rounded, 5.0),
+  ('Yoga / Stretch', Symbols.self_improvement_rounded, 2.5),
+  ('Dance', Symbols.music_note_rounded, 5.0),
+  ('Stairs', Symbols.stairs_rounded, 4.0),
 ];
 
 class ActivityScreen extends StatefulWidget {
@@ -87,9 +88,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
       await prefs.setString('ped_last_sync', DateTime.now().toIso8601String());
       await Repo.upsertSensorSteps(steps);
       await _load();
-      if (mounted) toast(context, 'Synced $steps steps from your phone 👟');
+      if (mounted) toast(context, 'Synced $steps steps');
     } on TimeoutException {
-      if (mounted) toast(context, 'No step sensor data yet — walk a little and try again.', error: true);
+      if (mounted) toast(context, 'No step data yet. Walk a little and try again.', error: true);
     } catch (e) {
       if (mounted) toast(context, 'Step sensor not available on this device.', error: true);
     } finally {
@@ -104,21 +105,21 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final km = TextEditingController();
     await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Log Activity', style: T.headlineMd),
+            Text('Log activity', style: T.headlineMd),
             const SizedBox(height: 4),
-            Text('Every bit of movement counts — walking to lectures included.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            Text('Walking to lectures counts too.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
             Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final t in activityTypes) VChip(t.$1, icon: t.$2, selected: type.$1 == t.$1, selectedColor: AppColors.secondary, onTap: () => set(() => type = t)),
+              for (final t in activityTypes) VChip(t.$1, icon: t.$2, selected: type.$1 == t.$1, selectedColor: AppColors.activity, onTap: () => set(() => type = t)),
             ]),
             const SizedBox(height: Sp.md),
-            VTextField(controller: minutes, hint: 'Duration (minutes)', icon: Symbols.schedule, keyboard: TextInputType.number),
+            VTextField(controller: minutes, hint: 'Duration (minutes)', icon: Symbols.schedule_rounded, keyboard: TextInputType.number),
             const SizedBox(height: Sp.sm),
-            VTextField(controller: steps, hint: 'Steps (optional)', icon: Symbols.footprint, keyboard: TextInputType.number),
+            VTextField(controller: steps, hint: 'Steps (optional)', icon: Symbols.footprint_rounded, keyboard: TextInputType.number),
             const SizedBox(height: Sp.sm),
-            VTextField(controller: km, hint: 'Distance km (optional)', icon: Symbols.near_me, keyboard: const TextInputType.numberWithOptions(decimal: true)),
+            VTextField(controller: km, hint: 'Distance km (optional)', icon: Symbols.near_me_rounded, keyboard: const TextInputType.numberWithOptions(decimal: true)),
             const SizedBox(height: Sp.md),
-            PrimaryButton('Save Activity', color: AppColors.inverseSurface, fg: AppColors.inverseOnSurface, onTap: () async {
+            PrimaryButton('Save', onTap: () async {
               final m = int.tryParse(minutes.text) ?? 0;
               if (m <= 0 || m > 600) return toast(ctx, 'Enter a duration between 1 and 600 minutes.', error: true);
               final weight = AppState.instance.profile?.weightKg ?? 60;
@@ -145,262 +146,99 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final days = [for (int i = 0; i < 7; i++) ws.add(Duration(days: i))];
     final loggedDays = days.where((d) => !d.isAfter(now)).toList();
     final avg = loggedDays.isEmpty ? 0 : (loggedDays.map((d) => _week[isoDate(d)] ?? 0).reduce((a, b) => a + b) / loggedDays.length).round();
-    final maxBar = [_goal * 1.2, ...days.map((d) => (_week[isoDate(d)] ?? 0).toDouble())].reduce((a, b) => a > b ? a : b);
-    final weekNo = weekOfYear(now);
+    final c = AppColors.activity;
+    final logs = (_today['logs'] as List).cast<Rec>();
 
     return VPage(
-      header: const MainHeader('VitalU Health Tools'),
-      nav: NavTab.tools,
+      header: TitleHeader('Activity', onLeading: () => goBack(context, '/tools')),
       onRefresh: _load,
       children: [
-        Row(children: [
-          Flexible(child: TagPill('Personal Wellness Vault • Movement', icon: Symbols.lock, bg: AppColors.secondaryFixed.withValues(alpha: 0.5), fg: AppColors.onSecondaryFixedVariant)),
-          const SizedBox(width: 8),
-          Text('Today, ${DateFormat('MMM d').format(now)}', style: T.labelSm.c(AppColors.outline)),
-        ]),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLow, fg: AppColors.onSurface, onTap: () => goBack(context, '/tools')),
-            const SizedBox(width: 10),
-            Text('Campus Movement', style: T.headlineMd),
-          ]),
-          const SizedBox(height: 4),
-          Text('Gentle campus strolls, stair climbs between classes, and mindful movement. No workout guilt, just moving at your rhythm.', style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.4)),
-        ]),
         VCard(
-          radius: Rad.xl,
-          clip: true,
-          shadow: Shadows.card,
-          child: Stack(clipBehavior: Clip.none, children: [
-            Positioned(top: -48, right: -48, child: Glow(color: AppColors.secondaryFixed.withValues(alpha: 0.3), size: 192)),
-            Positioned(bottom: -40, left: -40, child: Glow(color: AppColors.primaryFixed.withValues(alpha: 0.3), size: 176)),
-            Column(children: [
-              SizedBox(
-                width: 256,
-                height: 256,
-                child: Ring(
-                  value: pct,
-                  size: 256,
-                  stroke: 16,
-                  gradient: [AppColors.secondaryContainer, AppColors.secondary, AppColors.primaryContainer, AppColors.secondaryContainer],
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(color: AppColors.secondaryFixed.withValues(alpha: 0.4), shape: BoxShape.circle),
-                      child: ClipOval(child: const AssetImg('sneakers')),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(Fmt.thousands(steps), style: T.headlineXlMobile),
-                    Text('of ${Fmt.thousands(_goal)} gentle steps', style: T.labelSm.c(AppColors.onSurfaceVariant).medium),
-                  ]),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Pill(
-                color: AppColors.secondaryFixed,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle)),
-                  const SizedBox(width: 6),
-                  Text('${(pct * 100).round()}% of Daily Pace', style: T.labelMd.c(AppColors.onSecondaryFixed)),
+          child: Column(children: [
+            Row(children: [
+              Ring(value: pct, size: 112, stroke: 12, color: c, child: Text('${(pct * 100).round()}%', style: T.metric(22))),
+              const SizedBox(width: Sp.lg),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  CategoryLabel('Steps today', icon: Symbols.directions_walk_rounded, color: c),
+                  const SizedBox(height: 6),
+                  MetricValue(Fmt.thousands(steps), size: 32),
+                  Text('Goal ${Fmt.thousands(_goal)}', style: T.bodySm.c(AppColors.onSurfaceVariant)),
                 ]),
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.lg)),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Icon(Symbols.auto_awesome, size: 18, color: AppColors.secondary, fill: 1),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      steps == 0
-                          ? 'Sync your phone steps or log a walk to start today\'s rhythm.'
-                          : pct >= 1
-                              ? 'Wonderful! You reached your step goal — your heart thanks you.'
-                              : 'Great job! You reached ${Fmt.k(steps)} steps just moving around campus.',
-                      style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.35),
-                    ),
-                  ),
-                ]),
-              ),
+            ]),
+            const SizedBox(height: Sp.md),
+            const Divider(height: 1),
+            const SizedBox(height: Sp.md),
+            Row(children: [
+              _stat('${_today['minutes']}', 'min', 'Active time'),
+              _vDivider(),
+              _stat((_today['km'] as num).toStringAsFixed(1), 'km', 'Distance'),
+              _vDivider(),
+              _stat('${_today['kcal']}', 'kcal', 'Energy'),
             ]),
           ]),
         ),
-        Row(children: [
-          _metric(Symbols.schedule, AppColors.secondaryFixedDim.withValues(alpha: 0.3), AppColors.secondary, '${_today['minutes']} min', 'Active Time', 'Walk to class'),
-          const SizedBox(width: 10),
-          _metric(Symbols.near_me, AppColors.primaryFixed, AppColors.primary, '${(_today['km'] as num).toStringAsFixed(1)} km', 'Distance', 'Campus loops'),
-          const SizedBox(width: 10),
-          _metric(Symbols.local_fire_department, AppColors.secondaryContainer, AppColors.onSecondaryContainer, '${_today['kcal']} kcal', 'Energy', 'Gentle exertion'),
-        ]),
+        const SectionHeader('This week'),
         VCard(
-          radius: Rad.xl,
-          shadow: Shadows.card,
-          child: Column(children: [
-            Row(children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text("This Week's Rhythm", style: T.headlineSm),
-                  Text('Average ${Fmt.thousands(avg)} steps / day', style: T.labelSm.c(AppColors.onSurfaceVariant)),
-                ]),
-              ),
-              TagPill('Week $weekNo', icon: Symbols.tune),
-            ]),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 200,
-              child: Stack(children: [
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: 32 + 136 * (1 - _goal / maxBar) - 7,
-                  child: Row(children: [
-                    Expanded(child: CustomPaint(size: const Size(double.infinity, 1), painter: _Dashed())),
-                    const SizedBox(width: 4),
-                    Text('GOAL (${Fmt.k(_goal)})', style: T.labelSm.s(10).c(AppColors.outline).tracking(0.8)),
-                  ]),
-                ),
-                Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  for (final d in days) Expanded(child: _bar(d, now, maxBar)),
-                ]),
-              ]),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            MetricValue(Fmt.thousands(avg), unit: 'steps a day on average', size: 24),
+            const SizedBox(height: Sp.md),
+            BarChart(
+              values: [for (final d in days) d.isAfter(now) ? 0 : (_week[isoDate(d)] ?? 0).toDouble()],
+              labels: [for (final d in days) DateFormat('E').format(d).substring(0, 1)],
+              color: c,
+              goal: _goal.toDouble(),
+              highlightLast: false,
+              height: 140,
             ),
           ]),
         ),
-        PrimaryButton('Log Activity Manually', leadingIcon: Symbols.add, color: AppColors.inverseSurface, fg: AppColors.inverseOnSurface, height: 52, onTap: _logManual),
+        PrimaryButton('Log activity', leadingIcon: Symbols.add_rounded, onTap: _logManual),
         if (!kIsWeb)
-        Pressable(
-          onTap: _syncing ? null : _sync,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.full), boxShadow: Shadows.tiny),
-            child: Row(children: [
-              IconCircle(Symbols.sync, size: 32, iconSize: 18, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixed),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Phone Step Sensor Sync', style: T.labelMd),
-                  Row(children: [
-                    Container(width: 6, height: 6, decoration: BoxDecoration(color: _lastSync != null ? AppColors.tertiary : AppColors.outline, shape: BoxShape.circle)),
-                    const SizedBox(width: 4),
-                    Text(
-                      _syncing ? 'Syncing…' : (_lastSync == null ? 'Tap to connect' : 'Synced ${_ago(_lastSync!)}'),
-                      style: T.labelSm.s(10).c(_lastSync != null ? AppColors.tertiary : AppColors.outline),
-                    ),
-                  ]),
-                ]),
+          ListGroup(children: [
+            ListRow(
+              icon: Symbols.sync_rounded,
+              color: AppColors.tertiary,
+              title: 'Phone step counter',
+              subtitle: _syncing ? 'Syncing…' : (_lastSync == null ? 'Tap to sync steps from your phone' : 'Last synced ${_ago(_lastSync!)}'),
+              trailing: _syncing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
+              onTap: _syncing ? null : _sync,
+            ),
+          ]),
+        if (logs.isNotEmpty) ...[
+          const SectionHeader('Today'),
+          ListGroup(children: [
+            for (final l in logs)
+              ListRow(
+                icon: activityTypes.firstWhere((t) => t.$1 == l['activity_type'], orElse: () => activityTypes.first).$2,
+                color: c,
+                title: '${l['activity_type']}',
+                subtitle: l['source'] == 'sensor' ? 'Phone sensor' : 'Logged manually',
+                value: '${l['active_minutes']} min · ${Fmt.thousands(l['steps'])}',
               ),
-              _syncing
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Icon(Symbols.chevron_right, color: AppColors.outline, size: 20),
-            ]),
-          ),
-        ),
-        if ((_today['logs'] as List).isNotEmpty)
-          VCard(
-            color: AppColors.surfaceContainerLow,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text("Today's activities", style: T.labelLg),
-              const SizedBox(height: 8),
-              for (final l in (_today['logs'] as List).cast<Rec>())
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(children: [
-                    Icon(activityTypes.firstWhere((t) => t.$1 == l['activity_type'], orElse: () => activityTypes.first).$2, size: 18, color: AppColors.secondary),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text('${l['activity_type']}${l['source'] == 'sensor' ? ' • phone sensor' : ''}', style: T.bodySm)),
-                    Text('${l['active_minutes']} min • ${Fmt.thousands(l['steps'])} steps', style: T.labelSm.c(AppColors.onSurfaceVariant)),
-                  ]),
-                ),
-            ]),
-          ),
-        const PrivacyNote('Activity data stays private to you. No leaderboards or competitive ranking.'),
+          ]),
+        ],
+        const PrivacyNote('Activity stays private to you. No leaderboards.'),
       ],
     );
   }
 
+  Widget _stat(String value, String unit, String label) => Expanded(
+        child: Column(children: [
+          MetricValue(value, unit: unit, size: 20),
+          const SizedBox(height: 2),
+          Text(label, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+        ]),
+      );
+
+  Widget _vDivider() => Container(width: 1, height: 36, color: AppColors.outlineVariant);
+
   String _ago(DateTime t) {
     final d = DateTime.now().difference(t);
     if (d.inMinutes < 1) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes} mins ago';
+    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
     if (d.inHours < 24) return '${d.inHours} h ago';
     return DateFormat('d MMM').format(t);
   }
-
-  Widget _metric(IconData icon, Color bg, Color fg, String value, String label, String sub) => Expanded(
-        child: VCard(
-          padding: const EdgeInsets.all(12),
-          shadow: Shadows.tiny,
-          child: Column(children: [
-            IconCircle(icon, size: 36, iconSize: 20, bg: bg, fg: fg),
-            const SizedBox(height: 6),
-            FittedBox(child: Text(value, style: T.headlineSm)),
-            const SizedBox(height: 2),
-            Text(label, style: T.labelSm, overflow: TextOverflow.ellipsis),
-            Text(sub, style: T.labelSm.s(10).c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-          ]),
-        ),
-      );
-
-  Widget _bar(DateTime d, DateTime now, double maxBar) {
-    final isToday = isoDate(d) == isoDate(now);
-    final v = (_week[isoDate(d)] ?? 0).toDouble();
-    final frac = (v / maxBar).clamp(0.0, 1.0);
-    final future = d.isAfter(now);
-    return Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-      SizedBox(
-        height: 22,
-        child: isToday && v > 0
-            ? Pill(color: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), child: Text(Fmt.k(v), style: T.labelSm.s(10).c(AppColors.onPrimary)))
-            : null,
-      ),
-      const SizedBox(height: 4),
-      Container(
-        width: 28,
-        height: 144,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: isToday ? AppColors.primaryFixed.withValues(alpha: 0.4) : AppColors.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: isToday ? const [BoxShadow(color: Color(0x407459F7), blurRadius: 12)] : null,
-        ),
-        alignment: Alignment.bottomCenter,
-        child: FractionallySizedBox(
-          heightFactor: future ? 0 : frac,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isToday ? AppColors.primary : (v >= _goal ? AppColors.secondaryFixed : AppColors.secondaryFixedDim),
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(height: 8),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: isToday ? BoxDecoration(color: AppColors.primaryFixed, borderRadius: BorderRadius.circular(99)) : null,
-        child: Text(DateFormat('E').format(d).substring(0, 1), style: T.labelSm.c(isToday ? AppColors.primary : AppColors.onSurfaceVariant).w(isToday ? FontWeight.w700 : FontWeight.w500)),
-      ),
-    ]);
-  }
-}
-
-class _Dashed extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.outline.withValues(alpha: 0.4)
-      ..strokeWidth = 1;
-    double x = 0;
-    while (x < size.width) {
-      canvas.drawLine(Offset(x, 0), Offset(x + 4, 0), p);
-      x += 8;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

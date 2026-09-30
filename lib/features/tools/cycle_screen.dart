@@ -20,14 +20,14 @@ class _Phase {
   final String insight;
 }
 
-const _menstrual = _Phase('Menstrual', 'Menstrual • Rest & Replenish', Symbols.water_drop, 'Energy may dip — gentle movement, iron-rich meals and warm drinks can help.',
-    'Protect Your Rest', 'Plan lighter study blocks, keep warm drinks nearby and include iron-rich foods like dhal, green leaves and fish to replenish.');
-const _follicular = _Phase('Follicular', 'Follicular • Rising Energy', Symbols.eco, 'Energy is gradually rising. A great time to start new topics and build study momentum.',
-    'Build Momentum', 'Rising oestrogen often supports motivation. Start new modules or tough readings now and schedule active study sessions.');
-const _ovulation = _Phase('Ovulation', 'Ovulation • Peak Energy Window', Symbols.wb_twilight, 'Hormones are gently peaking. Ideal for group study sessions, presentation prep, and creative flow.',
-    'Leverage Ovulatory Focus', 'Many people feel most social and energetic now. Tackle presentations or group work, and prepare warm herbal teas for the restful phase ahead.');
-const _luteal = _Phase('Luteal', 'Luteal • Restful Rhythm', Symbols.bedtime, 'Your body is winding down. Prioritise sleep, regular meals and kinder study pacing.',
-    'Slow & Steady', 'Cravings and mood shifts are common. Keep regular meals, reduce caffeine, and plan revision rather than new material.');
+const _menstrual = _Phase('Menstrual', 'Menstrual', Symbols.water_drop_rounded, 'Energy may dip. Light movement, iron-rich meals and warm drinks can help.',
+    'Protect your rest', 'Plan lighter study blocks, keep warm drinks nearby and include iron-rich foods like dhal, green leaves and fish to replenish.');
+const _follicular = _Phase('Follicular', 'Follicular • Rising Energy', Symbols.eco_rounded, 'Energy is gradually rising. A great time to start new topics and build study momentum.',
+    'Build momentum', 'Rising oestrogen often supports motivation. Start new modules or tough readings now and schedule active study sessions.');
+const _ovulation = _Phase('Ovulation', 'Ovulation • Peak Energy Window', Symbols.wb_twilight_rounded, 'Hormones are gently peaking. Ideal for group study sessions, presentation prep, and creative flow.',
+    'Use the energy', 'Many people feel most social and energetic now. Tackle presentations or group work, and prepare warm herbal teas for the restful phase ahead.');
+const _luteal = _Phase('Luteal', 'Luteal • Restful Rhythm', Symbols.bedtime_rounded, 'Your body is winding down. Prioritise sleep, regular meals and kinder study pacing.',
+    'Slow and steady', 'Cravings and mood shifts are common. Keep regular meals, reduce caffeine, and plan revision rather than new material.');
 
 class CycleScreen extends StatefulWidget {
   const CycleScreen({super.key});
@@ -93,19 +93,19 @@ class _CycleScreenState extends State<CycleScreen> {
     final open = _cycles.isNotEmpty && _cycles.first['end_date'] == null && DateTime.now().difference(DateTime.parse(_cycles.first['start_date'])).inDays < 12;
     await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Period Flow & Sensations', style: T.headlineMd),
+            Text('Log period', style: T.headlineMd),
             const SizedBox(height: Sp.md),
             if (open) ...[
               VCard(
-                color: AppColors.secondaryFixed.withValues(alpha: 0.5),
+                color: AppColors.surfaceContainer,
                 child: Row(children: [
-                  Icon(Symbols.water_drop, color: AppColors.secondary, fill: 1),
+                  Icon(Symbols.water_drop_rounded, color: AppColors.cycle, fill: 1),
                   const SizedBox(width: 10),
                   Expanded(child: Text('Period started ${DateFormat('d MMM').format(DateTime.parse(_cycles.first['start_date']))}. Has it ended?', style: T.bodyMd)),
                 ]),
               ),
               const SizedBox(height: Sp.sm),
-              SoftButton('Mark period as ended today', icon: Symbols.check_circle, iconColor: AppColors.tertiary, onTap: () async {
+              SoftButton('Mark as ended today', icon: Symbols.check_circle_rounded, onTap: () async {
                 await Repo.endCycle(_cycles.first['id'], DateTime.now());
                 if (ctx.mounted) Navigator.pop(ctx);
                 _load();
@@ -122,10 +122,10 @@ class _CycleScreenState extends State<CycleScreen> {
                   if (d != null) set(() => start = d);
                 },
                 child: Row(children: [
-                  Icon(Symbols.calendar_today, color: AppColors.secondary),
+                  Icon(Symbols.calendar_today_rounded, color: AppColors.cycle),
                   const SizedBox(width: 10),
                   Expanded(child: Text(DateFormat('EEEE, d MMMM').format(start), style: T.labelLg)),
-                  const Icon(Symbols.edit, size: 18),
+                  const Icon(Symbols.edit_rounded, size: 18),
                 ]),
               ),
               const SizedBox(height: Sp.md),
@@ -134,10 +134,10 @@ class _CycleScreenState extends State<CycleScreen> {
             const SizedBox(height: 8),
             Wrap(spacing: 8, children: [
               for (final f in const ['spotting', 'light', 'medium', 'heavy'])
-                VChip(f[0].toUpperCase() + f.substring(1), selected: flow == f, selectedColor: AppColors.secondary, onTap: () => set(() => flow = f)),
+                VChip(f[0].toUpperCase() + f.substring(1), selected: flow == f, selectedColor: AppColors.cycle, onTap: () => set(() => flow = f)),
             ]),
             const SizedBox(height: Sp.lg),
-            PrimaryButton(open ? 'Save Flow' : 'Log Period Start', leadingIcon: Symbols.water_drop, color: AppColors.inverseSurface, fg: AppColors.inverseOnSurface, onTap: () async {
+            PrimaryButton(open ? 'Save' : 'Log period start', onTap: () async {
               if (!open) await Repo.addCycleStart(start);
               await Repo.upsertDailyLog(open ? DateTime.now() : start, {'flow': flow});
               if (ctx.mounted) Navigator.pop(ctx);
@@ -152,7 +152,7 @@ class _CycleScreenState extends State<CycleScreen> {
           Text(title, style: T.headlineMd),
           const SizedBox(height: Sp.md),
           Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final o in options) VChip(o, selected: _today?[field] == o, selectedColor: AppColors.secondary, onTap: () => Navigator.pop(ctx, o)),
+            for (final o in options) VChip(o, selected: _today?[field] == o, selectedColor: AppColors.cycle, onTap: () => Navigator.pop(ctx, o)),
           ]),
           const SizedBox(height: Sp.md),
           if (_today?[field] != null) TextLinkButton('Clear', onTap: () => Navigator.pop(ctx, '')),
@@ -169,16 +169,16 @@ class _CycleScreenState extends State<CycleScreen> {
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('More for today', style: T.headlineMd),
             const SizedBox(height: Sp.sm),
-            SwitchListTile(value: spotting, onChanged: (v) => set(() => spotting = v), title: Text('Spotting', style: T.labelLg), activeTrackColor: AppColors.secondary, contentPadding: EdgeInsets.zero),
+            SwitchListTile(value: spotting, onChanged: (v) => set(() => spotting = v), title: Text('Spotting', style: T.labelLg), contentPadding: EdgeInsets.zero),
             const SizedBox(height: Sp.sm),
             VTextField(controller: notes, hint: 'Notes (headache, bloating, skin, cravings…)', maxLines: 3),
             const SizedBox(height: Sp.sm),
-            SoftButton('Log water intake', icon: Symbols.water_drop, iconColor: AppColors.primary, onTap: () {
+            SoftButton('Log water', icon: Symbols.water_drop_rounded, onTap: () {
               Navigator.pop(ctx);
               context.push('/tools/water');
             }),
             const SizedBox(height: Sp.md),
-            PrimaryButton('Save', color: AppColors.secondary, onTap: () async {
+            PrimaryButton('Save', onTap: () async {
               await Repo.upsertDailyLog(DateTime.now(), {'spotting': spotting, 'notes': notes.text.trim().isEmpty ? null : notes.text.trim()});
               if (ctx.mounted) Navigator.pop(ctx);
               _load();
@@ -190,9 +190,9 @@ class _CycleScreenState extends State<CycleScreen> {
   void _history() {
     final starts = _cycles.map((c) => c).toList();
     showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('Cycle History', style: T.headlineMd),
+          Text('Cycle history', style: T.headlineMd),
           const SizedBox(height: 4),
-          Text('Average cycle: $_cycleLen days • Average period: $_periodLen days', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+          Text('Average cycle $_cycleLen days · average period $_periodLen days', style: T.bodySm.c(AppColors.onSurfaceVariant)),
           const SizedBox(height: Sp.md),
           if (starts.isEmpty) Text('No cycles logged yet.', style: T.bodyMd),
           for (int i = 0; i < starts.length; i++)
@@ -202,7 +202,7 @@ class _CycleScreenState extends State<CycleScreen> {
                 color: AppColors.surfaceContainerLow,
                 padding: const EdgeInsets.all(14),
                 child: Row(children: [
-                  Icon(Symbols.water_drop, color: AppColors.secondary, fill: 1, size: 20),
+                  Icon(Symbols.water_drop_rounded, color: AppColors.cycle, fill: 1, size: 20),
                   const SizedBox(width: 10),
                   Expanded(child: Text(DateFormat('d MMM yyyy').format(DateTime.parse(starts[i]['start_date'])), style: T.labelLg)),
                   Text(
@@ -214,8 +214,8 @@ class _CycleScreenState extends State<CycleScreen> {
             ),
           if (_irregular) ...[
             const SizedBox(height: Sp.sm),
-            Text('Your cycle lengths vary more than usual. Irregular cycles have many causes (stress, weight change, sleep), and can sometimes be associated with conditions such as PCOS. This is not a diagnosis — a doctor can help if it continues.',
-                style: T.bodySm.c(AppColors.secondary)),
+            Text('Your cycle lengths vary more than usual. Irregular cycles have many causes (stress, weight change, sleep), and can sometimes be associated with conditions such as PCOS. This is not a diagnosis; a doctor can help if it continues.',
+                style: T.bodySm.c(AppColors.onSurfaceVariant)),
           ],
         ]));
   }
@@ -223,8 +223,7 @@ class _CycleScreenState extends State<CycleScreen> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: const MainHeader('VitalU Health Tools'),
-      nav: NavTab.tools,
+      header: TitleHeader('Cycle', onLeading: () => goBack(context, '/tools')),
       onRefresh: _load,
       children: _loading ? [const Loading()] : _content(),
     );
@@ -234,209 +233,103 @@ class _CycleScreenState extends State<CycleScreen> {
     final now = DateTime.now();
     final last = _cycles.isEmpty ? null : DateTime.parse(_cycles.first['start_date']);
     final day = last == null ? null : now.difference(DateTime(last.year, last.month, last.day)).inDays + 1;
-    final phase = day == null ? null : _phaseFor(((day - 1) % _cycleLen) + 1);
+    final cycleDay = day == null ? null : ((day - 1) % _cycleLen) + 1;
+    final phase = cycleDay == null ? null : _phaseFor(cycleDay);
     final next = last == null ? null : last.add(Duration(days: _cycleLen * (((day! - 1) ~/ _cycleLen) + 1)));
     final daysToNext = next?.difference(DateTime(now.year, now.month, now.day)).inDays;
+    final c = AppColors.cycle;
 
-    Widget chip(String field, String label, IconData icon, Color c, String? value, String placeholder, List<String> options) {
-      final on = value != null;
-      return Pressable(
-        onTap: () => _pickSymptom(field, label, options),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: on ? AppColors.secondaryFixed : AppColors.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(Rad.r2xl),
-            boxShadow: on ? Shadows.tinted(AppColors.secondary, opacity: 0.1, blur: 16, y: 4, spread: 0) : Shadows.tiny,
-          ),
-          child: Row(children: [
-            IconCircle(icon, size: 36, iconSize: 20, bg: on ? AppColors.surfaceContainerLowest : AppColors.surfaceContainer, fg: c, shadow: on ? Shadows.tiny : null),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(label, style: T.labelMd.c(on ? AppColors.onSecondaryFixedVariant : AppColors.onSurface), overflow: TextOverflow.ellipsis),
-                Text(value ?? placeholder, style: T.bodySm.s(11).c(on ? AppColors.onSecondaryFixedVariant : AppColors.onSurfaceVariant).lh(1.2), overflow: TextOverflow.ellipsis),
-              ]),
-            ),
-            Icon(on ? Symbols.check_circle : Symbols.radio_button_unchecked, size: 18, color: on ? AppColors.secondary : AppColors.outlineVariant),
-          ]),
-        ),
-      );
-    }
+    ListRow symptom(String field, String label, IconData icon, List<String> options) => ListRow(
+          icon: icon,
+          color: c,
+          title: label,
+          value: _today?[field] ?? 'Log',
+          onTap: () => _pickSymptom(field, label, options),
+        );
 
     return [
-      Row(children: [
-        CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLowest, fg: AppColors.onSurface, shadow: Shadows.soft, onTap: () => goBack(context, '/tools')),
-        const Spacer(),
-        TagPill('Private & Encrypted', icon: Symbols.lock, bg: AppColors.surfaceContainerLow, fg: AppColors.secondary),
-      ]),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        TagPill('Cycle Rhythm • Natural Fluctuations', icon: Symbols.spa, upper: true, bg: AppColors.secondaryFixed, fg: AppColors.onSecondaryFixedVariant),
-        const SizedBox(height: 6),
-        Text('Cycle Sanctuary', style: T.headlineMd),
-        const SizedBox(height: 2),
-        Text('Gentle tracking aligned with your semester rhythm. No pressure, just intuitive bodily awareness.', style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.35)),
-      ]),
-      Container(
-        clipBehavior: Clip.antiAlias,
-        padding: const EdgeInsets.all(Sp.md),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surfaceContainerLowest, AppColors.surfaceContainerLow, AppColors.surfaceContainerHigh]),
-          boxShadow: const [BoxShadow(color: Color(0x14984062), blurRadius: 36, offset: Offset(0, 16), spreadRadius: -10), BoxShadow(color: Color(0x0A2D2B38), blurRadius: 16, offset: Offset(0, 4))],
-        ),
-        child: Stack(clipBehavior: Clip.none, children: [
-          Positioned(top: -48, right: -48, child: Glow(color: AppColors.secondaryFixed.withValues(alpha: 0.5), size: 176)),
-          Positioned(bottom: -40, left: -40, child: Glow(color: AppColors.primaryFixed.withValues(alpha: 0.4), size: 160)),
-          Column(children: [
-            SizedBox(
-              width: 256,
-              height: 256,
-              child: Stack(alignment: Alignment.center, children: [
-                CustomPaint(size: const Size(256, 256), painter: _CycleWheel(cycleLen: _cycleLen, periodLen: _periodLen, day: day == null ? null : ((day - 1) % _cycleLen) + 1)),
-                Container(
-                  width: 176,
-                  height: 176,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9)),
-                  child: ClipOval(child: const AssetImg('lotus_moon')),
-                ),
+      VCard(
+        child: Column(children: [
+          SizedBox(
+            width: 200,
+            height: 200,
+            child: Stack(alignment: Alignment.center, children: [
+              CustomPaint(size: const Size(200, 200), painter: _CycleWheel(cycleLen: _cycleLen, periodLen: _periodLen, day: cycleDay)),
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                if (cycleDay == null)
+                  Icon(Symbols.menstrual_health_rounded, size: 36, color: c)
+                else ...[
+                  Text('Day', style: T.labelMd.c(AppColors.onSurfaceVariant)),
+                  Text('$cycleDay', style: T.metric(44)),
+                  Text(phase!.name, style: T.labelMd.c(c)),
+                ],
               ]),
+            ]),
+          ),
+          const SizedBox(height: Sp.md),
+          if (cycleDay == null) ...[
+            Text('Start tracking', style: T.headlineSm),
+            const SizedBox(height: 4),
+            Text('Log the first day of your last period to see phases and predictions.', textAlign: TextAlign.center, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+          ] else
+            Text.rich(
+              TextSpan(text: 'Next period in about ', children: [TextSpan(text: '$daysToNext days', style: T.bodyLg.semi), TextSpan(text: ' · ${DateFormat('d MMM').format(next!)}')]),
+              textAlign: TextAlign.center,
+              style: T.bodyLg.c(AppColors.onSurfaceVariant),
             ),
-            const SizedBox(height: 8),
-            if (day == null) ...[
-              Text('Start your cycle rhythm', style: T.headlineSm),
-              const SizedBox(height: 6),
-              Text('Log the first day of your last period to see phases and predictions.', textAlign: TextAlign.center, style: T.bodySm.c(AppColors.onSurfaceVariant)),
-            ] else ...[
-              Text('Day ${((day - 1) % _cycleLen) + 1} of your cycle', style: T.headlineSm),
-              const SizedBox(height: 4),
-              TagPill(phase!.badge, icon: phase.icon, bg: AppColors.secondaryFixed, fg: AppColors.onSecondaryFixed),
-              const SizedBox(height: 8),
-              ConstrainedBox(constraints: const BoxConstraints(maxWidth: 270), child: Text(phase.text, textAlign: TextAlign.center, style: T.bodySm.c(AppColors.onSurfaceVariant))),
-              const SizedBox(height: 12),
-              Pill(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Symbols.calendar_clock, size: 15, color: AppColors.secondary),
-                  const SizedBox(width: 6),
-                  Text.rich(TextSpan(text: 'Next cycle predicted in ', children: [
-                    TextSpan(text: '~$daysToNext days (${DateFormat('MMM d').format(next!)})', style: T.labelSm.c(AppColors.onSurface).semi),
-                  ]), style: T.labelSm.c(AppColors.onSurfaceVariant)),
-                ]),
-              ),
-            ],
+          const SizedBox(height: Sp.md),
+          Wrap(spacing: 14, runSpacing: 6, alignment: WrapAlignment.center, children: [
+            _legend('Period', c),
+            _legend('Follicular', c.withValues(alpha: 0.35)),
+            _legend('Fertile', AppColors.mind),
+            _legend('Luteal', AppColors.surfaceContainerHighest),
           ]),
         ]),
       ),
-      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text("Log Today's Rhythm", style: T.headlineSm),
-              Text('How is your body feeling during class today?', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-            ]),
-          ),
-          CircleButton(Symbols.tune, size: 32, iconSize: 18, bg: AppColors.surfaceContainer, onTap: _moreLog),
-        ]),
-        const SizedBox(height: Sp.sm),
-        LayoutBuilder(builder: (context, c) {
-          final w = (c.maxWidth - 10) / 2;
-          return Wrap(spacing: 10, runSpacing: 10, children: [
-            SizedBox(width: w, child: chip('cramps', 'Cramps', Symbols.hot_tub, AppColors.secondary, _today?['cramps'], 'Tap to log', const ['None', 'Gentle / Mild', 'Moderate', 'Strong'])),
-            SizedBox(width: w, child: chip('mood', 'Mood', Symbols.filter_drama, AppColors.primary, _today?['mood'], 'Tap to log', const ['Calm & Reflective', 'Happy', 'Low', 'Irritable', 'Anxious'])),
-            SizedBox(width: w, child: chip('energy', 'Energy', Symbols.bolt, AppColors.tertiary, _today?['energy'], 'Tap to log', const ['Low', 'Steady Pace', 'High'])),
-            SizedBox(width: w, child: chip('sleep', 'Sleep', Symbols.bedtime, AppColors.secondary, _today?['sleep'], 'Tap to log', const ['Restful', 'Okay', 'Restless'])),
-          ]);
-        }),
-        const SizedBox(height: Sp.sm),
-        SoftButton('Log Spotting, Water or Notes', icon: Symbols.add_circle, fg: AppColors.onSurfaceVariant, height: 46, style: T.labelMd, onTap: _moreLog),
-      ]),
+      PrimaryButton('Log period', leadingIcon: Symbols.water_drop_rounded, onTap: _logPeriod),
       if (phase != null)
-        Container(
-          padding: const EdgeInsets.all(Sp.md),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surfaceContainerLowest, AppColors.secondaryFixed.withValues(alpha: 0.3), AppColors.surfaceContainerLow]),
-            boxShadow: const [BoxShadow(color: Color(0x0F984062), blurRadius: 28, offset: Offset(0, 12), spreadRadius: -8)],
-          ),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconCircle(Symbols.school, size: 40, iconSize: 22, bg: AppColors.secondaryFixed, fg: AppColors.secondary, shadow: Shadows.tiny),
-            const SizedBox(width: Sp.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text('SEMESTER SYNC INSIGHT', style: T.labelSm.s(10).c(AppColors.secondary).bold.tracking(1)),
-                  const SizedBox(width: 6),
-                  Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.6), shape: BoxShape.circle)),
-                  const SizedBox(width: 6),
-                  Text('${phase.name} phase', style: T.labelSm.s(11).c(AppColors.onSurfaceVariant)),
-                ]),
-                const SizedBox(height: 4),
-                Text(phase.insightTitle, style: T.headlineSm.lh(1.2)),
-                const SizedBox(height: 6),
-                Text(phase.insight, style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6)),
-              ]),
-            ),
+        VCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CategoryLabel('${phase.name} phase', icon: phase.icon, color: c),
+            const SizedBox(height: 8),
+            Text(phase.insightTitle, style: T.headlineSm),
+            const SizedBox(height: 4),
+            Text(phase.insight, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
           ]),
         ),
       if (_irregular)
         VCard(
-          color: AppColors.secondaryFixed.withValues(alpha: 0.35),
+          color: AppColors.warningContainer,
           onTap: () => context.push('/library/article/pcos-awareness'),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Symbols.info, color: AppColors.secondary),
-            const SizedBox(width: 10),
+            Icon(Symbols.info_rounded, color: AppColors.warning, fill: 1),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text('Your recent cycles have been irregular. This can happen with stress or routine changes, and is sometimes associated with conditions like PCOS. It is not a diagnosis — consider a check-up if it continues. Tap to learn more.',
-                  style: T.bodySm.c(AppColors.onSecondaryFixedVariant)),
+              child: Text('Your recent cycles have varied a lot. This can happen with stress or routine changes, and is sometimes linked to conditions like PCOS. It is not a diagnosis; consider a check-up if it continues.',
+                  style: T.bodyMd.c(AppColors.onSurface)),
             ),
           ]),
         ),
-      if (last != null)
-        VCard(
-          radius: 24,
-          shadow: Shadows.soft,
-          child: Column(children: [
-            Row(children: [
-              Icon(Symbols.date_range, color: AppColors.secondary, size: 20),
-              const SizedBox(width: 8),
-              Expanded(child: Text('${DateFormat('MMMM').format(last)} – ${DateFormat('MMMM').format(next!)}', style: T.headlineSm)),
-              Text('$_cycleLen-Day Pattern', style: T.labelSm.c(AppColors.onSurfaceVariant)),
-            ]),
-            const SizedBox(height: Sp.sm),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _seg(_periodLen.toDouble(), AppColors.secondaryContainer, DateFormat('MMM d').format(last), phase == _menstrual),
-              const SizedBox(width: 6),
-              _seg(math.max(1, _cycleLen - 14 - 2 - _periodLen - 1).toDouble(), AppColors.primaryFixed, 'Follicular', phase == _follicular),
-              const SizedBox(width: 6),
-              _seg(5, AppColors.secondary, 'Ovulation', phase == _ovulation),
-              const SizedBox(width: 6),
-              _seg(12, AppColors.surfaceContainerHighest, '${DateFormat('MMM d').format(next)} • Next', phase == _luteal),
-            ]),
-          ]),
-        ),
-      PrimaryButton('Log Period Flow & Physical Sensations', leadingIcon: Symbols.water_drop, color: AppColors.inverseSurface, fg: AppColors.onPrimary, height: 52, onTap: _logPeriod),
-      SoftButton('View Cycle History & Monthly Trends', icon: Symbols.insights, iconColor: AppColors.secondary, height: 48, style: T.labelMd, onTap: _history),
-      const PrivacyNote('Cycle data is private to you. Never shared with or visible to university administrators.'),
+      const SectionHeader('Today'),
+      ListGroup(children: [
+        symptom('cramps', 'Cramps', Symbols.healing_rounded, const ['None', 'Mild', 'Moderate', 'Strong']),
+        symptom('mood', 'Mood', Symbols.mood_rounded, const ['Calm', 'Happy', 'Low', 'Irritable', 'Anxious']),
+        symptom('energy', 'Energy', Symbols.bolt_rounded, const ['Low', 'Steady', 'High']),
+        symptom('sleep', 'Sleep', Symbols.bedtime_rounded, const ['Restful', 'Okay', 'Restless']),
+        ListRow(icon: Symbols.edit_note_rounded, color: c, title: 'Spotting and notes', onTap: _moreLog),
+      ]),
+      ListGroup(children: [
+        ListRow(icon: Symbols.history_rounded, color: c, title: 'History', value: _lengths.isEmpty ? null : '$_cycleLen-day average', onTap: _history),
+      ]),
+      const PrivacyNote('Cycle data is private to you.'),
     ];
   }
 
-  Widget _seg(double flex, Color c, String label, bool current) => Expanded(
-        flex: (flex * 10).round(),
-        child: Column(children: [
-          Container(
-            height: current ? 10 : 8,
-            decoration: BoxDecoration(
-              color: current ? AppColors.secondary : c,
-              borderRadius: BorderRadius.circular(8),
-              border: current ? Border.all(color: AppColors.secondaryFixed, width: 2) : null,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(current ? 'Today' : label, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.labelSm.s(10).c(current ? AppColors.secondary : AppColors.onSurfaceVariant).w(current ? FontWeight.w700 : FontWeight.w500)),
-        ]),
-      );
+  Widget _legend(String label, Color color) => Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(label, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+      ]);
 }
 
 class _CycleWheel extends CustomPainter {
@@ -448,46 +341,30 @@ class _CycleWheel extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
-    final r = size.width / 2 - 14;
+    const w = 14.0;
+    final r = size.width / 2 - w;
     final rect = Rect.fromCircle(center: c, radius: r);
     const start = -math.pi / 2;
     double a(int d) => 2 * math.pi * d / cycleLen;
-    Paint p(Color color, double w, {Shader? shader}) => Paint()
+    Paint p(Color color) => Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = w
-      ..strokeCap = StrokeCap.round
-      ..color = color
-      ..shader = shader;
-
-    canvas.drawCircle(c, r, p(const Color(0xFFEBE6F7), 12));
+      ..strokeCap = StrokeCap.butt
+      ..color = color;
+    const gap = 0.03;
     final ov = cycleLen - 14;
-    const gap = 0.05;
-    // Menstrual
-    canvas.drawArc(rect, start + gap, a(periodLen) - 2 * gap, false,
-        p(AppColors.secondary, 12, shader: SweepGradient(colors: [AppColors.secondaryContainer, AppColors.secondary]).createShader(rect)));
-    // Follicular
-    canvas.drawArc(rect, start + a(periodLen) + gap, a(ov - 2 - periodLen - 1) - 2 * gap, false, p(AppColors.primaryFixedDim, 12));
-    // Ovulation
-    canvas.drawArc(rect, start + a(ov - 3) + gap, a(5) - 2 * gap, false,
-        p(AppColors.secondaryFixedDim, 14, shader: SweepGradient(colors: [AppColors.secondaryFixedDim, AppColors.primaryFixedDim]).createShader(rect)));
-    // Luteal
-    canvas.drawArc(rect, start + a(ov + 2) + gap, a(cycleLen - ov - 2) - 2 * gap, false, p(AppColors.surfaceDim, 12));
-    // Predicted dashed outer ring
-    final dash = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..color = AppColors.secondary.withValues(alpha: 0.5);
-    for (double t = 0; t < 2 * math.pi; t += 0.12) {
-      canvas.drawArc(Rect.fromCircle(center: c, radius: r + 11), t, 0.05, false, dash);
-    }
+    canvas.drawArc(rect, start + gap, a(periodLen) - 2 * gap, false, p(AppColors.cycle));
+    canvas.drawArc(rect, start + a(periodLen) + gap, a(ov - 3 - periodLen) - 2 * gap, false, p(AppColors.cycle.withValues(alpha: 0.35)));
+    canvas.drawArc(rect, start + a(ov - 3) + gap, a(5) - 2 * gap, false, p(AppColors.mind));
+    canvas.drawArc(rect, start + a(ov + 2) + gap, a(cycleLen - ov - 2) - 2 * gap, false, p(AppColors.surfaceContainerHighest));
     if (day != null) {
       final ang = start + a(day!) - a(1) / 2;
       final pt = c + Offset(math.cos(ang), math.sin(ang)) * r;
-      canvas.drawCircle(pt + const Offset(0, 2), 10, Paint()
-        ..color = const Color(0x4D984062)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
-      canvas.drawCircle(pt, 9, Paint()..color = Colors.white);
-      canvas.drawCircle(pt, 5, Paint()..color = AppColors.secondary);
+      canvas.drawCircle(pt, w / 2 + 4, Paint()..color = AppColors.surfaceContainerLowest);
+      canvas.drawCircle(pt, w / 2 + 1, Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = AppColors.onSurface);
     }
   }
 

@@ -16,52 +16,69 @@ import '../../ui/widgets.dart';
 // ---------------------------------------------------------------------------
 
 class _StepProgress extends StatelessWidget {
-  const _StepProgress({required this.step, required this.label, this.thin = false});
+  const _StepProgress({required this.step});
   final int step;
-  final String label;
-  final bool thin;
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text('STEP $step OF 3', style: T.labelSm.c(AppColors.tertiary).bold.tracking(1)),
-          const Spacer(),
-          Text(label, style: T.labelSm.c(AppColors.onSurfaceVariant).medium),
-        ]),
-        const SizedBox(height: Sp.xs + 2),
-        Row(children: [
-          for (int i = 1; i <= 3; i++) ...[
-            if (i > 1) const SizedBox(width: Sp.xs + 2),
-            Expanded(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                height: thin ? 6 : 8,
-                decoration: BoxDecoration(
-                  color: i <= step ? AppColors.tertiary : AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: i <= step ? Shadows.tinted(AppColors.tertiary, opacity: 0.25, blur: 8, y: 2, spread: 0) : null,
-                ),
-              ),
+  Widget build(BuildContext context) => Row(children: [
+        for (int i = 1; i <= 3; i++) ...[
+          if (i > 1) const SizedBox(width: 6),
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              height: 4,
+              decoration: BoxDecoration(color: i <= step ? AppColors.primary : AppColors.surfaceContainerHigh, borderRadius: BorderRadius.circular(2)),
             ),
-          ]
-        ]),
+          ),
+        ],
       ]);
 }
 
-class _FooterNote extends StatelessWidget {
-  const _FooterNote(this.text, {this.icon = Symbols.encrypted});
+class _Intro extends StatelessWidget {
+  const _Intro(this.title, this.text);
+  final String title;
   final String text;
-  final IconData icon;
   @override
-  Widget build(BuildContext context) => Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, size: 14, color: AppColors.outline),
-        const SizedBox(width: 6),
-        Flexible(child: Text(text, textAlign: TextAlign.center, style: T.labelSm.c(AppColors.outline))),
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: T.headlineLg),
+        const SizedBox(height: 6),
+        Text(text, style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+      ]);
+}
+
+class _Actions extends StatelessWidget {
+  const _Actions({required this.label, required this.onContinue, required this.onSkip, this.busy = false, this.skipLabel = 'Skip for now'});
+  final String label;
+  final VoidCallback onContinue;
+  final VoidCallback onSkip;
+  final bool busy;
+  final String skipLabel;
+  @override
+  Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
+        PrimaryButton(label, loading: busy, onTap: onContinue),
+        TextLinkButton(skipLabel, color: AppColors.onSurfaceVariant, onTap: onSkip),
       ]);
 }
 
 Future<void> _saveStep(Map<String, dynamic> values, int step) async {
   final current = AppState.instance.profile?.registrationStep ?? 0;
   await AppState.instance.updateProfile({...values, 'registration_step': step > current ? step : current});
+}
+
+/// Bottom-sheet list picker with a check on the current value.
+Future<String?> pickOption(BuildContext context, String title, List<String> options, String? current) {
+  return showVSheet<String>(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(title, style: T.headlineMd),
+        const SizedBox(height: Sp.md),
+        ListGroup(dividerIndent: 16, children: [
+          for (final o in options)
+            ListRow(
+              title: o,
+              trailing: o == current ? Icon(Symbols.check_rounded, color: AppColors.primary) : null,
+              chevron: false,
+              onTap: () => Navigator.pop(ctx, o),
+            ),
+        ]),
+      ]));
 }
 
 // ---------------------------------------------------------------------------
@@ -98,10 +115,6 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
       initialDate: _dob ?? DateTime(now.year - 21, 1, 1),
       firstDate: DateTime(now.year - 70),
       lastDate: DateTime(now.year - 15, 12, 31),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: AppColors.tertiary)),
-        child: child!,
-      ),
     );
     if (d != null) setState(() => _dob = d);
   }
@@ -128,154 +141,60 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
     }
   }
 
-  Widget _card({required String label, required Widget badge, String? help, required IconData icon, required Color iconBg, required Color iconFg, required Widget control}) {
-    return VCard(
-      shadow: const [BoxShadow(color: Color(0x0D1C1A26), blurRadius: 24, offset: Offset(0, 8), spreadRadius: -6)],
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Text(label.toUpperCase(), style: T.labelSm.c(AppColors.outline).bold.tracking(1)), const Spacer(), badge]),
-        if (help != null) ...[const SizedBox(height: 2), Text(help, style: T.bodySm.c(AppColors.onSurfaceVariant))],
-        const SizedBox(height: Sp.xs + 4),
-        Row(children: [IconCircle(icon, bg: iconBg, fg: iconFg, iconSize: 20), const SizedBox(width: Sp.sm), Expanded(child: control)]),
-      ]),
-    );
-  }
-
-  Widget _selectPill(String text, VoidCallback onTap, {bool placeholder = false}) => Pressable(
-        onTap: onTap,
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.only(left: 16, right: 12),
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
-          child: Row(children: [
-            Expanded(child: Text(text, style: T.labelLg.c(placeholder ? AppColors.outline : AppColors.onSurface), overflow: TextOverflow.ellipsis)),
-            Icon(Symbols.expand_more, size: 20, color: AppColors.onSurfaceVariant),
-          ]),
-        ),
-      );
-
-  Future<void> _pickFrom(String title, List<String> options, String? current, ValueChanged<String> onPick) async {
-    final v = await showVSheet<String>(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(title, style: T.headlineSm),
-          const SizedBox(height: Sp.sm),
-          for (final o in options)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: VCard(
-                color: o == current ? AppColors.tertiaryFixed : AppColors.surfaceContainerLow,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                radius: Rad.md,
-                onTap: () => Navigator.pop(ctx, o),
-                child: Row(children: [
-                  Expanded(child: Text(o, style: T.labelLg)),
-                  if (o == current) Icon(Symbols.check_circle, color: AppColors.tertiary, fill: 1),
-                ]),
-              ),
-            ),
-        ]));
-    if (v != null) onPick(v);
-  }
-
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: RegistrationHeader(onBack: () => context.canPop() ? context.pop() : null),
-      spacing: Sp.sm,
+      header: RegistrationHeader(title: 'Step 1 of 3', onBack: () => context.canPop() ? context.pop() : null),
+      spacing: Sp.lg,
+      bottom: _Actions(label: 'Continue', busy: _busy, onContinue: () => _continue(), onSkip: () => _continue(skip: true)),
       children: [
-        const Padding(padding: EdgeInsets.only(top: Sp.sm, bottom: Sp.sm), child: _StepProgress(step: 1, label: 'Basic Info')),
-        VCard(
-          color: AppColors.surfaceContainerLow,
-          shadow: Shadows.tiny,
-          child: Row(children: [
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                TagPill('Gentle Start', icon: Symbols.spa, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixedVariant),
-                const SizedBox(height: 6),
-                Text('Tell us about you', style: T.headlineMd.lh(1.2)),
-                const SizedBox(height: 4),
-                Text('This helps VitalU tailor your daily baseline pace and care routine.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-              ]),
-            ),
-            const SizedBox(width: Sp.sm),
-            ClipOval(child: const AssetImg('heart_leaf', width: 64, height: 64)),
-          ]),
-        ),
-        const SizedBox(height: 4),
-        _card(
-          label: 'Date of Birth',
-          badge: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Symbols.lock, size: 13, color: AppColors.tertiary),
-            const SizedBox(width: 2),
-            Text('Private', style: T.labelSm.c(AppColors.tertiary)),
-          ]),
-          icon: Symbols.calendar_today,
-          iconBg: AppColors.secondaryFixed,
-          iconFg: AppColors.onSecondaryFixed,
-          control: _selectPill(_dob == null ? 'Select date' : DateFormat('d MMMM yyyy').format(_dob!), _pickDob, placeholder: _dob == null),
-        ),
-        _card(
-          label: 'Sex',
-          badge: Text('Physiological metrics', style: T.labelSm.c(AppColors.onSurfaceVariant).medium),
-          help: 'Helps tailor accurate hydration and heart rate baseline models.',
-          icon: Symbols.ecg_heart,
-          iconBg: AppColors.tertiaryFixed,
-          iconFg: AppColors.onTertiaryFixedVariant,
-          control: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
+        const _StepProgress(step: 1),
+        const _Intro('Tell us about you', 'This helps VitalU set your daily targets and assessment schedule.'),
+        ListGroup(dividerIndent: 60, children: [
+          ListRow(
+            icon: Symbols.cake_rounded,
+            color: AppColors.cycle,
+            title: 'Date of birth',
+            value: _dob == null ? 'Select' : DateFormat('d MMM yyyy').format(_dob!),
+            onTap: _pickDob,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 12),
             child: Row(children: [
-              for (final s in const [('female', 'Female', Symbols.female), ('male', 'Male', Symbols.male)])
-                Expanded(
-                  child: Pressable(
-                    onTap: () => setState(() => _sex = s.$1),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 40,
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      decoration: BoxDecoration(
-                        color: _sex == s.$1 ? AppColors.tertiary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(Rad.full),
-                        boxShadow: _sex == s.$1 ? Shadows.tiny : null,
-                      ),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(s.$3, size: 16, color: _sex == s.$1 ? AppColors.onTertiary : AppColors.onSurfaceVariant),
-                        const SizedBox(width: 6),
-                        Text(s.$2, style: T.labelMd.c(_sex == s.$1 ? AppColors.onTertiary : AppColors.onSurfaceVariant)),
-                      ]),
-                    ),
-                  ),
-                ),
+              IconCircle(Symbols.wc_rounded, size: 32, iconSize: 18, fg: AppColors.water, radius: 8, fill: 1),
+              const SizedBox(width: 12),
+              Expanded(child: Text('Sex', style: T.bodyLg)),
+              Segmented(
+                options: const ['Female', 'Male'],
+                value: _sex == 'male' ? 'Male' : (_sex == 'female' ? 'Female' : ''),
+                onChanged: (v) => setState(() => _sex = v.toLowerCase()),
+              ),
             ]),
           ),
-        ),
-        _card(
-          label: 'Faculty',
-          badge: Text('Campus syncing', style: T.labelSm.c(AppColors.primary).medium),
-          icon: Symbols.school,
-          iconBg: AppColors.primaryFixed,
-          iconFg: AppColors.onPrimaryFixed,
-          control: _selectPill(_faculty ?? 'Select your faculty', () => _pickFrom('Faculty', faculties, _faculty, (v) => setState(() => _faculty = v)), placeholder: _faculty == null),
-        ),
-        _card(
-          label: 'Academic Year',
-          badge: Text('Exam cycle sync', style: T.labelSm.c(AppColors.onSurfaceVariant).medium),
-          icon: Symbols.workspace_premium,
-          iconBg: AppColors.surfaceContainerHigh,
-          iconFg: AppColors.onSurface,
-          control: _selectPill(_year ?? 'Select your year', () => _pickFrom('Academic Year', academicYears, _year, (v) => setState(() => _year = v)), placeholder: _year == null),
-        ),
-        VCard(
-          color: AppColors.surfaceContainer,
-          radius: Rad.xl,
-          child: Row(children: [
-            IconCircle(Symbols.verified, size: 36, iconSize: 18, shadow: Shadows.tiny),
-            const SizedBox(width: Sp.sm),
-            Expanded(child: Text('VitalU schedules periodic health assessments by faculty, so your check-ins fit your academic calendar.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
-          ]),
-        ),
-        const SizedBox(height: Sp.xs),
-        PrimaryButton('Continue to Wellness Goals', icon: Symbols.arrow_forward, color: AppColors.tertiary, height: 52, loading: _busy, onTap: () => _continue()),
-        Center(child: TextLinkButton('Skip for now, fill later', onTap: () => _continue(skip: true))),
-        const _FooterNote('Your personal data is encrypted & private to you.'),
+          ListRow(
+            icon: Symbols.school_rounded,
+            color: AppColors.primary,
+            title: 'Faculty',
+            subtitle: _faculty,
+            value: _faculty == null ? 'Select' : null,
+            onTap: () async {
+              final v = await pickOption(context, 'Faculty', faculties, _faculty);
+              if (v != null) setState(() => _faculty = v);
+            },
+          ),
+          ListRow(
+            icon: Symbols.calendar_month_rounded,
+            color: AppColors.warning,
+            title: 'Academic year',
+            value: _year ?? 'Select',
+            onTap: () async {
+              final v = await pickOption(context, 'Academic year', academicYears, _year);
+              if (v != null) setState(() => _year = v);
+            },
+          ),
+        ]),
+        Text('Sex is used for body-metric ranges. Health assessments are scheduled by faculty, so check-ins follow your academic calendar.',
+            style: T.bodySm.c(AppColors.onSurfaceVariant)),
       ],
     );
   }
@@ -292,7 +211,7 @@ class RegistrationStep2 extends StatefulWidget {
 }
 
 class _RegistrationStep2State extends State<RegistrationStep2> {
-  late Set<String> _selected = {...?AppState.instance.profile?.conditions};
+  late final Set<String> _selected = {...?AppState.instance.profile?.conditions};
   bool _none = false;
   bool _busy = false;
 
@@ -332,84 +251,33 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: RegistrationHeader(onBack: () => goBack(context, '/register/1')),
-      spacing: Sp.md,
+      header: RegistrationHeader(title: 'Step 2 of 3', onBack: () => goBack(context, '/register/1')),
+      spacing: Sp.lg,
+      bottom: _Actions(label: 'Continue', busy: _busy, onContinue: () => _continue(), onSkip: () => _continue(skip: true), skipLabel: 'Skip this step'),
       children: [
-        const Padding(padding: EdgeInsets.only(top: Sp.sm), child: _StepProgress(step: 2, label: 'Health Background')),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Any health history we should know?', style: T.headlineLg),
-          const SizedBox(height: 4),
-          Text('Optional — you can skip and add this later at any time.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-        ]),
+        const _StepProgress(step: 2),
+        const _Intro('Any health history?', 'Optional. Select anything that applies to you or your family. You can change this later in your profile.'),
         VCard(
-          color: AppColors.surfaceContainerLow,
-          clip: true,
-          shadow: Shadows.tinted(AppColors.primary, opacity: 0.06, blur: 24, y: 8),
-          child: Stack(clipBehavior: Clip.none, children: [
-            Positioned(right: -36, bottom: -44, child: Glow(color: AppColors.primaryFixed.withValues(alpha: 0.4), size: 96)),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              IconCircle(Symbols.verified_user, size: 40, iconSize: 20, fg: AppColors.tertiary, fill: 1, shadow: Shadows.tiny),
-              const SizedBox(width: Sp.sm),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  TagPill('Private & Encrypted', icon: Symbols.lock, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixed),
-                  const SizedBox(height: 6),
-                  Text('VitalU uses this solely to tailor gentle preventative tips — never shared with lecturers or your faculty.',
-                      style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6)),
-                ]),
-              ),
-            ]),
+          color: AppColors.surfaceContainer,
+          padding: const EdgeInsets.all(14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Symbols.lock_rounded, size: 18, color: AppColors.onSurfaceVariant, fill: 1),
+            const SizedBox(width: 10),
+            Expanded(child: Text('VitalU uses this solely to tailor gentle preventative tips — never shared with lecturers or your faculty.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
           ]),
         ),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(children: [
-              Text('SELECT ANY THAT APPLY (OPTIONAL)', style: T.labelSm.c(AppColors.outline).bold.tracking(1)),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => setState(() {
-                  _selected.clear();
-                  _none = false;
-                }),
-                child: Text('Clear', style: T.labelSm.c(AppColors.primary)),
-              ),
-            ]),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final k in _keys) _chip(conditionByKey(k)!),
+          VChip(
+            'None of these',
+            icon: Symbols.block_rounded,
+            selected: _none,
+            selectedColor: AppColors.onSurfaceVariant,
+            onTap: () => setState(() {
+              _none = !_none;
+              if (_none) _selected.clear();
+            }),
           ),
-          const SizedBox(height: Sp.sm),
-          Wrap(spacing: 10, runSpacing: 10, children: [
-            for (final k in _keys) _chip(conditionByKey(k)!),
-            Pressable(
-              onTap: () => setState(() {
-                _none = !_none;
-                if (_none) _selected.clear();
-              }),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: _none ? AppColors.onSurface : AppColors.surfaceContainer,
-                  borderRadius: BorderRadius.circular(Rad.lg),
-                  boxShadow: Shadows.tiny,
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Symbols.do_not_disturb_on, size: 18, color: _none ? Colors.white : AppColors.onSurfaceVariant),
-                  const SizedBox(width: 8),
-                  Text('None of these apply to me', style: T.bodyMd.medium.c(_none ? Colors.white : AppColors.onSurfaceVariant)),
-                ]),
-              ),
-            ),
-          ]),
-        ]),
-        Row(children: [
-          Icon(Symbols.info, size: 16, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Expanded(child: Text('You can update or remove any of these details at any time in your Health Profile.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
-        ]),
-        Column(children: [
-          PrimaryButton('Continue to Measurements', icon: Symbols.arrow_forward, color: AppColors.tertiary, loading: _busy, onTap: () => _continue()),
-          TextLinkButton('Skip this step', onTap: () => _continue(skip: true)),
-          const _FooterNote('Encrypted in transit & at rest • Private to you'),
         ]),
       ],
     );
@@ -417,26 +285,13 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
 
   Widget _chip(Condition c) {
     final on = _selected.contains(c.key);
-    return Pressable(
+    return VChip(
+      c.label,
+      selected: on,
       onTap: () => setState(() {
         on ? _selected.remove(c.key) : _selected.add(c.key);
         if (!on) _none = false;
       }),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: on ? AppColors.tertiary : AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(Rad.lg),
-          boxShadow: on ? Shadows.tinted(AppColors.tertiary, opacity: 0.22, blur: 20, y: 8, spread: 0) : const [BoxShadow(color: Color(0x0A2D2B38), blurRadius: 14, offset: Offset(0, 4))],
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          IconCircle(c.icon, size: 32, iconSize: 18, bg: on ? Colors.white.withValues(alpha: 0.15) : AppColors.surfaceContainerLow, fg: on ? AppColors.onTertiary : (c.secondaryTint ? AppColors.secondary : AppColors.primary)),
-          const SizedBox(width: 10),
-          Text(c.label, style: T.bodyMd.c(on ? AppColors.onTertiary : AppColors.onSurface).w(on ? FontWeight.w600 : FontWeight.w500)),
-          if (on) ...[const SizedBox(width: 6), Icon(Symbols.check_circle, size: 18, fill: 1, color: AppColors.tertiaryFixed)],
-        ]),
-      ),
     );
   }
 }
@@ -445,6 +300,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
 // Step 3 — body measurements
 // ---------------------------------------------------------------------------
 
+/// Numeric entry with a unit switch.
 class MeasureField extends StatelessWidget {
   const MeasureField({super.key, required this.controller, required this.units, required this.unit, required this.onUnit, this.hint, this.accent});
   final TextEditingController controller;
@@ -454,45 +310,21 @@ class MeasureField extends StatelessWidget {
   final String? hint;
   final Color? accent;
   @override
-  Widget build(BuildContext context) {
-    final accent0 = accent ?? AppColors.tertiary;
-    return Row(children: [
-        Expanded(
-          child: Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: Sp.md),
-            decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
-            alignment: Alignment.centerLeft,
-            child: TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-              style: T.headlineSm,
-              decoration: InputDecoration(isDense: true, border: InputBorder.none, hintText: hint, hintStyle: T.headlineSm.c(AppColors.outlineVariant)),
-            ),
+  Widget build(BuildContext context) => Row(children: [
+        SizedBox(
+          width: 76,
+          child: TextField(
+            controller: controller,
+            textAlign: TextAlign.right,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+            style: T.bodyLg.tnum,
+            decoration: InputDecoration(isDense: true, hintText: hint ?? '—', contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
           ),
         ),
-        const SizedBox(width: Sp.sm),
-        Container(
-          height: 52,
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
-          child: Row(children: [
-            for (final u in units)
-              GestureDetector(
-                onTap: () => onUnit(u),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: u == unit ? accent0 : Colors.transparent, borderRadius: BorderRadius.circular(Rad.full)),
-                  child: Text(u, style: T.labelMd.c(u == unit ? Colors.white : AppColors.onSurfaceVariant)),
-                ),
-              ),
-          ]),
-        ),
+        const SizedBox(width: 8),
+        Segmented(options: units, value: unit, onChanged: onUnit),
       ]);
-  }
 }
 
 /// Unit-aware numeric measurement controller (stores metric).
@@ -540,10 +372,10 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
     String? err;
     if (!skip) {
       final h = _h.metric, w = _w.metric, wa = _waist.metric, hi = _hip.metric;
-      if (h != null && (h < 100 || h > 230)) err = 'Height looks unusual — please check it.';
-      if (w != null && (w < 25 || w > 250)) err = 'Weight looks unusual — please check it.';
-      if (wa != null && (wa < 40 || wa > 200)) err = 'Waist looks unusual — please check it.';
-      if (hi != null && (hi < 50 || hi > 200)) err = 'Hip looks unusual — please check it.';
+      if (h != null && (h < 100 || h > 230)) err = 'Height looks unusual. Please check it.';
+      if (w != null && (w < 25 || w > 250)) err = 'Weight looks unusual. Please check it.';
+      if (wa != null && (wa < 40 || wa > 200)) err = 'Waist looks unusual. Please check it.';
+      if (hi != null && (hi < 50 || hi > 200)) err = 'Hip looks unusual. Please check it.';
     }
     if (err != null) return toast(context, err, error: true);
     setState(() => _busy = true);
@@ -568,21 +400,17 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
     }
   }
 
-  Widget _card(String title, String sub, IconData icon, Measure m, {bool optional = false}) => VCard(
-        radius: Rad.md,
-        shadow: Shadows.card,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            IconCircle(icon, bg: AppColors.surfaceContainerLow, fg: AppColors.tertiary),
-            const SizedBox(width: Sp.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: T.headlineSm),
-                Text(sub, style: T.bodySm.c(optional ? AppColors.outline : AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-              ]),
-            ),
-          ]),
-          const SizedBox(height: Sp.sm),
+  Widget _row(String title, String? sub, IconData icon, Measure m) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 12),
+        child: Row(children: [
+          IconCircle(icon, size: 32, iconSize: 18, fg: AppColors.body, radius: 8, fill: 1),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: T.bodyLg),
+              if (sub != null) Text(sub, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
           MeasureField(controller: m.controller, units: [m.metricUnit, m.altUnit], unit: m.unit, onUnit: (u) => setState(() => m.switchTo(u))),
         ]),
       );
@@ -590,24 +418,17 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: RegistrationHeader(onBack: () => goBack(context, '/register/2')),
-      spacing: Sp.md,
+      header: RegistrationHeader(title: 'Step 3 of 3', onBack: () => goBack(context, '/register/2')),
+      spacing: Sp.lg,
+      bottom: _Actions(label: 'Finish setup', busy: _busy, onContinue: () => _finish(), onSkip: () => _finish(skip: true), skipLabel: "I'll add these later"),
       children: [
-        const _StepProgress(step: 3, label: 'Body Measurements', thin: true),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('A few numbers to personalize your tools', style: T.headlineMd.bold),
-          const SizedBox(height: 4),
-          Text("Don't know these? No problem, skip and add later.", style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-        ]),
-        _card('Height', 'For stride & metabolic rate', Symbols.height, _h),
-        _card('Weight', 'Helps baseline hydration targets', Symbols.monitor_weight, _w),
-        _card('Waist Circumference', 'Optional • Gentle estimate', Symbols.straighten, _waist, optional: true),
-        _card('Hip Circumference', 'Optional • Balances ratio calculations', Symbols.accessibility_new, _hip, optional: true),
-        const SizedBox(height: Sp.sm),
-        Column(children: [
-          PrimaryButton('Finish Setup', icon: Symbols.check, color: AppColors.tertiary, height: 54, loading: _busy, onTap: () => _finish()),
-          TextLinkButton("I'll add this later", onTap: () => _finish(skip: true)),
-          const _FooterNote('Private & encrypted • Only visible to you', icon: Symbols.verified_user),
+        const _StepProgress(step: 3),
+        const _Intro('A few numbers to personalize your tools', "Don't know these? No problem, skip and add later."),
+        ListGroup(dividerIndent: 60, children: [
+          _row('Height', null, Symbols.height_rounded, _h),
+          _row('Weight', null, Symbols.monitor_weight_rounded, _w),
+          _row('Waist', 'Optional', Symbols.straighten_rounded, _waist),
+          _row('Hip', 'Optional', Symbols.accessibility_new_rounded, _hip),
         ]),
       ],
     );
@@ -623,90 +444,32 @@ class RegistrationComplete extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = AppState.instance.profile?.firstName ?? 'there';
-    Widget tile(IconData icon, Color bg, Color fg, String t, String s) => Expanded(
-          child: VCard(
-            color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
-            padding: const EdgeInsets.all(12),
-            shadow: Shadows.soft,
-            child: Column(children: [
-              IconCircle(icon, bg: bg, fg: fg, fill: 1, shadow: Shadows.tiny),
-              const SizedBox(height: 8),
-              Text(t, style: T.labelMd, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 2),
-              Text(s, style: T.labelSm.c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-            ]),
-          ),
-        );
+    final name = AppState.instance.profile?.firstName;
     return VPage(
-      header: const BrandBackHeader(chip: 'All set'),
-      backgroundDecoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surface, AppColors.surfaceContainerLow, AppColors.surfaceContainer]),
-      ),
-      background: Colors.transparent,
-      spacing: Sp.md,
+      spacing: Sp.lg,
+      topPadding: Sp.xl,
+      bottom: PrimaryButton('Go to my dashboard', onTap: () => context.go('/home')),
       children: [
-        Center(
-          child: Pill(
-            color: AppColors.surfaceContainerLowest,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            shadow: Shadows.tiny,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              Text('PROFILE READY', style: T.labelSm.c(AppColors.tertiary).tracking(1)),
-            ]),
-          ),
-        ),
-        Center(
-          child: Stack(alignment: Alignment.center, children: [
-            Glow(color: AppColors.tertiaryFixedDim.withValues(alpha: 0.35), size: 200),
-            Container(
-              width: 224,
-              height: 224,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(56), boxShadow: const [BoxShadow(color: Color(0x3860DDA2), blurRadius: 28, offset: Offset(0, 16))]),
-              child: const AssetImg('registration_badge', radius: 56),
-            ),
-          ]),
-        ),
         Column(children: [
-          Text.rich(
-            TextSpan(children: [
-              const TextSpan(text: "You're All Set, "),
-              TextSpan(text: '$name!', style: TextStyle(color: AppColors.primary)),
-            ]),
-            textAlign: TextAlign.center,
-            style: T.headlineXlMobile,
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(color: AppColors.tint(AppColors.tertiary), shape: BoxShape.circle),
+            child: Icon(Symbols.check_rounded, size: 40, color: AppColors.tertiary, weight: 600),
           ),
-          const SizedBox(height: 6),
-          Text('Your personalized health space is ready.', style: T.bodyMd.c(AppColors.onSurfaceVariant).medium),
-          const SizedBox(height: 4),
-          Text('Gentle reminders and tools crafted for your university rhythm, at your own pace.', textAlign: TextAlign.center, style: T.bodySm.c(AppColors.outline)),
-        ]),
-        Column(children: [
-          Row(children: [
-            Text('YOUR SPACE INCLUDES', style: T.labelSm.c(AppColors.outline).tracking(1.6)),
-          ]),
+          const SizedBox(height: Sp.md),
+          Text(name == null ? "You're all set" : "You're all set, $name", textAlign: TextAlign.center, style: T.headlineXlMobile),
           const SizedBox(height: Sp.sm),
-          Row(children: [
-            tile(Symbols.vital_signs, AppColors.tertiaryFixed, AppColors.onTertiaryFixed, 'Health Tools', 'Vitals & habits'),
-            const SizedBox(width: Sp.xs),
-            tile(Symbols.local_dining, AppColors.secondaryFixed, AppColors.onSecondaryFixed, 'Nutrition Hub', 'Meals & water'),
-            const SizedBox(width: Sp.xs),
-            tile(Symbols.local_library, AppColors.primaryFixed, AppColors.onPrimaryFixed, 'Health Education', 'Campus tips'),
-          ]),
-          const SizedBox(height: Sp.xs),
-          Row(children: [
-            tile(Symbols.support_agent, AppColors.secondaryFixed, AppColors.onSecondaryFixed, 'Health Support', 'Help & experts'),
-            const SizedBox(width: Sp.xs),
-            tile(Symbols.bubble_chart, AppColors.tertiaryFixed, AppColors.onTertiaryFixed, 'My Progress', 'Trends & badges'),
-          ]),
+          Text('Your personalized health space is ready.', textAlign: TextAlign.center, style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+          const SizedBox(height: 2),
+          Text('Gentle reminders and tools crafted for your university rhythm, at your own pace.', textAlign: TextAlign.center, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
         ]),
-        PrimaryButton('Go to My Dashboard', icon: Symbols.arrow_forward, color: AppColors.tertiaryContainer, shadowColor: AppColors.tertiary, onTap: () => context.go('/home')),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Symbols.favorite, size: 16, fill: 1, color: AppColors.tertiary),
-          const SizedBox(width: 6),
-          Text('No streaks, no pressure. Just supportive daily care.', style: T.labelSm.c(AppColors.onSurfaceVariant.withValues(alpha: 0.8))),
+        ListGroup(header: 'Your space includes', children: [
+          ListRow(icon: Symbols.monitor_heart_rounded, color: AppColors.heart, title: 'Health Tools', subtitle: 'Vitals and daily habits', chevron: false),
+          ListRow(icon: Symbols.restaurant_rounded, color: AppColors.nutrition, title: 'Nutrition Hub', subtitle: 'Meals, diversity and budget', chevron: false),
+          ListRow(icon: Symbols.menu_book_rounded, color: AppColors.water, title: 'Health Education', subtitle: 'Short reads for campus life', chevron: false),
+          ListRow(icon: Symbols.support_agent_rounded, color: AppColors.primary, title: 'Health Support', subtitle: 'Professionals and emergency lines', chevron: false),
+          ListRow(icon: Symbols.insights_rounded, color: AppColors.mind, title: 'My Progress', subtitle: 'Trends and milestones', chevron: false),
         ]),
       ],
     );

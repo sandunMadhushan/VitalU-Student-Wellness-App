@@ -111,7 +111,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
     final a = _a!;
     SharePlus.instance.share(ShareParams(
       subject: a['title'],
-      text: '${a['title']}\n\n${_body['intro'] ?? a['subtitle'] ?? ''}\n\n— shared from VitalU Health Education Library',
+      text: '${a['title']}\n\n${_body['intro'] ?? a['subtitle'] ?? ''}\n\nShared from VitalU',
     ));
   }
 
@@ -119,30 +119,21 @@ class _ArticleScreenState extends State<ArticleScreen> {
   Widget build(BuildContext context) {
     final a = _a;
     return VPage(
-      header: const MainHeader('VitalU Health Education Library'),
-      nav: NavTab.library,
-      navVariantLibrary: true,
-      children: [
-        Row(children: [
-          CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLow, fg: AppColors.onSurface, onTap: () => goBack(context, '/library')),
-          const SizedBox(width: Sp.sm),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('HEALTH EDUCATION', style: T.labelSm.c(AppColors.onSurfaceVariant).tracking(0.8)),
-              Text('Study Season Sanctuary', style: T.labelMd),
-            ]),
+      header: TitleHeader('', onLeading: () => goBack(context, '/library'), actions: [
+        if (a != null) ...[
+          IconButton(tooltip: _speaking ? 'Stop reading' : 'Read aloud', icon: Icon(_speaking ? Symbols.stop_circle_rounded : Symbols.volume_up_rounded), onPressed: _toggleSpeak),
+          IconButton(
+            tooltip: _saved ? 'Remove from saved' : 'Save',
+            icon: Icon(Symbols.bookmark_rounded, fill: _saved ? 1 : 0, color: _saved ? AppColors.primary : null),
+            onPressed: _toggleSave,
           ),
-          if (a != null) ...[
-            CircleButton(_speaking ? Symbols.stop_circle : Symbols.volume_up,
-                size: 40, iconSize: 20, bg: AppColors.primaryFixed, fg: AppColors.primary, onTap: _toggleSpeak),
-            const SizedBox(width: 8),
-            CircleButton(Symbols.bookmark, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: _saved ? AppColors.secondary : AppColors.onSecondaryFixedVariant, onTap: _toggleSave)
-                .withFill(_saved),
-          ],
-        ]),
+          IconButton(tooltip: 'Share', icon: const Icon(Symbols.share_rounded), onPressed: _share),
+        ],
+      ]),
+      children: [
         if (_loading) const Loading(),
         if (!_loading && a == null)
-          EmptyState(icon: Symbols.menu_book, title: 'Article not found', text: 'It may have been moved or updated.', action: SoftButton('Back to library', expand: false, onTap: () => context.go('/library'))),
+          EmptyState(icon: Symbols.menu_book_rounded, title: 'Article not found', text: 'It may have been moved or updated.', action: SoftButton('Back to library', expand: false, onTap: () => context.go('/library'))),
         if (a != null) ..._content(a),
       ],
     );
@@ -153,142 +144,99 @@ class _ArticleScreenState extends State<ArticleScreen> {
     final hl = b['highlight'] as Map?;
     final tips = List<Map>.from(b['tips'] as List? ?? []);
     final cta = b['cta'] as Map?;
+    final (icon, c) = articleStyle(a['category']);
+    final body = T.bodyLg.c(AppColors.onSurface).lh(1.55);
     return [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(Rad.md),
-        child: SizedBox(
-          height: 224,
-          child: Stack(fit: StackFit.expand, children: [
-            AssetImg(articleImage(a)),
-            Positioned(
-              top: 12,
-              left: 12,
-              right: 12,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Pill(
-                  color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
-                  shadow: Shadows.tiny,
-                  child: Text('🌿 Reviewed by ${a['author'] ?? 'Campus Wellness Team'}', style: T.labelSm, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-            ),
-          ]),
-        ),
-      ),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          Pill(color: AppColors.tertiaryFixed, child: Text('${a['emoji'] ?? '📘'} ${a['category_label']}', style: T.labelSm.c(AppColors.onTertiaryFixedVariant))),
-          Pill(color: AppColors.surfaceContainerHigh, child: Text('⏱️ ${a['read_minutes']} min read', style: T.labelSm.c(AppColors.onSurfaceVariant))),
-          if (a['badge'] != null) Pill(color: AppColors.primaryFixed, child: Text(a['badge'], style: T.labelSm.c(AppColors.onPrimaryFixedVariant))),
+        Row(children: [
+          Icon(icon, size: 18, color: c, fill: 1),
+          const SizedBox(width: 6),
+          Flexible(child: Text(a['category_label'] ?? '', style: T.labelMd.semi.c(c))),
         ]),
-        const SizedBox(height: Sp.sm),
-        Text(a['title'], style: T.headlineMd.lh(1.3)),
+        const SizedBox(height: 10),
+        Text(a['title'], style: T.headlineLg.lh(1.2)),
+        const SizedBox(height: 10),
+        Text(
+          [
+            '${a['read_minutes']} min read',
+            if (a['author'] != null) 'Reviewed by ${a['author']}',
+          ].join(' · '),
+          style: T.bodySm.c(AppColors.onSurfaceVariant),
+        ),
         if (b['intro'] != null) ...[
-          const SizedBox(height: Sp.sm),
-          Text(b['intro'], style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.7)),
+          const SizedBox(height: Sp.lg),
+          Text(b['intro'], style: body),
         ],
       ]),
       if (hl != null)
         VCard(
-          color: AppColors.tertiaryFixed.withValues(alpha: 0.35),
-          shadow: Shadows.tiny,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              IconCircle(iconByName(hl['icon']), size: 36, iconSize: 20, fg: AppColors.tertiary),
-              const SizedBox(width: Sp.sm),
-              Expanded(child: Text(hl['title'] ?? '', style: T.headlineSm)),
-            ]),
-            const SizedBox(height: Sp.sm),
-            Text(hl['text'] ?? '', style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6)),
+          color: AppColors.tint(c),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(iconByName(hl['icon']), size: 22, color: c, fill: 1),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(hl['title'] ?? '', style: T.headlineSm),
+                const SizedBox(height: 4),
+                Text(hl['text'] ?? '', style: T.bodyMd.lh(1.5)),
+              ]),
+            ),
           ]),
         ),
       if (tips.isNotEmpty)
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            Icon(Symbols.spa, size: 22, color: AppColors.primary),
-            const SizedBox(width: 8),
-            Expanded(child: Text(b['tips_title'] ?? 'Gentle tips', style: T.headlineSm)),
-          ]),
-          const SizedBox(height: Sp.sm),
-          for (final t in tips)
+          Text(b['tips_title'] ?? 'What you can do', style: T.headlineMd),
+          const SizedBox(height: Sp.md),
+          for (int i = 0; i < tips.length; i++)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: VCard(
-                color: AppColors.surfaceContainerLow,
-                padding: const EdgeInsets.all(14),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(t['emoji'] ?? '•', style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: Sp.sm),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(t['title'] ?? '', style: T.labelMd),
-                      const SizedBox(height: 2),
-                      Text(t['text'] ?? '', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                    ]),
-                  ),
-                ]),
-              ),
+              padding: const EdgeInsets.only(bottom: Sp.md),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: AppColors.tint(c), shape: BoxShape.circle),
+                  child: Text('${i + 1}', style: T.labelMd.semi.c(c)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(tips[i]['title'] ?? '', style: T.labelLg.semi),
+                    const SizedBox(height: 2),
+                    Text(tips[i]['text'] ?? '', style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.5)),
+                  ]),
+                ),
+              ]),
             ),
         ]),
       if (b['quote'] != null)
-        VCard(
-          color: AppColors.surfaceContainer,
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Symbols.eco, size: 20, color: AppColors.primary),
-            const SizedBox(width: Sp.sm),
-            Expanded(child: Text('"${b['quote']}"', style: T.bodySm.c(AppColors.onSurfaceVariant).copyWith(fontStyle: FontStyle.italic).lh(1.6))),
-          ]),
+        Container(
+          padding: const EdgeInsets.only(left: 14),
+          decoration: BoxDecoration(border: Border(left: BorderSide(color: c, width: 3))),
+          child: Text(b['quote'], style: T.bodyLg.c(AppColors.onSurfaceVariant).lh(1.5).copyWith(fontStyle: FontStyle.italic)),
         ),
       if (cta != null)
         VCard(
-          shadow: Shadows.card,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              IconCircle(Symbols.favorite, size: 44, bg: AppColors.secondaryFixed, fg: AppColors.secondary, radius: 14),
-              const SizedBox(width: Sp.sm),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('CURIOUS ABOUT YOUR NUMBERS?', style: T.labelSm.c(AppColors.secondary).tracking(0.6)),
-                  Text(cta['title'] ?? '', style: T.headlineSm.lh(1.3)),
-                  const SizedBox(height: 2),
-                  Text(cta['text'] ?? '', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                ]),
-              ),
-            ]),
+            Text(cta['title'] ?? '', style: T.headlineSm),
+            const SizedBox(height: 4),
+            Text(cta['text'] ?? '', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
-            PrimaryButton(cta['label'] ?? 'Open', icon: Symbols.arrow_forward, onTap: cta['route'] == null ? null : () => context.push(cta['route'])),
+            SoftButton(cta['label'] ?? 'Open', trailingIcon: Symbols.arrow_forward_rounded, onTap: cta['route'] == null ? null : () => context.push(cta['route'])),
           ]),
         ),
-      Column(children: [
-        Text('Was this mindful guide helpful?', style: T.labelMd.c(AppColors.onSurfaceVariant)),
-        const SizedBox(height: Sp.sm),
-        Row(children: [
-          Expanded(
-            child: SoftButton('Helpful ($_helpfulCount)',
-                icon: Symbols.favorite,
-                height: 48,
-                color: _helpful ? AppColors.secondaryFixed : AppColors.surfaceContainerLow,
-                iconColor: AppColors.secondary,
-                style: T.labelMd,
-                onTap: _toggleHelpful),
-          ),
-          const SizedBox(width: Sp.sm),
-          Expanded(child: SoftButton('Share with peer', icon: Symbols.send, height: 48, iconColor: AppColors.primary, style: T.labelMd, onTap: _share)),
-        ]),
+      const Divider(height: Sp.lg),
+      Row(children: [
+        Expanded(child: Text('Was this helpful?', style: T.bodyLg)),
+        _helpful
+            ? FilledButton.tonalIcon(style: FilledButton.styleFrom(minimumSize: const Size(0, 40)), onPressed: _toggleHelpful, icon: const Icon(Symbols.thumb_up_rounded, fill: 1, size: 18), label: Text('Yes · $_helpfulCount'))
+            : OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+                onPressed: _toggleHelpful,
+                icon: const Icon(Symbols.thumb_up_rounded, size: 18),
+                label: Text(_helpfulCount > 0 ? 'Yes · $_helpfulCount' : 'Yes'),
+              ),
       ]),
     ];
   }
-}
-
-extension on CircleButton {
-  /// CircleButton has no fill parameter; wrap to render a filled icon when active.
-  Widget withFill(bool filled) => filled
-      ? Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: GestureDetector(onTap: onTap, child: Icon(icon, size: iconSize, color: fg, fill: 1)),
-        )
-      : this;
 }

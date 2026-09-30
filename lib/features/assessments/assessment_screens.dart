@@ -50,16 +50,16 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
     final w = _next;
     if (w == null) return;
     await Repo.schedule(
-      title: 'Health Assessment Window',
-      body: 'Your ${w['term']} assessment is now open. Take 5 gentle minutes whenever you feel ready.',
+      title: 'Health assessment open',
+      body: 'Your ${w['term']} assessment is now open. It takes about 5 minutes.',
       category: 'milestone',
-      label: 'Campus Milestone',
+      label: 'Assessment',
       icon: 'event_upcoming',
       route: '/assessments/run',
       at: DateTime.parse(w['opens_at']).toLocal(),
     );
     setState(() => _reminded = true);
-    if (mounted) toast(context, "Reminder set — we'll nudge you when it opens.");
+    if (mounted) toast(context, "Reminder set. We'll let you know when it opens.");
   }
 
   @override
@@ -68,165 +68,63 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
     final inProgress = _open == null ? null : _history.where((h) => h['window_id'] == _open!['id'] && h['status'] != 'completed').firstOrNull;
     final openDone = _open != null && _history.any((h) => h['window_id'] == _open!['id'] && h['status'] == 'completed');
     final target = (_open != null && !openDone) ? _open : _next;
+    final isOpen = target != null && target == _open;
 
     return VPage(
-      header: const MainHeader('Home'),
-      nav: NavTab.home,
+      header: const TitleHeader('Health assessments'),
       onRefresh: _load,
       children: _loading
           ? [const Loading()]
           : [
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(children: [
-                  CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerHigh, fg: AppColors.onSurface, shadow: Shadows.tiny, onTap: () => goBack(context)),
-                  const Spacer(),
-                  TagPill('Protected & Private', icon: Symbols.verified_user, fill: 1, fg: AppColors.tertiary),
-                ]),
-              ),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Health Assessments', style: T.headlineLg),
-                const SizedBox(height: 2),
-                Text('Periodic student wellness reviews & check-in milestones', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-              ]),
+              Text('A short check-in about every six months covering body measurements, eating, activity, sleep and stress. It takes about 5 minutes.',
+                  style: T.bodyLg.c(AppColors.onSurfaceVariant)),
               VCard(
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainer, AppColors.surfaceContainerHigh]),
-                shadow: Shadows.tiny,
-                child: Row(children: [
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), boxShadow: Shadows.soft),
-                    child: const AssetImg('wellness_journal', radius: 16),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        Icon(Symbols.eco, size: 16, color: AppColors.tertiary),
-                        const SizedBox(width: 4),
-                        Flexible(child: Text('Gentle Periodic Check-ins', style: T.labelMd.c(AppColors.tertiary))),
-                      ]),
-                      const SizedBox(height: 4),
-                      Text('Holistic reviews conducted about every six months to keep you thriving throughout your university journey.',
-                          style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.35)),
-                    ]),
-                  ),
-                ]),
-              ),
-              VCard(
-                padding: const EdgeInsets.all(Sp.lg),
-                shadow: Shadows.tiny,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Row(children: [
-                    IconCircle(Symbols.calendar_today, size: 32, iconSize: 18, bg: AppColors.surfaceContainer),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(target == _open && _open != null ? 'Assessment Window Open' : 'Next Scheduled Assessment', style: T.labelMd.c(AppColors.onSurfaceVariant))),
-                    TagPill(
-                      target == null ? 'To be announced' : (target == _open ? (inProgress != null ? 'In progress' : 'Open now') : 'Not yet open'),
-                      bg: target == _open && _open != null ? AppColors.tertiaryFixed : AppColors.surfaceContainerHigh,
-                      fg: target == _open && _open != null ? AppColors.onTertiaryFixedVariant : AppColors.onSurfaceVariant,
-                    ),
+                    Expanded(child: Text(isOpen ? 'Open now' : 'Next assessment', style: T.labelMd.c(isOpen ? AppColors.tertiary : AppColors.onSurfaceVariant))),
+                    if (isOpen && inProgress != null) TagPill('In progress', bg: AppColors.tint(AppColors.primary), fg: AppColors.primary),
                   ]),
-                  const SizedBox(height: 16),
-                  Text(target == null ? 'Coming soon' : DateFormat('MMMM yyyy').format(DateTime.parse(target['opens_at']).toLocal()), style: T.headlineXlMobile),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+                  Text(target == null ? 'To be announced' : DateFormat('MMMM yyyy').format(DateTime.parse(target['opens_at']).toLocal()), style: T.headlineLg),
+                  const SizedBox(height: 6),
                   Text(
                     target == null
-                        ? 'Your university will announce the next assessment window. You will get a gentle reminder.'
-                        : target == _open
-                            ? 'Window closes ${DateFormat('d MMMM').format(DateTime.parse(target['closes_at']).toLocal())}. A gentle 5-minute self-reflection — no preparation needed.'
-                            : 'Your assessment window opens automatically on ${DateFormat('d MMMM').format(DateTime.parse(target['opens_at']).toLocal())}. No preparation needed — just a gentle 5-minute self-reflection.',
-                    style: T.bodySm.c(AppColors.onSurfaceVariant),
+                        ? 'Your university will announce the next window. You will get a reminder.'
+                        : isOpen
+                            ? 'Closes ${DateFormat('d MMMM').format(DateTime.parse(target['closes_at']).toLocal())}. No preparation needed.'
+                            : 'Opens ${DateFormat('d MMMM').format(DateTime.parse(target['opens_at']).toLocal())}. No preparation needed.',
+                    style: T.bodyMd.c(AppColors.onSurfaceVariant),
                   ),
-                  const SizedBox(height: 16),
-                  if (target != null && target == _open)
-                    PrimaryButton(inProgress != null ? 'Continue Assessment' : 'Start Assessment', icon: Symbols.arrow_forward, height: 48, onTap: () async {
+                  const SizedBox(height: Sp.md),
+                  if (isOpen)
+                    PrimaryButton(inProgress != null ? 'Continue' : 'Start assessment', onTap: () async {
                       await context.push('/assessments/run');
                       _load();
                     })
                   else
                     SoftButton(
-                      _reminded ? 'Reminder Set' : 'Remind Me When Open',
-                      icon: _reminded ? Symbols.notifications_active : Symbols.notifications,
-                      iconColor: AppColors.primary,
-                      height: 48,
-                      style: T.labelMd,
+                      _reminded ? 'Reminder set' : 'Remind me when it opens',
+                      icon: _reminded ? Symbols.notifications_active_rounded : Symbols.notifications_rounded,
                       onTap: target == null || _reminded ? null : _remind,
                     ),
                 ]),
               ),
-              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(children: [
-                    Expanded(child: Text('Your Assessment History', style: T.headlineSm)),
-                    TagPill('${completed.length} Completed', bg: AppColors.surfaceContainerHighest),
-                  ]),
-                ),
-                const SizedBox(height: 12),
-                if (completed.isEmpty)
-                  const EmptyState(icon: Symbols.history_edu, title: 'No completed assessments yet', text: 'Your periodic check-ins will appear here, so you can see changes over time.')
-                else
+              if (completed.isEmpty)
+                const EmptyState(icon: Symbols.history_rounded, title: 'No completed assessments yet', text: 'Completed check-ins appear here so you can see changes over time.')
+              else
+                ListGroup(header: 'History', children: [
                   for (final h in completed)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: VCard(
-                        shadow: Shadows.tiny,
-                        onTap: () => showAssessmentSummary(context, h),
-                        child: Row(children: [
-                          IconCircle(Symbols.check_circle, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.tertiary, fill: 1),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(h['title'] ?? 'Health Assessment', style: T.labelLg, overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 2),
-                              Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: 4, children: [
-                                Text(DateFormat('MMM d, yyyy').format(DateTime.parse(h['completed_at']).toLocal()), style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                                Container(width: 4, height: 4, decoration: BoxDecoration(color: AppColors.outlineVariant, shape: BoxShape.circle)),
-                                Pill(color: AppColors.surfaceContainerLow, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), child: Text(h['result_label'] ?? 'Recorded', style: T.labelSm.c(AppColors.tertiary))),
-                              ]),
-                            ]),
-                          ),
-                          Icon(Symbols.chevron_right, color: AppColors.outlineVariant, size: 20),
-                        ]),
-                      ),
+                    ListRow(
+                      icon: Symbols.assignment_turned_in_rounded,
+                      color: AppColors.tertiary,
+                      title: h['title'] ?? 'Health assessment',
+                      subtitle: [DateFormat('d MMM yyyy').format(DateTime.parse(h['completed_at']).toLocal()), if (h['result_label'] != null) h['result_label']].join(' · '),
+                      onTap: () => showAssessmentSummary(context, h),
                     ),
-              ]),
-              VCard(
-                color: AppColors.surfaceContainerHigh,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    IconCircle(Symbols.favorite, size: 32, iconSize: 18, fg: AppColors.secondary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Need guidance right now?', style: T.labelLg),
-                        const SizedBox(height: 4),
-                        Text("You don't have to wait for an official milestone. You can consult campus health advisors or use daily tools whenever you need a boost.",
-                            style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                      ]),
-                    ),
-                  ]),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Pressable(
-                      onTap: () => context.go('/tools'),
-                      child: Pill(
-                        color: AppColors.surfaceContainerLowest,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shadow: Shadows.tiny,
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Text('Explore Health Tools', style: T.labelMd.c(AppColors.primary)),
-                          const SizedBox(width: 6),
-                          Icon(Symbols.arrow_forward, size: 16, color: AppColors.primary),
-                        ]),
-                      ),
-                    ),
-                  ),
                 ]),
-              ),
+              ListGroup(children: [
+                ListRow(icon: Symbols.health_and_safety_rounded, color: AppColors.primary, title: 'Health tools', subtitle: 'Check in any time, no need to wait for a window', onTap: () => context.go('/tools')),
+              ]),
             ],
     );
   }
@@ -234,37 +132,28 @@ class _AssessmentsStatusScreenState extends State<AssessmentsStatusScreen> {
 
 Future<void> showAssessmentSummary(BuildContext context, Rec a) {
   final s = Map<String, dynamic>.from(a['scores'] ?? {});
-  Widget line(String k, String v, IconData icon) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: VCard(
-          color: AppColors.surfaceContainerLow,
-          radius: Rad.base,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(children: [
-            Icon(icon, size: 20, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(child: Text(k, style: T.bodyMd)),
-            Text(v, style: T.labelLg),
-          ]),
-        ),
-      );
   String stressLabel(num v) => v <= 6 ? 'Low' : (v <= 10 ? 'Moderate' : 'High');
   return showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(a['title'] ?? 'Assessment Summary', style: T.headlineMd),
+        Text(a['title'] ?? 'Assessment summary', style: T.headlineMd),
         const SizedBox(height: 4),
-        Text('${a['result_label'] ?? ''} • ${a['completed_at'] == null ? '' : DateFormat('d MMM yyyy').format(DateTime.parse(a['completed_at']).toLocal())}',
+        Text(
+            [
+              if (a['result_label'] != null) a['result_label'],
+              if (a['completed_at'] != null) DateFormat('d MMM yyyy').format(DateTime.parse(a['completed_at']).toLocal()),
+            ].join(' · '),
             style: T.bodySm.c(AppColors.onSurfaceVariant)),
         const SizedBox(height: Sp.md),
-        if (s['bmi'] != null) line('BMI', '${s['bmi']}', Symbols.scale),
-        if (s['whr'] != null) line('Waist-to-hip ratio', '${s['whr']}', Symbols.straighten),
-        if (s['sbp'] != null) line('Systolic blood pressure', '${(s['sbp'] as num).round()} mmHg', Symbols.monitor_heart),
-        line('Nutrition habits', '${s['diet_score'] ?? 0} / 10', Symbols.restaurant),
-        line('Active days (last week)', '${s['activity_days'] ?? 0}', Symbols.directions_walk),
-        line('Typical sleep', '${s['sleep_hours'] ?? '-'} h', Symbols.bedtime),
-        line('Perceived stress (PSS-4)', '${s['stress'] ?? 0} / 16 • ${stressLabel((s['stress'] ?? 0) as num)}', Symbols.psychology),
-        const SizedBox(height: Sp.sm),
-        Text('This summary is for your own reflection and is not a diagnosis. If anything worries you, a campus health professional can help.',
-            style: T.bodySm.c(AppColors.outline)),
+        ListGroup(children: [
+          if (s['bmi'] != null) ListRow(icon: Symbols.monitor_weight_rounded, color: AppColors.body, title: 'BMI', value: '${s['bmi']}', chevron: false),
+          if (s['whr'] != null) ListRow(icon: Symbols.straighten_rounded, color: AppColors.body, title: 'Waist-to-hip ratio', value: '${s['whr']}', chevron: false),
+          if (s['sbp'] != null) ListRow(icon: Symbols.monitor_heart_rounded, color: AppColors.heart, title: 'Systolic pressure', value: '${(s['sbp'] as num).round()} mmHg', chevron: false),
+          ListRow(icon: Symbols.restaurant_rounded, color: AppColors.nutrition, title: 'Eating habits', value: '${s['diet_score'] ?? 0} / 10', chevron: false),
+          ListRow(icon: Symbols.directions_walk_rounded, color: AppColors.activity, title: 'Active days last week', value: '${s['activity_days'] ?? 0}', chevron: false),
+          ListRow(icon: Symbols.bedtime_rounded, color: AppColors.sleep, title: 'Typical sleep', value: '${s['sleep_hours'] ?? '-'} h', chevron: false),
+          ListRow(icon: Symbols.psychology_rounded, color: AppColors.mind, title: 'Stress (PSS-4)', value: '${s['stress'] ?? 0} / 16, ${stressLabel((s['stress'] ?? 0) as num).toLowerCase()}', chevron: false),
+        ]),
+        const SizedBox(height: Sp.md),
+        Text('For your own reflection, not a diagnosis. If anything worries you, a university health professional can help.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
       ]));
 }
 
@@ -396,197 +285,112 @@ class _AssessmentRunScreenState extends State<AssessmentRunScreen> {
   Widget build(BuildContext context) {
     if (_loading || _error != null) {
       return VPage(
-        header: TitleHeader('Health Assessment', close: true, onLeading: () => goBack(context)),
+        header: TitleHeader('Health assessment', close: true, onLeading: () => goBack(context)),
         children: [
-          if (_loading) const Loading() else EmptyState(icon: Symbols.event_busy, title: 'Assessment not available', text: _error, action: SoftButton('Back', onTap: () => goBack(context))),
+          if (_loading) const Loading() else EmptyState(icon: Symbols.event_busy_rounded, title: 'Assessment not available', text: _error, action: SoftButton('Back', expand: false, onTap: () => goBack(context))),
         ],
       );
     }
     final section = assessmentSections[_q.section];
-    final remaining = assessmentQuestions.length - _index;
+    final total = assessmentQuestions.length;
+    final remaining = total - _index;
     final mins = (remaining * 15 / 60).ceil();
+    final last = _index == total - 1;
 
     return VPage(
-      header: TitleHeader(section.title, close: true, upper: true, filledButton: true, onLeading: _saveAndExit),
-      backgroundDecoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surface, AppColors.surfaceContainerLow, AppColors.primaryFixed.withValues(alpha: 0.2)]),
-      ),
-      background: Colors.transparent,
+      header: TitleHeader(section.title, close: true, onLeading: _saveAndExit),
+      bottom: Row(children: [
+        if (_index > 0) ...[
+          IconButton.outlined(tooltip: 'Previous question', style: IconButton.styleFrom(minimumSize: const Size(52, 52)), icon: Icon(backIcon(context)), onPressed: _saving ? null : _back),
+          const SizedBox(width: Sp.sm),
+        ],
+        Expanded(child: PrimaryButton(last ? 'Submit' : 'Next', loading: _saving, onTap: _canNext ? _next : null)),
+      ]),
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: Sp.sm),
-          child: Row(children: [
-            TagPill('Confidential', icon: Symbols.lock, fill: 1, iconColor: AppColors.primary),
-            const Spacer(),
-            TagPill('~$mins min${mins == 1 ? '' : 's'} remaining', icon: Symbols.schedule, bg: AppColors.surfaceContainerHigh),
+        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(child: Text('Question ${_index + 1} of $total', style: T.labelMd.c(AppColors.onSurfaceVariant))),
+            Text('About $mins min left', style: T.labelMd.c(AppColors.onSurfaceVariant)),
           ]),
-        ),
-        VCard(
-          padding: const EdgeInsets.all(Sp.sm),
-          shadow: Shadows.tiny,
-          child: Column(children: [
-            Row(children: [
-              Text('Section ${_q.section + 1} of ${assessmentSections.length}', style: T.labelSm.tracking(0.4)),
-              const Spacer(),
-              Text(section.title, style: T.labelSm.c(AppColors.primary)),
-            ]),
-            const SizedBox(height: 8),
-            Row(children: [
-              for (int i = 0; i < assessmentSections.length; i++) ...[
-                if (i > 0) const SizedBox(width: 6),
-                Expanded(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: i < _q.section ? AppColors.primary : (i == _q.section ? AppColors.primaryContainer : AppColors.surfaceVariant),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: i == _q.section ? const [BoxShadow(color: Color(0x807459F7), blurRadius: 8)] : null,
-                    ),
-                  ),
-                ),
-              ]
-            ]),
-          ]),
-        ),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: _questionCard(section, key: ValueKey(_index)),
-        ),
-        Container(
-          padding: const EdgeInsets.all(Sp.sm),
-          decoration: BoxDecoration(color: AppColors.surfaceContainer.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(Rad.lg)),
-          child: Row(children: [
-            Icon(Symbols.verified_user, size: 18, color: AppColors.onSurfaceVariant),
-            const SizedBox(width: 6),
-            Expanded(child: Text('Your responses are confidential. Only anonymised, grouped results are shared with the university — and only with your consent.', style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.3))),
-          ]),
-        ),
-        Column(children: [
-          PrimaryButton(_index == assessmentQuestions.length - 1 ? 'Submit Assessment' : 'Next', icon: Symbols.arrow_forward, height: 52, loading: _saving, onTap: _canNext ? _next : null),
-          if (_index > 0) TextLinkButton('Back to previous question', leading: Symbols.arrow_back, onTap: _back),
+          const SizedBox(height: 8),
+          Bar(value: (_index + 1) / total, color: AppColors.primary),
         ]),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: KeyedSubtree(key: ValueKey(_index), child: _question(section)),
+        ),
+        const PrivacyNote('Your answers are confidential. The university only sees anonymised, grouped results, and only with your consent.'),
       ],
     );
   }
 
-  Widget _questionCard(ASection section, {Key? key}) {
-    return VCard(
-      key: key,
-      padding: const EdgeInsets.all(Sp.lg),
-      clip: true,
-      shadow: Shadows.card,
-      child: Stack(clipBehavior: Clip.none, children: [
-        Positioned(top: -76, right: -76, child: Glow(color: AppColors.primaryFixed.withValues(alpha: 0.4), size: 160)),
-        Positioned(bottom: -68, left: -68, child: Glow(color: AppColors.secondaryFixed.withValues(alpha: 0.3), size: 144)),
-        Column(children: [
-          Stack(clipBehavior: Clip.none, children: [
-            Container(
-              width: 128,
-              height: 128,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.lg)),
-              child: AssetImg(section.image, radius: Rad.base),
-            ),
-            Positioned(
-              bottom: -8,
-              right: -4,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, shape: BoxShape.circle, boxShadow: Shadows.tiny),
-                child: Icon(section.icon, size: 18, color: AppColors.tertiary, fill: 1),
-              ),
-            ),
-          ]),
-          const SizedBox(height: Sp.sm + 4),
-          Pill(
-            color: AppColors.primaryFixed,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(_q.categoryIcon, size: 14, color: AppColors.onPrimaryFixedVariant),
-              const SizedBox(width: 6),
-              Flexible(child: Text(_q.category.toUpperCase(), style: T.labelSm.c(AppColors.onPrimaryFixedVariant).tracking(1), overflow: TextOverflow.ellipsis)),
-            ]),
-          ),
-          const SizedBox(height: Sp.xs + 2),
-          Text(_q.text, style: T.headlineSm, textAlign: TextAlign.center),
-          const SizedBox(height: Sp.xs),
-          Text(_q.help, style: T.bodySm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
-          const SizedBox(height: Sp.md),
-          if (_q.type == AType.choice)
-            for (final o in _q.options) Padding(padding: const EdgeInsets.only(bottom: Sp.xs), child: _option(o))
-          else
-            _numberInput(),
+  Widget _question(ASection section) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Icon(_q.categoryIcon, size: 18, color: AppColors.primary, fill: 1),
+          const SizedBox(width: 6),
+          Flexible(child: Text(_q.category, style: T.labelMd.semi.c(AppColors.primary))),
         ]),
-      ]),
-    );
-  }
+        const SizedBox(height: 8),
+        Text(_q.text, style: T.headlineMd.lh(1.25)),
+        if (_q.help.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(_q.help, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        ],
+        const SizedBox(height: Sp.lg),
+        if (_q.type == AType.choice) ListGroup(dividerIndent: 16, children: [for (final o in _q.options) _option(o)]) else _numberInput(),
+      ]);
 
   Widget _option(AOption o) {
     final on = _answers[_q.id] == o.value;
-    return Pressable(
-      scale: 0.99,
+    return InkWell(
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() => _answers[_q.id] = o.value);
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        padding: const EdgeInsets.all(Sp.sm),
-        decoration: BoxDecoration(
-          color: on ? AppColors.primaryFixed.withValues(alpha: 0.5) : AppColors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(Rad.base),
-          boxShadow: on ? Shadows.tiny : null,
-        ),
+      child: Container(
+        color: on ? AppColors.tint(AppColors.primary) : null,
+        padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 14),
         child: Row(children: [
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(o.title, style: T.labelLg.c(on ? AppColors.primary : AppColors.onSurface)),
-              if (o.subtitle != null) Text(o.subtitle!, style: T.bodySm.c(on ? AppColors.onSurface : AppColors.onSurfaceVariant)),
+              Text(o.title, style: T.bodyLg.w(on ? FontWeight.w600 : FontWeight.w400)),
+              if (o.subtitle != null) Text(o.subtitle!, style: T.bodySm.c(AppColors.onSurfaceVariant)),
             ]),
           ),
-          const SizedBox(width: Sp.sm),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(color: on ? AppColors.primary : AppColors.surfaceContainerHighest, shape: BoxShape.circle),
-            child: on ? Icon(Symbols.check, size: 16, color: AppColors.onPrimary) : null,
-          ),
+          const SizedBox(width: 12),
+          Icon(on ? Symbols.radio_button_checked_rounded : Symbols.radio_button_unchecked_rounded, size: 22, color: on ? AppColors.primary : AppColors.outline),
         ]),
       ),
     );
   }
 
-  Widget _numberInput() => Column(children: [
-        Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: Sp.md),
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.full)),
-          child: Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _numCtrl,
-                onChanged: (_) => setState(() {}),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                style: T.headlineMd,
-                decoration: InputDecoration(border: InputBorder.none, hintText: 'Enter value', hintStyle: T.headlineSm.c(AppColors.outlineVariant)),
-              ),
-            ),
-            Text(_q.unit ?? '', style: T.labelLg.c(AppColors.primary)),
-          ]),
-        ),
-        if (_numCtrl.text.isNotEmpty && !_canNext)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text('Please enter a value between ${_q.min?.round()} and ${_q.max?.round()} ${_q.unit}.', style: T.bodySm.c(AppColors.error)),
+  Widget _numberInput() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        TextField(
+          controller: _numCtrl,
+          autofocus: false,
+          onChanged: (_) => setState(() {}),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+          style: T.metric(28),
+          decoration: InputDecoration(
+            hintText: 'Enter value',
+            hintStyle: T.bodyLg.c(AppColors.outline),
+            suffixText: _q.unit,
+            suffixStyle: T.bodyLg.c(AppColors.onSurfaceVariant),
+            errorText: _numCtrl.text.isNotEmpty && !_canNext ? 'Enter a value between ${_q.min?.round()} and ${_q.max?.round()} ${_q.unit ?? ''}'.trim() : null,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
-        if (_q.optional)
-          TextLinkButton("I don't know — skip", onTap: () {
-            _numCtrl.clear();
-            _next();
-          }),
+        ),
+        if (_q.optional) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextLinkButton("I don't know, skip", onTap: () {
+              _numCtrl.clear();
+              _next();
+            }),
+          ),
+        ],
       ]);
 }
 
@@ -601,94 +405,32 @@ class AssessmentCompleteScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = assessment?['completed_at'] == null ? DateTime.now() : DateTime.parse(assessment!['completed_at']).toLocal();
-    Widget callout(IconData icon, Color bg, Color fg, String t, String s) => Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.base), boxShadow: Shadows.tiny),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconCircle(icon, size: 32, iconSize: 18, bg: bg, fg: fg),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(t, style: T.labelMd),
-                Text(s, style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis),
-              ]),
-            ),
-          ]),
-        );
-
     return VPage(
-      header: TitleHeader('Assessment Milestone Confirmation', close: true, onLeading: () => context.go('/home')),
-      spacing: Sp.md,
+      header: TitleHeader('', close: true, onLeading: () => context.go('/home')),
+      bottom: PrimaryButton('Done', onTap: () => context.go('/home')),
       children: [
-        Center(child: TagPill('Confidential', icon: Symbols.lock, fill: 1, iconColor: AppColors.primary, upper: true, bg: AppColors.surfaceContainer)),
-        SizedBox(
-          height: 220,
-          child: Stack(alignment: Alignment.center, children: [
-            Glow(color: AppColors.primaryFixed.withValues(alpha: 0.7), size: 224),
-            Container(
-              width: 192,
-              height: 192,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x1F984062), blurRadius: 36, offset: Offset(0, 16), spreadRadius: -8),
-                  BoxShadow(color: Color(0x145B3CDD), blurRadius: 20, offset: Offset(0, 6), spreadRadius: -4),
-                ],
-              ),
-              child: const AssetImg('assessment_badge', radius: 34),
-            ),
-            Positioned(
-              top: 4,
-              right: 70,
-              child: IconCircle(Symbols.auto_awesome, size: 28, iconSize: 16, bg: AppColors.surfaceContainerLow, fg: AppColors.primaryContainer, fill: 1),
-            ),
-            Positioned(bottom: 12, left: 70, child: IconCircle(Symbols.favorite, size: 24, iconSize: 14, bg: AppColors.secondaryFixed, fg: AppColors.secondary, fill: 1)),
-          ]),
+        const SizedBox(height: Sp.lg),
+        Center(
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(color: AppColors.tint(AppColors.tertiary), shape: BoxShape.circle),
+            child: Icon(Symbols.check_rounded, size: 44, color: AppColors.tertiary, weight: 600),
+          ),
         ),
         Column(children: [
-          Pill(color: AppColors.tertiaryFixed, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2), child: Text('Milestone Achieved', style: T.labelSm.c(AppColors.onTertiaryFixedVariant))),
+          Text('Assessment complete', style: T.headlineLg, textAlign: TextAlign.center),
           const SizedBox(height: 6),
-          Text('Assessment Complete!', style: T.headlineLg),
-          const SizedBox(height: 6),
-          Text('Thank you — your honest reflections cultivate personalized support for your semester ahead.', textAlign: TextAlign.center, style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.6)),
-          const SizedBox(height: 4),
-          Text('Taking time for your physical well-being, energy, and routine is a vital pause for a thriving campus life.', textAlign: TextAlign.center, style: T.bodySm.c(AppColors.outline)),
+          Text('Recorded on ${DateFormat('d MMMM yyyy').format(done)}', style: T.bodyMd.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+          const SizedBox(height: Sp.md),
+          Text('Thanks for taking the time. Your measurements have been updated and your results are in Progress.',
+              textAlign: TextAlign.center, style: T.bodyLg.c(AppColors.onSurfaceVariant)),
         ]),
-        VCard(
-          color: AppColors.surfaceContainerLow,
-          shadow: Shadows.tiny,
-          child: Column(children: [
-            Row(children: [
-              IconCircle(Symbols.event_available, size: 36, iconSize: 19, bg: AppColors.surfaceContainerHighest),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('REVIEW TIMESTAMP', style: T.labelSm.c(AppColors.outline).tracking(1)),
-                  Text(DateFormat('MMMM d, yyyy').format(done), style: T.headlineSm),
-                ]),
-              ),
-              TagPill('Recorded', icon: Symbols.check_circle, fill: 1, bg: AppColors.tertiaryFixed.withValues(alpha: 0.6), fg: AppColors.tertiary),
-            ]),
-            const SizedBox(height: 14),
-            callout(Symbols.insights, AppColors.secondaryFixed, AppColors.secondary, 'Fresh Insights Ready', 'Your updated measurements and wellbeing results are synced to your Progress hub.'),
-            const SizedBox(height: 8),
-            callout(Symbols.history_edu, AppColors.primaryFixed, AppColors.primary, 'Accessible Anytime', 'Revisit your results anytime under Health Assessments.'),
-          ]),
-        ),
-        PrimaryButton('Back to Dashboard', icon: Symbols.arrow_forward, height: 52, onTap: () => context.go('/home')),
-        SoftButton('View Assessment Summary', icon: Symbols.menu_book, color: AppColors.surfaceContainer, fg: AppColors.onSurfaceVariant, height: 48, style: T.labelMd, onTap: assessment == null ? null : () => showAssessmentSummary(context, assessment!)),
-        Column(children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Symbols.verified_user, size: 15, color: AppColors.outline),
-            const SizedBox(width: 4),
-            Text('CAMPUS PRIVACY GUARANTEE', style: T.labelSm.c(AppColors.outline).tracking(1)),
-          ]),
-          const SizedBox(height: 4),
-          Text('Individual responses are never shared with lecturers or your faculty. University reports only use anonymised, grouped results from students who consented.',
-              textAlign: TextAlign.center, style: T.bodySm.c(AppColors.outline).lh(1.35)),
+        ListGroup(children: [
+          ListRow(icon: Symbols.summarize_rounded, color: AppColors.primary, title: 'View summary', onTap: assessment == null ? null : () => showAssessmentSummary(context, assessment!)),
+          ListRow(icon: Symbols.insights_rounded, color: AppColors.water, title: 'Open Progress', onTap: () => context.go('/progress')),
         ]),
+        const PrivacyNote('Individual answers are never shared with lecturers or your faculty.'),
       ],
     );
   }

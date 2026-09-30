@@ -82,9 +82,9 @@ class Calc {
 
   static (String, String) whrCategory(double whr, String sex) {
     final (low, high) = whrThresholds(sex);
-    if (whr < low) return ('Low Risk', 'Harmonious Balance');
-    if (whr <= high) return ('Moderate Risk', 'Gentle Watch Zone');
-    return ('High Risk', 'Worth a Check-in');
+    if (whr < low) return ('Low Risk', 'Healthy range');
+    if (whr <= high) return ('Moderate Risk', 'Keep an eye on it');
+    return ('High Risk', 'Worth a check-up');
   }
 
   /// Suggested daily water target (ml) ≈ 35 ml/kg, clamped to a sensible student range.

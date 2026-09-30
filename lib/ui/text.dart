@@ -1,34 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'tokens.dart';
 
-/// Typography scale (Plus Jakarta Sans) from DESIGN.md.
+/// Type scale, set in Manrope (bundled). Headings and numbers use the heavy
+/// cuts with tight tracking; body copy stays at regular/medium weight.
 class T {
   T._();
 
-  static TextStyle _b(double size, double lh, FontWeight w, [double ls = 0]) => GoogleFonts.plusJakartaSans(
+  /// Brand face. Bundled in assets/fonts and declared in pubspec.yaml.
+  static String? family = 'Manrope';
+
+  static TextStyle _b(double size, double lh, FontWeight w, [double ls = 0]) => TextStyle(
+        fontFamily: family,
         fontSize: size,
         height: lh / size,
         fontWeight: w,
-        letterSpacing: ls * size,
+        letterSpacing: ls,
         color: AppColors.onSurface,
       );
 
-  static TextStyle get headlineXl => _b(40, 48, FontWeight.w700, -0.02);
-  static TextStyle get headlineXlMobile => _b(32, 40, FontWeight.w700, -0.02);
-  static TextStyle get headlineLg => _b(28, 36, FontWeight.w700, -0.015);
-  static TextStyle get headlineMd => _b(22, 30, FontWeight.w600, -0.01);
-  static TextStyle get headlineSm => _b(18, 26, FontWeight.w600);
-  static TextStyle get bodyLg => _b(17, 26, FontWeight.w400);
-  static TextStyle get bodyMd => _b(15, 23, FontWeight.w400);
-  static TextStyle get bodySm => _b(13, 19, FontWeight.w400);
-  static TextStyle get labelLg => _b(15, 20, FontWeight.w600, 0.01);
-  static TextStyle get labelMd => _b(13, 18, FontWeight.w600, 0.015);
-  static TextStyle get labelSm => _b(11, 15, FontWeight.w600, 0.02);
+  static TextStyle get headlineXl => _b(32, 38, FontWeight.w800, -0.9);
+  static TextStyle get headlineXlMobile => _b(28, 34, FontWeight.w800, -0.7);
+  static TextStyle get headlineLg => _b(24, 30, FontWeight.w800, -0.5);
+  static TextStyle get headlineMd => _b(19, 25, FontWeight.w700, -0.3);
+  static TextStyle get headlineSm => _b(16, 22, FontWeight.w700, -0.15);
+  static TextStyle get bodyLg => _b(15.5, 22, FontWeight.w500, -0.1);
+  static TextStyle get bodyMd => _b(14.5, 21, FontWeight.w500, -0.05);
+  static TextStyle get bodySm => _b(12.5, 17, FontWeight.w500);
+  static TextStyle get labelLg => _b(15, 20, FontWeight.w600, -0.1);
+  static TextStyle get labelMd => _b(13, 18, FontWeight.w600);
+  static TextStyle get labelSm => _b(11.5, 15, FontWeight.w600, 0.1);
 
-  static TextStyle custom(double size, {FontWeight weight = FontWeight.w400, Color? color, double? height, double? spacing}) =>
-      GoogleFonts.plusJakartaSans(
+  /// Large metric numbers, with tabular figures so values don't jitter.
+  static TextStyle metric(double size, {FontWeight weight = FontWeight.w800}) =>
+      _b(size, size * 1.08, weight, -size * 0.035).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
+  static TextStyle custom(double size, {FontWeight weight = FontWeight.w400, Color? color, double? height, double? spacing}) => TextStyle(
+        fontFamily: family,
         fontSize: size,
         fontWeight: weight,
         color: color ?? AppColors.onSurface,
@@ -44,7 +52,8 @@ extension TextStyleX on TextStyle {
   TextStyle get bold => copyWith(fontWeight: FontWeight.w700);
   TextStyle get semi => copyWith(fontWeight: FontWeight.w600);
   TextStyle get medium => copyWith(fontWeight: FontWeight.w500);
-  TextStyle get upper => copyWith(letterSpacing: 0.8);
+  TextStyle get upper => copyWith(letterSpacing: 0.4);
+  TextStyle get tnum => copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
   TextStyle tracking(double v) => copyWith(letterSpacing: v);
   TextStyle lh(double v) => copyWith(height: v);
 }

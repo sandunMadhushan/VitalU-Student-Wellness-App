@@ -8,40 +8,24 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
-/// Illustration used for an article, picked by slug then category.
-String articleImage(Rec a) => switch (a['slug']) {
-      'heart-rate-exam-stress' => 'heart_desk',
-      'nourish-exam-season' => 'open_wellness_book',
-      'heart-health-basics' => 'heart_pulse',
-      'iron-deficiency' => 'nourishment_bowl',
-      'hydration-2pm' || 'electrolytes-vs-water' => 'water_bottle',
-      _ => switch (a['category']) {
-          'heart' => 'heart_embrace',
-          'nutrition' => 'healthy_plate',
-          'sleep' => 'moon_cloud',
-          'stress' => 'meditating_student',
-          'womens' => 'lotus_moon',
-          _ => 'study_desk_tea',
-        },
-    };
-
-/// (background, foreground) tone for an article category.
-(Color, Color) articleTone(String? category) => switch (category) {
-      'heart' || 'womens' => (AppColors.secondaryFixed, AppColors.secondary),
-      'nutrition' => (AppColors.primaryFixed, AppColors.primary),
-      'sleep' => (AppColors.primaryFixed, AppColors.onPrimaryFixedVariant),
-      'stress' => (AppColors.tertiaryFixed, AppColors.tertiary),
-      _ => (AppColors.surfaceContainerHighest, AppColors.onPrimaryFixedVariant),
+/// Icon and colour for an article category.
+(IconData, Color) articleStyle(String? category) => switch (category) {
+      'heart' => (Symbols.cardiology_rounded, AppColors.heart),
+      'nutrition' => (Symbols.nutrition_rounded, AppColors.nutrition),
+      'sleep' => (Symbols.bedtime_rounded, AppColors.sleep),
+      'stress' => (Symbols.self_improvement_rounded, AppColors.mind),
+      'womens' => (Symbols.female_rounded, AppColors.cycle),
+      _ => (Symbols.lightbulb_rounded, AppColors.warning),
     };
 
 const libraryTopics = [
-  ('all', '', 'All For You'),
-  ('heart', '❤️', 'Heart Health'),
-  ('nutrition', '🥗', 'Nutrition'),
-  ('sleep', '🌙', 'Sleep'),
-  ('stress', '🧘', 'Stress'),
-  ('womens', '🌸', "Women's Health"),
-  ('common', '💡', 'Common Concerns'),
+  ('all', 'All'),
+  ('heart', 'Heart'),
+  ('nutrition', 'Nutrition'),
+  ('sleep', 'Sleep'),
+  ('stress', 'Stress'),
+  ('womens', "Women's health"),
+  ('common', 'Common concerns'),
 ];
 
 class LibraryScreen extends StatefulWidget {
@@ -78,7 +62,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     setState(() => on ? _saved.add(id) : _saved.remove(id));
     try {
       await Repo.setBookmark(id, on);
-      if (mounted) toast(context, on ? 'Saved to your library' : 'Removed from saved');
+      if (mounted) toast(context, on ? 'Saved' : 'Removed from saved');
     } catch (_) {
       setState(() => on ? _saved.remove(id) : _saved.add(id));
     }
@@ -110,20 +94,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
           return SizedBox(
             height: MediaQuery.of(ctx).size.height * 0.7,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text('Search the library', style: T.headlineMd),
-              const SizedBox(height: Sp.sm),
-              VTextField(controller: q, hint: 'Try "sleep", "iron" or "stress"', icon: Symbols.search, onChanged: (_) => set(() {})),
-              const SizedBox(height: Sp.sm),
+              VTextField(controller: q, hint: 'Search articles', icon: Symbols.search_rounded, onChanged: (_) => set(() {})),
+              const SizedBox(height: Sp.md),
               Expanded(
                 child: hits.isEmpty
-                    ? const EmptyState(icon: Symbols.search_off, title: 'No matches yet', text: 'Try a different word.')
-                    : ListView.separated(
-                        itemCount: hits.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _row(hits[i], onTap: () {
-                          Navigator.pop(ctx);
-                          _open(hits[i]);
-                        }),
+                    ? const EmptyState(icon: Symbols.search_off_rounded, title: 'No matches', text: 'Try "sleep", "iron" or "stress".')
+                    : SingleChildScrollView(
+                        child: ListGroup(dividerIndent: 64, children: [
+                          for (final a in hits)
+                            _row(a, onTap: () {
+                              Navigator.pop(ctx);
+                              _open(a);
+                            }),
+                        ]),
                       ),
               ),
             ]),
@@ -139,278 +122,105 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final explore = visible.where((a) => a != featured && !rec.contains(a)).toList();
 
     return VPage(
-      header: const MainHeader('VitalU Health Education Library'),
-      nav: NavTab.library,
-      navVariantLibrary: true,
-      spacing: Sp.lg - 4,
+      header: TitleHeader(_savedOnly ? 'Saved articles' : 'Library', actions: [
+        IconButton(tooltip: 'Search', icon: const Icon(Symbols.search_rounded), onPressed: _search),
+        IconButton(
+          tooltip: _savedOnly ? 'Show all articles' : 'Show saved',
+          isSelected: _savedOnly,
+          icon: const Icon(Symbols.bookmarks_rounded),
+          selectedIcon: Icon(Symbols.bookmarks_rounded, fill: 1, color: AppColors.primary),
+          onPressed: () => setState(() => _savedOnly = !_savedOnly),
+        ),
+      ]),
       onRefresh: _load,
       children: [
-        Row(children: [
-          CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLow, fg: AppColors.onSurface, shadow: Shadows.tiny, onTap: () => goBack(context)),
-          const Spacer(),
-          Pressable(
-            onTap: () => setState(() => _savedOnly = !_savedOnly),
-            child: Pill(
-              color: _savedOnly ? AppColors.secondary : AppColors.secondaryFixed,
-              shadow: Shadows.tiny,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Symbols.bookmark, size: 16, fill: 1, color: _savedOnly ? AppColors.onSecondary : AppColors.onSecondaryFixed),
-                const SizedBox(width: 6),
-                Text('${_saved.length} Saved', style: T.labelSm.c(_savedOnly ? AppColors.onSecondary : AppColors.onSecondaryFixed)),
-              ]),
-            ),
-          ),
-        ]),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Health Education', style: T.headlineLg),
-          const SizedBox(height: 4),
-          Text(_savedOnly ? 'Your saved reads' : 'Short reads, just for you', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-          const SizedBox(height: 6),
-          Pill(color: AppColors.surfaceContainerHigh, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), child: Text('📚 Evidence-based • 2–4 min bites', style: T.labelSm.c(AppColors.onSurfaceVariant))),
-        ]),
         FullBleed(
           child: ChipRow(children: [
-            for (final t in libraryTopics)
-              Pressable(
-                onTap: () => setState(() => _topic = t.$1),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 40,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: _topic == t.$1 ? AppColors.primary : AppColors.surfaceContainer,
-                    borderRadius: BorderRadius.circular(Rad.full),
-                    boxShadow: _topic == t.$1 ? Shadows.tiny : null,
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    if (t.$1 == 'all') Icon(Symbols.arrow_back_ios_new, size: 14, color: _topic == t.$1 ? AppColors.onPrimary : AppColors.onSurfaceVariant) else Text(t.$2),
-                    const SizedBox(width: 6),
-                    Text(t.$3, style: T.labelMd.c(_topic == t.$1 ? AppColors.onPrimary : AppColors.onSurfaceVariant)),
-                  ]),
-                ),
-              ),
+            for (final t in libraryTopics) VChip(t.$2, selected: _topic == t.$1, onTap: () => setState(() => _topic = t.$1)),
           ]),
         ),
         if (_loading) const Loading(),
         if (!_loading && visible.isEmpty)
           EmptyState(
-            icon: _savedOnly ? Symbols.bookmark : Symbols.menu_book,
-            title: _savedOnly ? 'Nothing saved yet' : 'No reads in this topic yet',
-            text: _savedOnly ? 'Tap the bookmark on any article to keep it here.' : 'Check back soon — new bites are added regularly.',
+            icon: _savedOnly ? Symbols.bookmark_rounded : Symbols.menu_book_rounded,
+            title: _savedOnly ? 'Nothing saved yet' : 'No articles in this topic yet',
+            text: _savedOnly ? 'Tap the bookmark on any article to keep it here.' : 'New articles are added regularly.',
           ),
         if (featured != null) _featured(featured),
-        if (rec.isNotEmpty)
-          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Expanded(child: Text('Recommended for you', style: T.headlineSm)),
-              GestureDetector(onTap: _search, child: Text('See All', style: T.labelMd.c(AppColors.primary))),
-            ]),
-            const SizedBox(height: Sp.sm),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              child: Row(children: [
-                for (final a in rec) ...[_recCard(a), const SizedBox(width: 14)],
-              ]),
-            ),
-          ]),
-        if (explore.isNotEmpty)
-          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Expanded(child: Text('Explore Bite-Sized Reads', style: T.headlineSm)),
-              Text('Updated today', style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w400)),
-            ]),
-            const SizedBox(height: Sp.sm),
-            for (final a in explore) Padding(padding: const EdgeInsets.only(bottom: 10), child: _row(a, onTap: () => _open(a))),
-          ]),
-        VCard(
-          shadow: Shadows.card,
-          onTap: () => context.push('/blood-report'),
-          padding: const EdgeInsets.all(14),
-          child: Row(children: [
-            const SizedBox(width: 64, height: 64, child: AssetImg('lab_report', radius: 32)),
-            const SizedBox(width: Sp.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('CAMPUS HEALTH COMPANION', style: T.labelSm.c(AppColors.tertiary).tracking(0.6)),
-                Text('Understand Your Blood Report', style: T.labelLg),
-                Text('Plain-English insights for routine lab panels', style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ]),
-            ),
-            Icon(Symbols.chevron_right, color: AppColors.outlineVariant),
-          ]),
-        ),
-        VCard(
-          color: AppColors.primaryFixed,
-          shadow: Shadows.tiny,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              IconCircle(Symbols.support_agent, size: 40, iconSize: 22, shadow: Shadows.tiny),
-              const SizedBox(width: Sp.sm),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Have questions about your health?', style: T.headlineSm.c(AppColors.onPrimaryFixed).lh(1.25)),
-                  const SizedBox(height: 2),
-                  Text('Campus nurses and wellness peer guides are available for confidential consultations.', style: T.bodySm.c(AppColors.onPrimaryFixedVariant)),
-                ]),
-              ),
-            ]),
-            const SizedBox(height: Sp.sm),
-            Row(children: [
-              Expanded(child: PrimaryButton('Ask Health Center', leadingIcon: Symbols.chat, height: 44, textStyle: T.labelMd.c(AppColors.onPrimary), onTap: () => context.push('/professionals'))),
-              const SizedBox(width: 8),
-              SoftButton('Search', icon: Symbols.search, height: 44, expand: false, color: AppColors.surfaceContainerLowest, style: T.labelMd, onTap: _search),
-            ]),
-          ]),
-        ),
+        if (rec.isNotEmpty) ListGroup(header: 'Recommended for you', dividerIndent: 64, children: [for (final a in rec) _row(a, onTap: () => _open(a))]),
+        if (explore.isNotEmpty) ListGroup(header: rec.isEmpty && featured == null ? null : 'More articles', dividerIndent: 64, children: [for (final a in explore) _row(a, onTap: () => _open(a))]),
+        ListGroup(header: 'Get help', children: [
+          ListRow(icon: Symbols.lab_profile_rounded, color: AppColors.heart, title: 'Understand a blood report', subtitle: 'Plain-language notes on common lab values', onTap: () => context.push('/blood-report')),
+          ListRow(icon: Symbols.stethoscope_rounded, color: AppColors.primary, title: 'Talk to a professional', subtitle: 'Campus medical officers and counsellors', onTap: () => context.push('/professionals')),
+        ]),
       ],
     );
   }
 
-  Widget _bookmarkBtn(Rec a, {double size = 32, Color? bg}) {
-    final bg0 = bg ?? AppColors.surfaceContainerLowest;
+  Widget _bookmark(Rec a) {
     final on = _saved.contains(a['id']);
-    return GestureDetector(
-      onTap: () => _toggle(a),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: bg0, shape: BoxShape.circle, boxShadow: bg0 == Colors.transparent ? null : Shadows.tiny),
-        child: Icon(Symbols.bookmark, size: size * 0.5, fill: on ? 1 : 0, color: on ? AppColors.primary : AppColors.onSurfaceVariant),
-      ),
+    return IconButton(
+      tooltip: on ? 'Remove from saved' : 'Save',
+      icon: Icon(Symbols.bookmark_rounded, fill: on ? 1 : 0, color: on ? AppColors.primary : AppColors.onSurfaceVariant),
+      onPressed: () => _toggle(a),
     );
   }
 
-  Widget _featured(Rec a) => Pressable(
-        onTap: () => _open(a),
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.lg), boxShadow: Shadows.tiny),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            SizedBox(
-              height: 208,
-              child: Stack(fit: StackFit.expand, children: [
-                AssetImg(articleImage(a)),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [AppColors.surfaceContainerLow, Colors.transparent, Color(0x33000000)],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Pill(
-                    color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
-                    child: Text(a['badge'] ?? '${a['emoji'] ?? '🌿'} ${a['category_label']}', style: T.labelSm.c(AppColors.tertiary)),
-                  ),
-                ),
-                Positioned(top: 12, right: 12, child: _bookmarkBtn(a, size: 36, bg: AppColors.surfaceContainerLowest.withValues(alpha: 0.9))),
-              ]),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(Sp.md),
+  Widget _featured(Rec a) {
+    final (icon, c) = articleStyle(a['category']);
+    return VCard(
+      onTap: () => _open(a),
+      padding: EdgeInsets.zero,
+      clip: true,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Container(
+          height: 112,
+          color: AppColors.tint(c),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 48, color: c, fill: 1),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Sp.md, 14, 4, Sp.md),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Icon(Symbols.schedule, size: 16, color: AppColors.primary),
-                  const SizedBox(width: 6),
-                  Flexible(child: Text('${a['read_minutes']} min read • ${a['category_label']}', style: T.labelSm.c(AppColors.primary))),
-                ]),
+                Text('${a['category_label'] ?? 'Featured'} · ${a['read_minutes']} min read', style: T.labelMd.c(c)),
+                const SizedBox(height: 6),
+                Text(a['title'], style: T.headlineMd.lh(1.25)),
+                if (a['subtitle'] != null) ...[
+                  const SizedBox(height: 6),
+                  Text(a['subtitle'], style: T.bodyMd.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis),
+                ],
                 const SizedBox(height: 8),
-                Text(a['title'], style: T.headlineMd.lh(1.3)),
-                const SizedBox(height: 8),
-                Text(a['subtitle'] ?? '', style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: Sp.sm),
-                Row(children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: AppColors.primaryFixed, shape: BoxShape.circle),
-                    child: Text('VU', style: T.labelSm.s(10).bold.c(AppColors.onPrimaryFixed)),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(a['author'] ?? 'VitalU', style: T.labelSm.c(AppColors.onSurfaceVariant))),
-                  Icon(Symbols.arrow_forward, size: 20, color: AppColors.primary),
-                ]),
+                Text(a['author'] ?? 'VitalU', style: T.bodySm.c(AppColors.onSurfaceVariant)),
               ]),
             ),
+            _bookmark(a),
           ]),
         ),
-      );
-
-  Widget _recCard(Rec a) {
-    final (bg, fg) = articleTone(a['category']);
-    return Pressable(
-      onTap: () => _open(a),
-      child: Container(
-        width: 240,
-        height: 196,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.lg), boxShadow: Shadows.tiny),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: bg, shape: BoxShape.circle, boxShadow: Shadows.tiny),
-              child: Text(a['emoji'] ?? '📘', style: const TextStyle(fontSize: 18)),
-            ),
-            const Spacer(),
-            _bookmarkBtn(a),
-          ]),
-          const SizedBox(height: 10),
-          Pill(color: bg.withValues(alpha: 0.6), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2), child: Text(a['category_label'] ?? '', style: T.labelSm.c(fg))),
-          const SizedBox(height: 8),
-          Text(a['title'], style: T.headlineSm.s(16).lh(1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
-          const Spacer(),
-          Row(children: [
-            Text('⏱️ ${a['read_minutes']} min read', style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w500)),
-            const Spacer(),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 100),
-              child: Text(a['author'] ?? '', style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w500), overflow: TextOverflow.ellipsis),
-            ),
-          ]),
-        ]),
-      ),
+      ]),
     );
   }
 
   Widget _row(Rec a, {VoidCallback? onTap}) {
-    final (bg, fg) = articleTone(a['category']);
-    return VCard(
-      padding: const EdgeInsets.all(14),
-      shadow: Shadows.tiny,
+    final (icon, c) = articleStyle(a['category']);
+    return InkWell(
       onTap: onTap,
-      child: Row(children: [
-        Container(
-          width: 48,
-          height: 48,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle, boxShadow: Shadows.tiny),
-          child: Text(a['emoji'] ?? '📘', style: const TextStyle(fontSize: 20)),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(a['title'], style: T.labelLg.s(14), maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(a['subtitle'] ?? '', style: T.bodySm.s(12).c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
-            Row(children: [
-              Flexible(child: Text(a['category_label'] ?? '', style: T.labelSm.c(fg).w(FontWeight.w500), overflow: TextOverflow.ellipsis)),
-              Text('  •  ', style: T.labelSm.s(10).c(AppColors.outline)),
-              Text('${a['read_minutes']} min read', style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w500)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Sp.md, 12, 4, 12),
+        child: Row(children: [
+          IconCircle(icon, size: 36, iconSize: 20, fg: c, radius: 10, fill: 1),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(a['title'], style: T.bodyLg, maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 2),
+              Text('${a['category_label'] ?? ''} · ${a['read_minutes']} min', style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
             ]),
-          ]),
-        ),
-        _bookmarkBtn(a, bg: Colors.transparent),
-      ]),
+          ),
+          _bookmark(a),
+        ]),
+      ),
     );
   }
 }

@@ -46,7 +46,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _match(Rec n) => switch (_filter) {
         'Milestones' => n['category'] == 'milestone',
         'Reminders' => n['category'] == 'reminder',
-        'Care & Health' => n['category'] == 'care' || n['category'] == 'insight' || n['category'] == 'nourishment',
+        'Health' => n['category'] == 'care' || n['category'] == 'insight' || n['category'] == 'nourishment',
         _ => true,
       };
 
@@ -73,9 +73,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               );
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Quiet Hours', style: T.headlineMd),
+            Text('Quiet hours', style: T.headlineMd),
             const SizedBox(height: 4),
-            Text('VitalU will hold gentle reminders during these hours.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            Text('Reminders are held until quiet hours end.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
             Row(children: [tile('From', start, (v) => start = v), const SizedBox(width: Sp.sm), tile('Until', end, (v) => end = v)]),
             const SizedBox(height: Sp.md),
@@ -92,155 +92,78 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final list = _items.where(_match).toList();
     final today = list.where((n) => isoDate(DateTime.parse(n['scheduled_for']).toLocal()) == isoDate(DateTime.now())).toList();
     final earlier = list.where((n) => !today.contains(n)).toList();
-    final unreadToday = today.where((n) => n['read_at'] == null).length;
+    final unread = _items.any((n) => n['read_at'] == null);
 
     return VPage(
-      header: const MainHeader('VitalU Your Progress & Trends'),
-      nav: NavTab.progress,
+      header: TitleHeader('Notifications', actions: [
+        IconButton(
+          tooltip: 'Mark all as read',
+          icon: const Icon(Symbols.done_all_rounded),
+          onPressed: unread
+              ? () async {
+                  await Repo.markAllRead();
+                  _load();
+                }
+              : null,
+        ),
+      ]),
       onRefresh: _load,
       children: [
-        Row(children: [
-          CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, fg: AppColors.onSurface, shadow: Shadows.tiny, onTap: () => goBack(context)),
-          Expanded(
-            child: Column(children: [
-              Text('Notifications', style: T.headlineSm),
-              Text('Gentle updates & milestones', style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w400)),
-            ]),
-          ),
-          CircleButton(Symbols.done_all, size: 40, iconSize: 20, bg: AppColors.surfaceContainer, shadow: Shadows.tiny, onTap: () async {
-            await Repo.markAllRead();
-            _load();
-          }),
-        ]),
-        VCard(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surfaceContainerLowest, AppColors.surfaceContainerLow, AppColors.secondaryFixed.withValues(alpha: 0.3)]),
-          shadow: Shadows.card,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: Stack(alignment: Alignment.center, children: [
-                  Glow(color: AppColors.primaryFixed.withValues(alpha: 0.4), size: 72),
-                  const AssetImg('bell', width: 80, height: 80, radius: 40),
-                ]),
-              ),
-              const SizedBox(width: Sp.sm),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  TagPill('Peace of Mind', icon: Symbols.spa, bg: AppColors.surfaceContainerLowest.withValues(alpha: 0.8), fg: AppColors.primary),
-                  const SizedBox(height: 4),
-                  Text('Mindful Reminders', style: T.headlineSm.lh(1.2)),
-                  Text('Only what matters for your self-care rhythm. No urgency or stress.', style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis),
-                ]),
-              ),
-            ]),
-            const SizedBox(height: Sp.sm),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: [
-                for (final f in const ['All', 'Milestones', 'Reminders', 'Care & Health']) ...[
-                  VChip(f, selected: _filter == f, selectedColor: AppColors.inverseSurface, selectedFg: AppColors.inverseOnSurface, height: 36, onTap: () => setState(() => _filter = f)),
-                  const SizedBox(width: 6),
-                ],
-              ]),
-            ),
-          ]),
+        SizedBox(
+          width: double.infinity,
+          child: Segmented(options: const ['All', 'Milestones', 'Reminders', 'Health'], value: _filter, onChanged: (v) => setState(() => _filter = v)),
         ),
         if (_loading) const Loading(),
-        if (!_loading && list.isEmpty) const EmptyState(icon: Symbols.notifications, title: 'All quiet here', text: 'Gentle reminders and milestones will appear here.'),
-        if (today.isNotEmpty) ...[
-          _sectionTitle('Today', unreadToday > 0 ? '$unreadToday new' : null),
-          for (final n in today) _card(n),
-        ],
-        if (earlier.isNotEmpty) ...[
-          _sectionTitle('Earlier', null),
-          for (final n in earlier) _card(n),
-        ],
-        Container(
-          padding: const EdgeInsets.all(Sp.md),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Rad.lg),
-            gradient: LinearGradient(colors: [AppColors.surfaceContainerLow, AppColors.surfaceContainer]),
-            boxShadow: Shadows.tiny,
-          ),
-          child: Row(children: [
-            IconCircle(Symbols.notifications_paused, size: 40, iconSize: 20, shadow: Shadows.tiny),
-            const SizedBox(width: Sp.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Manage quiet hours', style: T.labelMd),
-                Text('Tailor frequency to study schedules', style: T.bodySm.c(AppColors.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-              ]),
-            ),
-            Pressable(
-              onTap: _quietHours,
-              child: Pill(
-                color: AppColors.surfaceContainerLowest,
-                shadow: Shadows.tiny,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text('Adjust', style: T.labelMd.c(AppColors.primary)),
-                  Icon(Symbols.chevron_right, size: 16, color: AppColors.primary),
-                ]),
-              ),
-            ),
-          ]),
-        ),
+        if (!_loading && list.isEmpty) const EmptyState(icon: Symbols.notifications_rounded, title: 'No notifications', text: 'Reminders and milestones will show up here.'),
+        if (today.isNotEmpty) ListGroup(header: 'Today', dividerIndent: 68, children: [for (final n in today) _row(n)]),
+        if (earlier.isNotEmpty) ListGroup(header: 'Earlier', dividerIndent: 68, children: [for (final n in earlier) _row(n)]),
+        ListGroup(children: [
+          ListRow(icon: Symbols.do_not_disturb_on_rounded, color: AppColors.sleep, title: 'Quiet hours', subtitle: 'No reminders while you sleep or study', onTap: _quietHours),
+        ]),
       ],
     );
   }
 
-  Widget _sectionTitle(String t, String? trailing) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(children: [
-          Expanded(child: Text(t.toUpperCase(), style: T.labelMd.c(AppColors.onSurfaceVariant).tracking(1))),
-          if (trailing != null) Text(trailing, style: T.labelSm.c(AppColors.primary)),
-        ]),
-      );
-
-  Widget _card(Rec n) {
+  Widget _row(Rec n) {
     final unread = n['read_at'] == null;
-    final cat = n['category'] as String;
-    final (bg, fg) = switch (cat) {
-      'milestone' => (AppColors.tertiaryFixed.withValues(alpha: 0.5), AppColors.tertiary),
-      'care' => (AppColors.secondaryFixed, AppColors.secondary),
-      'nourishment' => (AppColors.tertiaryFixed, AppColors.tertiary),
-      _ => (AppColors.primaryFixed, AppColors.primary),
+    final fg = switch (n['category'] as String) {
+      'milestone' => AppColors.primary,
+      'care' => AppColors.mind,
+      'nourishment' => AppColors.nutrition,
+      'reminder' => AppColors.water,
+      _ => AppColors.heart,
     };
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Sp.sm),
-      child: VCard(
-        color: unread ? AppColors.surfaceContainerLowest : AppColors.surfaceContainerLow.withValues(alpha: 0.7),
-        shadow: unread ? Shadows.card : Shadows.tiny,
-        onTap: () async {
-          if (unread) await Repo.markRead(n['id']);
-          if (n['route'] != null && mounted) {
-            await context.push(n['route']);
-          }
-          _load();
-        },
+    return InkWell(
+      onTap: () async {
+        if (unread) await Repo.markRead(n['id']);
+        if (n['route'] != null && mounted) {
+          await context.push(n['route']);
+        }
+        _load();
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Sp.md, 14, Sp.md, 14),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(color: unread ? fg : Colors.transparent, shape: BoxShape.circle, boxShadow: unread ? [BoxShadow(color: fg.withValues(alpha: 0.6), blurRadius: 8)] : null),
-          ),
-          const SizedBox(width: Sp.sm),
-          IconCircle(iconByName(n['icon']), size: 44, bg: unread ? bg : AppColors.surfaceContainerHighest, fg: fg, shadow: Shadows.tiny),
-          const SizedBox(width: Sp.sm),
+          IconCircle(iconByName(n['icon']), size: 40, iconSize: 20, fg: fg, fill: 1),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Flexible(child: TagPill(n['label'] ?? cat[0].toUpperCase() + cat.substring(1), bg: unread ? bg.withValues(alpha: 0.6) : AppColors.surfaceContainerHighest, fg: unread ? fg : AppColors.onSurfaceVariant)),
-                const Spacer(),
-                Text(_ago(DateTime.parse(n['scheduled_for']).toLocal()), style: T.labelSm.c(AppColors.outline)),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Text(n['title'], style: T.bodyLg.w(unread ? FontWeight.w600 : FontWeight.w400))),
+                const SizedBox(width: 8),
+                Text(_ago(DateTime.parse(n['scheduled_for']).toLocal()), style: T.labelSm.c(AppColors.onSurfaceVariant)),
               ]),
-              const SizedBox(height: 4),
-              Text(n['title'], style: T.headlineSm.s(16).lh(1.3)),
-              if (n['body'] != null) ...[const SizedBox(height: 4), Text(n['body'], style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.6))],
+              if (n['body'] != null) ...[
+                const SizedBox(height: 2),
+                Text(n['body'], style: T.bodyMd.c(AppColors.onSurfaceVariant), maxLines: 3, overflow: TextOverflow.ellipsis),
+              ],
             ]),
+          ),
+          SizedBox(
+            width: 16,
+            child: unread
+                ? Align(alignment: Alignment.topRight, child: Container(margin: const EdgeInsets.only(top: 6), width: 8, height: 8, decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)))
+                : null,
           ),
         ]),
       ),

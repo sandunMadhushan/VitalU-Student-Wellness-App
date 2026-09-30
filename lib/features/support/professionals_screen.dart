@@ -10,17 +10,17 @@ import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
 const _cats = [
-  ('all', 'All Care'),
-  ('mental', 'Mental Health'),
+  ('all', 'All'),
+  ('mental', 'Mental health'),
   ('nutrition', 'Nutritionists'),
   ('cardiology', 'Cardiologists'),
-  ('sleep', 'Sleep Coaches'),
-  ('peer', 'Peer Navigators'),
+  ('sleep', 'Sleep coaches'),
+  ('peer', 'Peer support'),
 ];
 
 Future<void> callNumber(BuildContext context, String? phone) async {
   if (phone == null || phone.trim().isEmpty) {
-    toast(context, 'This number hasn\'t been added yet — please use the booking request instead.');
+    toast(context, "This number isn't listed yet. Send a booking request instead.");
     return;
   }
   final ok = await launchUrl(Uri(scheme: 'tel', path: phone.replaceAll(' ', '')));
@@ -70,10 +70,10 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text(chat ? 'Start a conversation' : 'Request a visit', style: T.headlineMd),
             const SizedBox(height: 4),
-            Text(pro == null ? service : '${pro['name']} • ${pro['specialty']}', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            Text(pro == null ? service : '${pro['name']} · ${pro['specialty']}', style: T.bodySm.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
             if (!chat) ...[
-              Text('Preferred day', style: T.labelMd),
+              Text('Preferred day', style: T.labelLg.semi),
               const SizedBox(height: 8),
               SizedBox(
                 height: 64,
@@ -88,7 +88,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                           onTap: () => set(() => date = d),
                           child: Container(
                             width: 56,
-                            decoration: BoxDecoration(color: sel ? AppColors.primary : AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(Rad.base)),
+                            decoration: BoxDecoration(color: sel ? AppColors.primary : AppColors.surfaceContainerHigh, borderRadius: BorderRadius.circular(Rad.base)),
                             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                               Text(DateFormat('EEE').format(d), style: T.labelSm.c(sel ? AppColors.onPrimary : AppColors.onSurfaceVariant)),
                               Text('${d.day}', style: T.headlineSm.c(sel ? AppColors.onPrimary : AppColors.onSurface)),
@@ -105,7 +105,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
             ],
             VTextField(controller: note, hint: chat ? 'What would you like to talk about?' : 'Anything they should know? (optional)', maxLines: 3),
             const SizedBox(height: Sp.md),
-            PrimaryButton(chat ? 'Send Message' : 'Send Request', leadingIcon: chat ? Symbols.send : Symbols.event, loading: sending, onTap: () async {
+            PrimaryButton(chat ? 'Send message' : 'Send request', loading: sending, onTap: () async {
               if (chat && note.text.trim().isEmpty) {
                 toast(ctx, 'Write a short message first');
                 return;
@@ -121,7 +121,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                   message: note.text.trim().isEmpty ? null : note.text.trim(),
                 );
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) toast(context, chat ? 'Message sent — expect a reply soon 💬' : 'Request sent — you\'ll get a confirmation soon 📅');
+                if (mounted) toast(context, chat ? 'Message sent. Expect a reply soon.' : "Request sent. You'll get a confirmation soon.");
                 _load();
               } catch (_) {
                 set(() => sending = false);
@@ -129,7 +129,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
               }
             }),
             const SizedBox(height: Sp.xs),
-            const PrivacyNote('Private between you and the care team'),
+            const PrivacyNote('Private between you and the care team.'),
           ]);
         }));
   }
@@ -137,229 +137,134 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
   @override
   Widget build(BuildContext context) {
     final shown = _pros.where((p) => _cat == 'all' || p['category'] == _cat).toList();
-    final roster = shown.where((p) => p['mode'] != 'chat').toList();
-    final peers = shown.where((p) => p['mode'] == 'chat').toList();
     final upcoming = _appts.where((a) => a['status'] == 'requested' || a['status'] == 'confirmed').toList();
 
     return VPage(
-      header: const TwoLineHeader(kicker: 'VitalU Sanctuary', title: 'Sanctuary Tools'),
-      nav: NavTab.tools,
+      header: const TitleHeader('Talk to a professional'),
       onRefresh: _load,
       children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          TagPill('Confidential Student Care • Privacy Protected', icon: Symbols.verified_user, bg: AppColors.secondaryFixed.withValues(alpha: 0.5), fg: AppColors.onSecondaryFixedVariant, iconColor: AppColors.secondary),
-          const SizedBox(height: Sp.sm),
-          Row(children: [
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Talk to a Professional', style: T.headlineMd),
-                Text('Gentle support whenever life feels a little loud', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-              ]),
-            ),
-            CircleButton(Symbols.help, bg: AppColors.primaryFixed, fg: AppColors.primary, size: 40, iconSize: 20, onTap: () => context.push('/help')),
-          ]),
-        ]),
-        Container(
-          padding: const EdgeInsets.all(Sp.md),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Rad.lg),
-            gradient: LinearGradient(colors: [AppColors.primaryFixed.withValues(alpha: 0.6), AppColors.secondaryFixed.withValues(alpha: 0.4)]),
-            boxShadow: Shadows.card,
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              TagPill('Free for Students', icon: Symbols.check_circle, bg: AppColors.tertiaryFixed, fg: AppColors.onTertiaryFixedVariant, iconColor: AppColors.tertiary),
-              const Spacer(),
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: _clinicOpen ? AppColors.tertiary : AppColors.outline, shape: BoxShape.circle)),
-              const SizedBox(width: 6),
-              Text(_clinicOpen ? 'Open until 6:00 PM' : 'Opens weekdays 8:00 AM', style: T.labelSm),
-            ]),
-            const SizedBox(height: Sp.sm),
-            Row(children: [
+        VCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              IconCircle(Symbols.local_hospital_rounded, size: 44, iconSize: 22, fg: AppColors.heart, fill: 1),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('University Health Centre', style: T.headlineSm),
                   const SizedBox(height: 2),
-                  Text('On-campus clinic & same-day urgent student triage', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                  Text('Main campus · free for students', style: T.bodySm.c(AppColors.onSurfaceVariant)),
                   const SizedBox(height: 6),
                   Row(children: [
-                    Icon(Symbols.location_on, size: 16, color: AppColors.onSurfaceVariant),
-                    const SizedBox(width: 4),
-                    Flexible(child: Text('University Health Centre • Main Campus', style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w500))),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: _clinicOpen ? AppColors.tertiary : AppColors.outline, shape: BoxShape.circle)),
+                    const SizedBox(width: 6),
+                    Text(_clinicOpen ? 'Open until 6:00 PM' : 'Closed · opens weekdays at 8:00 AM', style: T.labelMd.c(_clinicOpen ? AppColors.tertiary : AppColors.onSurfaceVariant)),
                   ]),
                 ]),
               ),
-              const SizedBox(width: Sp.sm),
-              const SizedBox(width: 84, height: 84, child: AssetImg('stethoscope_rose', radius: 20)),
             ]),
             const SizedBox(height: Sp.md),
             Row(children: [
-              Expanded(child: PrimaryButton('Book Visit', leadingIcon: Symbols.calendar_add_on, height: 48, textStyle: T.labelMd.c(AppColors.onPrimary), onTap: () => _request(service: 'University Health Centre visit'))),
+              Expanded(child: FilledButton(onPressed: () => _request(service: 'University Health Centre visit'), child: const Text('Book a visit'))),
               const SizedBox(width: 8),
-              Expanded(
-                  child: SoftButton('Chat Nurse',
-                      icon: Symbols.chat_bubble, height: 48, color: AppColors.surfaceContainerLowest, iconColor: AppColors.primary, style: T.labelMd, onTap: () => _request(service: 'Nurse chat', chat: true))),
+              Expanded(child: OutlinedButton(onPressed: () => _request(service: 'Nurse chat', chat: true), child: const Text('Message'))),
               const SizedBox(width: 8),
-              CircleButton(Symbols.call, size: 48, iconSize: 20, bg: AppColors.surfaceContainerLowest, fg: AppColors.secondary, shadow: Shadows.tiny, onTap: () => callNumber(context, _clinic?['phone'])),
+              IconButton.filledTonal(tooltip: 'Call the health centre', style: IconButton.styleFrom(minimumSize: const Size(52, 52)), icon: const Icon(Symbols.call_rounded), onPressed: () => callNumber(context, _clinic?['phone'])),
             ]),
           ]),
         ),
         FullBleed(
           child: ChipRow(children: [
-            for (final c in _cats)
-              Pressable(
-                onTap: () => setState(() => _cat = c.$1),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(color: _cat == c.$1 ? AppColors.inverseSurface : AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.full)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(c.$2, style: T.labelMd.c(_cat == c.$1 ? AppColors.inverseOnSurface : AppColors.onSurfaceVariant)),
-                    if (c.$1 == 'all') ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                        decoration: BoxDecoration(color: AppColors.surfaceContainerLowest.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(10)),
-                        child: Text('${_pros.length}', style: T.labelSm.c(_cat == c.$1 ? AppColors.inverseOnSurface : AppColors.onSurfaceVariant)),
-                      ),
-                    ],
-                  ]),
-                ),
-              ),
+            for (final c in _cats) VChip(c.$2, selected: _cat == c.$1, onTap: () => setState(() => _cat = c.$1)),
           ]),
         ),
         if (_loading) const Loading(),
-        if (!_loading && shown.isEmpty) const EmptyState(icon: Symbols.person_search, title: 'No one listed here yet', text: 'Try another category or book the Health Centre.'),
-        for (final p in roster) _proCard(p),
-        for (final p in peers)
-          VCard(
-            shadow: Shadows.card,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Icon(Symbols.groups, color: AppColors.secondary),
-                const SizedBox(width: 8),
-                Expanded(child: Text(p['name'], style: T.headlineSm)),
-              ]),
-              const SizedBox(height: 4),
-              TagPill(p['specialty'] ?? '', bg: AppColors.secondaryFixed.withValues(alpha: 0.5), fg: AppColors.onSecondaryFixedVariant),
-              const SizedBox(height: Sp.sm),
-              Row(children: [
-                Icon(Symbols.bolt, size: 18, color: AppColors.tertiary),
-                const SizedBox(width: 6),
-                Expanded(child: Text(p['availability'] ?? '', style: T.bodySm.c(AppColors.onSurfaceVariant))),
-                PrimaryButton('Live Chat', leadingIcon: Symbols.forum, height: 44, expand: false, color: AppColors.inverseSurface, textStyle: T.labelMd.c(AppColors.inverseOnSurface), onTap: () => _request(pro: p, service: 'Peer chat', chat: true)),
-              ]),
-            ]),
-          ),
+        if (!_loading && shown.isEmpty) const EmptyState(icon: Symbols.person_search_rounded, title: 'No one listed here yet', text: 'Try another category or book the health centre.'),
+        for (final p in shown) _proCard(p),
         if (upcoming.isNotEmpty)
-          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Your requests', style: T.headlineSm),
-            const SizedBox(height: Sp.sm),
+          ListGroup(header: 'Your requests', children: [
             for (final a in upcoming)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: VCard(
-                  color: AppColors.surfaceContainerLow,
-                  padding: const EdgeInsets.all(14),
-                  child: Row(children: [
-                    IconCircle(a['kind'] == 'chat' ? Symbols.chat : Symbols.event, size: 40, iconSize: 20),
-                    const SizedBox(width: Sp.sm),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text((a['professionals'] as Map?)?['name'] ?? a['service'] ?? 'Care request', style: T.labelLg),
-                        Text(
-                            a['preferred_at'] != null
-                                ? 'Preferred ${DateFormat('EEE d MMM, h a').format(DateTime.parse(a['preferred_at']).toLocal())}'
-                                : 'Sent ${DateFormat('d MMM').format(DateTime.parse(a['created_at']).toLocal())}',
-                            style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                      ]),
-                    ),
-                    TagPill(a['status'] == 'confirmed' ? 'Confirmed' : 'Requested',
-                        bg: a['status'] == 'confirmed' ? AppColors.tertiaryFixed : AppColors.surfaceContainerHigh, fg: a['status'] == 'confirmed' ? AppColors.onTertiaryFixedVariant : AppColors.onSurfaceVariant),
-                  ]),
-                ),
+              ListRow(
+                icon: a['kind'] == 'chat' ? Symbols.chat_rounded : Symbols.event_rounded,
+                color: AppColors.primary,
+                title: (a['professionals'] as Map?)?['name'] ?? a['service'] ?? 'Care request',
+                subtitle: a['preferred_at'] != null
+                    ? 'Preferred ${DateFormat('EEE d MMM, h a').format(DateTime.parse(a['preferred_at']).toLocal())}'
+                    : 'Sent ${DateFormat('d MMM').format(DateTime.parse(a['created_at']).toLocal())}',
+                trailing: TagPill(a['status'] == 'confirmed' ? 'Confirmed' : 'Pending',
+                    bg: a['status'] == 'confirmed' ? AppColors.tint(AppColors.tertiary) : AppColors.surfaceContainerHigh, fg: a['status'] == 'confirmed' ? AppColors.tertiary : AppColors.onSurfaceVariant),
               ),
           ]),
-        VCard(
-          color: AppColors.secondaryFixed.withValues(alpha: 0.35),
-          border: Border.all(color: AppColors.secondaryFixed),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(Symbols.emergency, color: AppColors.error),
-              const SizedBox(width: 8),
-              Text('24/7 Student Safety Net', style: T.headlineSm.c(AppColors.onSecondaryFixedVariant)),
-            ]),
-            const SizedBox(height: 6),
-            Text('If you or someone around you is in immediate emotional or medical distress, you are never alone.', style: T.bodySm.c(AppColors.onSecondaryFixedVariant)),
-            const SizedBox(height: Sp.sm),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              _safety(Symbols.call, 'Call 1926 (Mental Health)', () => callNumber(context, '1926')),
-              _safety(Symbols.support_agent, 'Call 1333 (CCCline)', () => callNumber(context, '1333')),
-            ]),
-          ]),
-        ),
+        ListGroup(children: [
+          ListRow(icon: Symbols.emergency_rounded, destructive: true, title: 'Need help right now?', subtitle: 'Emergency and crisis lines, 24/7', onTap: () => context.push('/help')),
+        ]),
       ],
     );
   }
 
-  Widget _safety(IconData icon, String label, VoidCallback onTap) => Pressable(
-        onTap: onTap,
-        child: Pill(
-          color: AppColors.surfaceContainerLowest,
-          shadow: Shadows.tiny,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 16, color: AppColors.error),
-            const SizedBox(width: 6),
-            Text(label, style: T.labelSm),
-          ]),
-        ),
-      );
-
   Widget _proCard(Rec p) {
+    final chatOnly = p['mode'] == 'chat';
     final modeIcon = switch (p['mode']) {
-      'virtual' => Symbols.videocam,
-      'dropin' => Symbols.hourglass_bottom,
-      _ => Symbols.location_on,
+      'virtual' => Symbols.videocam_rounded,
+      'dropin' => Symbols.door_open_rounded,
+      'chat' => Symbols.forum_rounded,
+      _ => Symbols.location_on_rounded,
     };
-    final name = p['credentials'] == null ? p['name'] : '${p['name']}, ${p['credentials']}';
+    final name = p['credentials'] == null ? p['name'] as String : '${p['name']}, ${p['credentials']}';
+    final initials = (p['name'] as String).replaceAll(RegExp(r'^(Dr|Mr|Ms|Mrs)\.?\s+'), '').split(RegExp(r'\s+')).where((w) => w.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join();
+    final c = switch (p['category']) {
+      'mental' => AppColors.mind,
+      'nutrition' => AppColors.nutrition,
+      'cardiology' => AppColors.heart,
+      'sleep' => AppColors.sleep,
+      _ => AppColors.primary,
+    };
     return VCard(
-      shadow: Shadows.card,
-      padding: const EdgeInsets.all(14),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(120), bottom: Radius.circular(24)),
-          child: SizedBox(
-            height: 240,
-            child: Stack(fit: StackFit.expand, children: [
-              p['photo_key'] != null
-                  ? AssetImg(p['photo_key'], alignment: Alignment.topCenter)
-                  : Container(color: AppColors.primaryFixed, child: Icon(Symbols.person, size: 64, color: AppColors.primary)),
-              Positioned(
-                right: 14,
-                bottom: 14,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(color: AppColors.tertiaryContainer, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                ),
-              ),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: AppColors.tint(c), shape: BoxShape.circle),
+            child: chatOnly ? Icon(Symbols.groups_rounded, color: c, fill: 1) : Text(initials, style: T.labelLg.semi.c(c)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(name, style: T.labelLg.semi),
+              Text(p['specialty'] ?? '', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+              if (p['availability'] != null) ...[
+                const SizedBox(height: 6),
+                Row(children: [
+                  Icon(modeIcon, size: 16, color: AppColors.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(p['availability'], style: T.bodySm.c(AppColors.onSurfaceVariant))),
+                ]),
+              ],
             ]),
           ),
-        ),
-        const SizedBox(height: Sp.sm),
-        Text(name, style: T.headlineSm),
-        const SizedBox(height: 4),
-        Align(alignment: Alignment.centerLeft, child: TagPill(p['specialty'] ?? '', bg: AppColors.secondaryFixed.withValues(alpha: 0.5), fg: AppColors.onSecondaryFixedVariant)),
-        const SizedBox(height: Sp.sm),
+        ]),
+        const SizedBox(height: Sp.md),
         Row(children: [
-          Icon(modeIcon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Expanded(child: Text(p['availability'] ?? '', style: T.bodySm.c(AppColors.onSurfaceVariant))),
-          CircleButton(Symbols.chat, size: 40, iconSize: 18, bg: AppColors.primaryFixed, fg: AppColors.primary, onTap: () => _request(pro: p, service: p['specialty'] ?? 'Consultation', chat: true)),
-          const SizedBox(width: 8),
-          PrimaryButton('Book', leadingIcon: Symbols.event, height: 40, expand: false, textStyle: T.labelMd.c(AppColors.onPrimary), onTap: () => _request(pro: p, service: p['specialty'] ?? 'Consultation')),
+          Expanded(
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+              onPressed: () => _request(pro: p, service: chatOnly ? 'Peer chat' : (p['specialty'] ?? 'Consultation'), chat: true),
+              icon: const Icon(Symbols.chat_rounded, size: 18),
+              label: const Text('Message'),
+            ),
+          ),
+          if (!chatOnly) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+                onPressed: () => _request(pro: p, service: p['specialty'] ?? 'Consultation'),
+                icon: const Icon(Symbols.event_rounded, size: 18),
+                label: const Text('Book'),
+              ),
+            ),
+          ],
         ]),
       ]),
     );

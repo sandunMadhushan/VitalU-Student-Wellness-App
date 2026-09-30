@@ -14,6 +14,7 @@ import '../../data/repo.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
+import '../home/home_screen.dart' show bodyMetricTiles;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -81,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final id = uid;
       final session = db.auth.currentSession;
       if (id == null || session == null) {
-        if (mounted) toast(context, 'Your session expired — please sign out and sign in again.', error: true);
+        if (mounted) toast(context, 'Your session expired. Sign out and sign in again.', error: true);
         return;
       }
       final bytes = await x.readAsBytes();
@@ -130,95 +131,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, _) {
         final p = AppState.instance.profile;
         if (p == null) return const Scaffold(body: Loading());
-        final bmi = p.bmi, whr = p.whr;
+        final goalGlasses = (p.waterGoalMl / 250).round();
         return VPage(
           header: const MainHeader('Profile'),
           nav: NavTab.profile,
-          padding: const EdgeInsets.symmetric(horizontal: Sp.margin),
+          topPadding: 0,
           children: [
-            FullBleed(
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(Sp.margin, 16, Sp.margin, 24),
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(Rad.lg)),
-                  gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.tertiaryFixedDim.withValues(alpha: 0.2), AppColors.surfaceContainerLow, AppColors.surface]),
-                ),
-                child: Column(children: [
-                  Row(children: [
-                    CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLowest, fg: AppColors.onSurface, shadow: Shadows.soft, onTap: () => goBack(context)),
-                    Expanded(child: Text('Health Profile', textAlign: TextAlign.center, style: T.headlineSm)),
-                    CircleButton(Symbols.edit, size: 40, iconSize: 19, bg: AppColors.surfaceContainerLowest, fg: AppColors.primary, shadow: Shadows.tinted(AppColors.primary, opacity: 0.2, blur: 20, y: 8), onTap: () => context.push('/profile/edit')),
-                  ]),
-                  const SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: _avatar,
-                    child: Stack(clipBehavior: Clip.none, children: [
-                      Positioned.fill(child: Glow(color: AppColors.tertiaryFixed.withValues(alpha: 0.7), size: 100)),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, shape: BoxShape.circle, boxShadow: Shadows.soft),
-                        child: Avatar(size: 88, ring: false, onTap: _avatar),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(color: AppColors.tertiaryContainer, shape: BoxShape.circle, boxShadow: Shadows.tinted(AppColors.tertiary, opacity: 0.3, blur: 8, y: 2, spread: 0)),
-                          child: Icon(Symbols.photo_camera, size: 13, color: AppColors.onTertiary, fill: 1),
-                        ),
-                      ),
-                    ]),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(p.fullName, style: T.headlineMd),
-                ]),
+            _identity(p),
+            SectionHeader('My health metrics',
+                trailing: Text(p.measuredAt == null ? 'Not measured yet' : 'Updated ${DateFormat('d MMM').format(p.measuredAt!.toLocal())}', style: T.labelMd.c(AppColors.onSurfaceVariant))),
+            bodyMetricTiles(p, (r) => context.push(r)),
+            const SectionHeader("Today's goals"),
+            TileGrid(children: [
+              MetricTile(
+                label: 'Water',
+                icon: Symbols.water_drop_rounded,
+                color: AppColors.water,
+                value: '${(_waterMl / 250).round()}',
+                unit: 'of $goalGlasses glasses',
+                progress: _waterMl / p.waterGoalMl,
+                onTap: () => context.push('/tools/water'),
               ),
-            ),
-            Row(children: [
-              Expanded(child: Text('My Health Metrics', style: T.headlineSm)),
-              Text(p.measuredAt == null ? 'Not yet updated' : 'Updated ${DateFormat('d MMM').format(p.measuredAt!.toLocal())}', style: T.labelSm.c(AppColors.onSurfaceVariant)),
+              MetricTile(
+                label: 'Activity',
+                icon: Symbols.directions_walk_rounded,
+                color: AppColors.activity,
+                value: Fmt.thousands(_steps),
+                unit: 'steps',
+                progress: _steps / p.stepGoal,
+                onTap: () => context.push('/tools/activity'),
+              ),
+              MetricTile(
+                label: 'Meals',
+                icon: Symbols.restaurant_rounded,
+                color: AppColors.nutrition,
+                value: '$_mealsToday',
+                unit: 'logged',
+                onTap: () => context.push('/diet'),
+              ),
+              MetricTile(
+                label: 'Food variety',
+                icon: Symbols.nutrition_rounded,
+                color: AppColors.nutrition,
+                value: '$_diversityToday',
+                unit: 'of 8 groups',
+                progress: _diversityToday / 8,
+                onTap: () => context.push('/diet/diversity'),
+              ),
+              MetricTile(
+                label: 'Sleep',
+                icon: Symbols.bedtime_rounded,
+                color: AppColors.sleep,
+                value: _sleepMinutes == null ? '—' : Fmt.hm(_sleepMinutes!).replaceAll(' 0', ' '),
+                caption: _sleepMinutes == null ? 'Not logged' : 'Goal ${p.sleepGoalHours.toStringAsFixed(0)} h',
+                onTap: () => context.push('/tools/sleep'),
+              ),
             ]),
-            Row(children: [
-              _bmiStat(bmi, () => context.push('/tools/bmi')),
-              const SizedBox(width: 10),
-              _stat(Symbols.accessibility_new, AppColors.primaryFixed.withValues(alpha: 0.6), AppColors.primary, whr?.toStringAsFixed(2) ?? '—', 'WHR Ratio',
-                  whr == null ? 0 : ((whr - 0.6) / 0.5).clamp(0, 1), () => context.push('/tools/whr')),
-            ]),
-            Text("Today's Health Goals", style: T.headlineSm),
-            Row(children: [
-              _goalTile(Symbols.water_drop, AppColors.primaryFixed, AppColors.primary, '${(_waterMl / 250).round()}/${(p.waterGoalMl / 250).round()}', 'Water (glasses)'),
-              const SizedBox(width: Sp.xs),
-              _goalTile(Symbols.restaurant, AppColors.secondaryFixed, AppColors.secondary, '$_mealsToday', 'Meals logged'),
-              const SizedBox(width: Sp.xs),
-              _goalTile(Symbols.nutrition, AppColors.tertiaryFixed, AppColors.tertiary, '$_diversityToday/8', 'Diet diversity'),
-            ]),
-            Row(children: [
-              _goalTile(Symbols.directions_walk, AppColors.butterWash, AppColors.butterAccent, Fmt.thousands(_steps), 'Activity (steps)'),
-              const SizedBox(width: Sp.xs),
-              _goalTile(Symbols.bedtime, AppColors.primaryFixed, AppColors.primary, _sleepMinutes == null ? '—' : Fmt.hm(_sleepMinutes!), 'Sleep'),
-            ]),
-            Text('Settings & Support', style: T.headlineSm),
-            VCard(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              shadow: Shadows.soft,
-              child: Column(children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(Sp.md, 10, Sp.md, 4),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                    IconCircle(AppState.instance.themeMode == ThemeMode.dark ? Symbols.dark_mode : Symbols.light_mode, size: 36, iconSize: 18, bg: AppColors.surfaceContainerLow, fg: AppColors.primary),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Appearance', style: T.labelLg),
-                        Text('Light, dark or match your device', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                      ]),
-                    ),
-                  ]),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(Sp.md, 8, Sp.md, 10),
+            ListGroup(header: 'Appearance', children: [
+              Padding(
+                padding: const EdgeInsets.all(Sp.md),
+                child: SizedBox(
+                  width: double.infinity,
                   child: Segmented(
                     small: false,
                     options: const ['Light', 'Dark', 'System'],
@@ -226,115 +199,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onChanged: (v) => AppState.instance.setThemeMode(_themeModeFromLabel(v)),
                   ),
                 ),
-                Container(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.3), margin: const EdgeInsets.symmetric(horizontal: Sp.md)),
-                SwitchListTile(
-                  value: p.researchConsent,
-                  onChanged: _consent,
-                  activeTrackColor: AppColors.tertiary,
-                  secondary: IconCircle(Symbols.science, size: 36, iconSize: 18, bg: AppColors.tertiaryFixed, fg: AppColors.tertiary),
-                  title: Text('Research participation', style: T.labelLg),
-                  subtitle: Text('Share anonymised assessment results', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              ),
+            ]),
+            ListGroup(
+              header: 'Privacy',
+              footer: 'Includes only completed term assessments, reported for groups of five or more students. Daily tracking is never shared.',
+              children: [
+                ListRow(
+                  icon: Symbols.science_rounded,
+                  color: AppColors.mind,
+                  title: 'Research participation',
+                  subtitle: 'Share anonymised assessment results',
+                  trailing: Switch(value: p.researchConsent, onChanged: _consent),
                 ),
-                _link(Symbols.event_note, 'My appointments & requests', () => _appointments()),
-                _link(Symbols.lab_profile, 'My blood reports', () => context.push('/blood-report')),
-                _link(Symbols.notifications, 'Notifications', () => context.push('/notifications')),
-                _link(Symbols.info, 'About & Support', () => context.push('/about')),
-                _link(Symbols.emergency, 'Need Help Now', () => context.push('/help'), color: AppColors.error),
-                _link(Symbols.logout, 'Sign out', () async {
+              ],
+            ),
+            ListGroup(header: 'Records', children: [
+              ListRow(icon: Symbols.event_note_rounded, color: AppColors.primary, title: 'Appointments & requests', onTap: _appointments),
+              ListRow(icon: Symbols.lab_profile_rounded, color: AppColors.heart, title: 'Blood reports', onTap: () => context.push('/blood-report')),
+              ListRow(icon: Symbols.notifications_rounded, color: AppColors.warning, title: 'Notifications', onTap: () => context.push('/notifications')),
+            ]),
+            ListGroup(header: 'Support', children: [
+              ListRow(icon: Symbols.info_rounded, color: AppColors.water, title: 'About VitalU', onTap: () => context.push('/about')),
+              ListRow(icon: Symbols.emergency_rounded, color: AppColors.error, title: 'Emergency & support lines', onTap: () => context.push('/help')),
+            ]),
+            ListGroup(children: [
+              ListRow(
+                icon: Symbols.logout_rounded,
+                title: 'Sign out',
+                destructive: true,
+                chevron: false,
+                onTap: () async {
                   await AppState.instance.signOut();
                   if (context.mounted) context.go('/auth/login');
-                }),
-              ]),
-            ),
+                },
+              ),
+            ]),
           ],
         );
       },
     );
   }
 
+  Widget _identity(Profile p) => VCard(
+        onTap: () => context.push('/profile/edit'),
+        child: Row(children: [
+          GestureDetector(
+            onTap: _avatar,
+            child: Stack(clipBehavior: Clip.none, children: [
+              Avatar(size: 64, ring: false, onTap: _avatar),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle, border: Border.all(color: AppColors.surfaceContainerLowest, width: 2)),
+                  child: Icon(Symbols.photo_camera_rounded, size: 13, color: AppColors.onPrimary, fill: 1),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(width: Sp.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(p.fullName, style: T.headlineMd, maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 2),
+              Text('Edit profile', style: T.bodyMd.c(AppColors.primary)),
+            ]),
+          ),
+          Icon(Symbols.chevron_right_rounded, color: AppColors.outline),
+        ]),
+      );
+
   Future<void> _appointments() async {
     final list = await Repo.appointments();
     if (!mounted) return;
     showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('My Appointments & Requests', style: T.headlineMd),
+          Text('Appointments & requests', style: T.headlineMd),
           const SizedBox(height: Sp.md),
-          if (list.isEmpty) Text('No requests yet. Book a visit from Talk to a Professional.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-          for (final a in list)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: VCard(
-                color: AppColors.surfaceContainerLow,
-                padding: const EdgeInsets.all(14),
-                child: Row(children: [
-                  Icon(a['kind'] == 'chat' ? Symbols.chat : Symbols.event, color: AppColors.primary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text((a['professionals'] as Map?)?['name'] ?? a['service'] ?? 'Request', style: T.labelLg),
-                      Text(
-                          '${a['preferred_at'] != null ? DateFormat('EEE d MMM, h:mm a').format(DateTime.parse(a['preferred_at']).toLocal()) : DateFormat('d MMM').format(DateTime.parse(a['created_at']).toLocal())} • ${a['status']}',
-                          style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                    ]),
-                  ),
-                ]),
-              ),
-            ),
+          if (list.isEmpty) Text('No requests yet. You can book from Talk to a professional.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+          if (list.isNotEmpty)
+            ListGroup(dividerIndent: 16, children: [
+              for (final a in list)
+                ListRow(
+                  icon: a['kind'] == 'chat' ? Symbols.chat_rounded : Symbols.event_rounded,
+                  title: (a['professionals'] as Map?)?['name'] ?? a['service'] ?? 'Request',
+                  subtitle:
+                      '${a['preferred_at'] != null ? DateFormat('EEE d MMM, h:mm a').format(DateTime.parse(a['preferred_at']).toLocal()) : DateFormat('d MMM').format(DateTime.parse(a['created_at']).toLocal())} · ${a['status']}',
+                ),
+            ]),
         ]));
   }
-
-  Widget _link(IconData icon, String label, VoidCallback onTap, {Color? color}) {
-    final color0 = color ?? AppColors.primary;
-    return ListTile(
-      onTap: onTap,
-      leading: IconCircle(icon, size: 36, iconSize: 18, bg: AppColors.surfaceContainerLow, fg: color0),
-      title: Text(label, style: T.labelLg.c(color0 == AppColors.error ? AppColors.error : AppColors.onSurface)),
-      trailing: Icon(Symbols.chevron_right, color: AppColors.outline),
-    );
-  }
-
-  Widget _stat(IconData icon, Color bg, Color fg, String value, String label, double bar, VoidCallback onTap) => Expanded(
-        child: VCard(
-          padding: const EdgeInsets.all(14),
-          shadow: Shadows.soft,
-          onTap: onTap,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconCircle(icon, size: 28, iconSize: 16, bg: bg, fg: fg),
-            const SizedBox(height: 8),
-            Text(value, style: T.headlineMd.lh(1)),
-            const SizedBox(height: 4),
-            Text(label, style: T.labelSm.s(11).c(AppColors.onSurfaceVariant)),
-            const SizedBox(height: 10),
-            Bar(value: bar, height: 6, color: fg, track: AppColors.surfaceContainer),
-          ]),
-        ),
-      );
-
-  /// BMI tile with a status-coloured icon (underweight/normal/overweight/obese)
-  /// instead of a body photo, per the "visually show BMI status" request.
-  Widget _bmiStat(double? bmi, VoidCallback onTap) {
-    final (icon, bg, fg) = switch (bmi == null ? null : Calc.bmiCategory(bmi)) {
-      null => (Symbols.scale, AppColors.surfaceContainerHigh, AppColors.onSurfaceVariant),
-      'Underweight' => (Symbols.trending_down, AppColors.skyWash, AppColors.skyAccent),
-      'Normal Weight' => (Symbols.check_circle, AppColors.tertiaryFixed, AppColors.tertiary),
-      'Overweight' => (Symbols.trending_up, AppColors.butterWash, AppColors.butterAccent),
-      _ => (Symbols.priority_high, AppColors.errorContainer, AppColors.error),
-    };
-    return _stat(icon, bg, fg, bmi?.toStringAsFixed(1) ?? '—', 'BMI Range', bmi == null ? 0 : ((bmi - 15) / 20).clamp(0, 1), onTap);
-  }
-
-  Widget _goalTile(IconData icon, Color bg, Color fg, String value, String label) => Expanded(
-        child: VCard(
-          color: AppColors.surfaceContainerLowest,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          shadow: Shadows.tiny,
-          child: Column(children: [
-            IconCircle(icon, size: 32, iconSize: 16, bg: bg, fg: fg, fill: 1),
-            const SizedBox(height: 6),
-            Text(value, style: T.labelLg.bold, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(label, style: T.labelSm.s(10).c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
-          ]),
-        ),
-      );
 
   String _themeModeLabel(ThemeMode m) => switch (m) {
         ThemeMode.light => 'Light',

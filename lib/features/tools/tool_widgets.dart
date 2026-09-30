@@ -5,7 +5,7 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 
-/// Card with a big value, −/+ steppers, a unit toggle and a slider.
+/// Measurement card: title with a unit switch, a large value with −/+ and a slider.
 class StepperMeasureCard extends StatelessWidget {
   const StepperMeasureCard({
     super.key,
@@ -46,71 +46,40 @@ class StepperMeasureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent0 = accent ?? AppColors.tertiary;
+    final c = accent ?? AppColors.body;
+    Widget stepBtn(IconData i, double delta) => IconButton.outlined(
+          onPressed: () => onChanged((value + delta).clamp(min, max)),
+          icon: Icon(i, size: 20),
+          style: IconButton.styleFrom(side: BorderSide(color: AppColors.outlineVariant), foregroundColor: AppColors.onSurface),
+        );
     return VCard(
-      shadow: const [BoxShadow(color: Color(0x0A2D2B38), blurRadius: 28, offset: Offset(0, 12), spreadRadius: -8)],
       child: Column(children: [
         Row(children: [
-          IconCircle(icon, size: 36, iconSize: 20, bg: AppColors.surfaceContainer, fg: accent0),
-          const SizedBox(width: Sp.xs + 2),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: T.headlineSm),
-              if (subtitle != null) Text(subtitle!, style: T.bodySm.c(AppColors.onSurfaceVariant)),
-            ]),
-          ),
-          _UnitToggle(units: units, unit: unit, onUnit: onUnit, accent: accent0),
+          Expanded(child: CategoryLabel(title, icon: icon, color: c)),
+          Segmented(options: units, value: unit, onChanged: onUnit),
         ]),
+        if (subtitle != null) Align(alignment: Alignment.centerLeft, child: Padding(padding: const EdgeInsets.only(top: 2), child: Text(subtitle!, style: T.bodySm.c(AppColors.onSurfaceVariant)))),
         const SizedBox(height: Sp.md),
         Row(children: [
-          CircleButton(Symbols.remove, bg: AppColors.surfaceContainerLow, fg: AppColors.onSurface, iconSize: 20, onTap: () => onChanged((value - step).clamp(min, max))),
+          stepBtn(Symbols.remove_rounded, -step),
           Expanded(
             child: Column(children: [
-              Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-                Text(display, style: T.headlineXlMobile),
-                const SizedBox(width: 4),
-                Text(unitLabel, style: T.labelMd.c(AppColors.onSurfaceVariant)),
-              ]),
-              if (caption != null) Text(caption!, style: T.labelSm.c(AppColors.outline)),
+              MetricValue(display, unit: unitLabel.isEmpty ? null : unitLabel, size: 36),
+              if (caption != null) Text(caption!, style: T.bodySm.c(AppColors.onSurfaceVariant)),
             ]),
           ),
-          CircleButton(Symbols.add, bg: AppColors.surfaceContainerLow, fg: AppColors.onSurface, iconSize: 20, onTap: () => onChanged((value + step).clamp(min, max))),
+          stepBtn(Symbols.add_rounded, step),
         ]),
         const SizedBox(height: Sp.xs),
-        VSlider(value: value, min: min, max: max, color: accent0, onChanged: onChanged),
+        VSlider(value: value, min: min, max: max, color: c, onChanged: onChanged),
         if (scaleLabels != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [for (final l in scaleLabels!) Text(l, style: T.labelSm.s(10).c(AppColors.outline))]),
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [for (final l in scaleLabels!) Text(l, style: T.labelSm.c(AppColors.onSurfaceVariant))]),
           ),
       ]),
     );
   }
-}
-
-class _UnitToggle extends StatelessWidget {
-  const _UnitToggle({required this.units, required this.unit, required this.onUnit, required this.accent});
-  final List<String> units;
-  final String unit;
-  final ValueChanged<String> onUnit;
-  final Color accent;
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(color: AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.full)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          for (final u in units)
-            GestureDetector(
-              onTap: () => onUnit(u),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(color: u == unit ? accent : Colors.transparent, borderRadius: BorderRadius.circular(Rad.full), boxShadow: u == unit ? Shadows.tiny : null),
-                child: Text(u, style: T.labelSm.c(u == unit ? Colors.white : AppColors.onSurfaceVariant)),
-              ),
-            ),
-        ]),
-      );
 }
 
 class GaugeSegment {
@@ -121,9 +90,9 @@ class GaugeSegment {
   final double? to;
 }
 
-/// Segmented pastel spectrum with a "You: x" marker.
+/// Segmented range bar with a marker for the student's value.
 class SpectrumGauge extends StatelessWidget {
-  const SpectrumGauge({super.key, required this.segments, required this.position, required this.markerLabel, this.labels = const [], this.height = 12});
+  const SpectrumGauge({super.key, required this.segments, required this.position, required this.markerLabel, this.labels = const [], this.height = 10});
   final List<GaugeSegment> segments;
 
   /// 0..1 across the full bar.
@@ -135,97 +104,75 @@ class SpectrumGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      const SizedBox(height: 30),
       LayoutBuilder(builder: (context, c) {
-        final x = (position.clamp(0.02, 0.98)) * c.maxWidth;
+        final x = position.clamp(0.0, 1.0) * c.maxWidth;
         return Stack(clipBehavior: Clip.none, children: [
-          Container(
-            height: height,
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(color: AppColors.surfaceContainer, borderRadius: BorderRadius.circular(height)),
+          Padding(
+            padding: const EdgeInsets.only(top: 26),
             child: Row(children: [
               for (int i = 0; i < segments.length; i++) ...[
-                if (i > 0) const SizedBox(width: 4),
+                if (i > 0) const SizedBox(width: 3),
                 Expanded(
                   flex: (segments[i].flex * 100).round(),
                   child: Container(
+                    height: height,
                     decoration: BoxDecoration(
                       color: segments[i].color,
                       borderRadius: BorderRadius.horizontal(
-                        left: Radius.circular(i == 0 ? height : 0),
-                        right: Radius.circular(i == segments.length - 1 ? height : 0),
+                        left: Radius.circular(i == 0 ? height : 2),
+                        right: Radius.circular(i == segments.length - 1 ? height : 2),
                       ),
                     ),
                   ),
                 ),
-              ]
+              ],
             ]),
           ),
           AnimatedPositioned(
-            duration: const Duration(milliseconds: 400),
+            duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutCubic,
-            left: x - 40,
-            top: -30,
+            left: (x - 40).clamp(-8.0, c.maxWidth - 72),
+            top: 0,
             width: 80,
             child: Column(children: [
-              Pill(
-                color: AppColors.inverseSurface,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                shadow: Shadows.tiny,
-                child: Text(markerLabel, style: T.labelSm.s(10).c(AppColors.inverseOnSurface)),
-              ),
-              CustomPaint(size: const Size(8, 5), painter: _Tri()),
+              Text(markerLabel, style: T.labelSm.semi.tnum),
+              const SizedBox(height: 2),
+              Container(width: 2, height: 8 + height, color: AppColors.onSurface),
             ]),
           ),
         ]);
       }),
       if (labels.isNotEmpty) ...[
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: labels),
       ],
     ]);
   }
 }
 
-class _Tri extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size s) {
-    final p = Path()
-      ..moveTo(0, 0)
-      ..lineTo(s.width, 0)
-      ..lineTo(s.width / 2, s.height)
-      ..close();
-    canvas.drawPath(p, Paint()..color = AppColors.inverseSurface);
-  }
+Widget gaugeLabel(String t, {Color? color, bool bold = false}) => Text(t, style: T.labelSm.c(color ?? AppColors.onSurfaceVariant).w(bold ? FontWeight.w600 : FontWeight.w500));
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-Widget gaugeLabel(String t, {Color? color, bool bold = false}) => Text(t, style: T.labelSm.s(10).c(color ?? AppColors.onSurfaceVariant).w(bold ? FontWeight.w600 : FontWeight.w500));
-
-/// "🔒 Confidential • Self-Check Tool" + help icon row.
+/// Privacy line plus a "How it works" link for self-check tools.
 class ToolSubBar extends StatelessWidget {
-  const ToolSubBar({super.key, this.label = 'Confidential • Self-Check Tool', this.onHelp, this.icon = Symbols.shield_with_heart});
+  const ToolSubBar({super.key, this.label = 'Private self-check', this.onHelp, this.icon = Symbols.lock_rounded});
   final String label;
   final VoidCallback? onHelp;
   final IconData icon;
   @override
   Widget build(BuildContext context) => Row(children: [
-        TagPill(label, icon: icon, fill: 1, fg: AppColors.tertiary),
-        const Spacer(),
-        if (onHelp != null) CircleButton(Symbols.help, size: 32, iconSize: 18, bg: AppColors.surfaceContainerLowest, shadow: Shadows.tiny, onTap: onHelp),
+        Icon(icon, size: 16, color: AppColors.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Expanded(child: Text(label, style: T.bodySm.c(AppColors.onSurfaceVariant))),
+        if (onHelp != null) TextLinkButton('How it works', leading: Symbols.info_rounded, onTap: onHelp),
       ]);
 }
 
-Future<void> showInfoSheet(BuildContext context, {required String title, required List<String> paragraphs, IconData icon = Symbols.info}) {
+Future<void> showInfoSheet(BuildContext context, {required String title, required List<String> paragraphs, IconData icon = Symbols.info_rounded}) {
   return showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        IconCircle(icon, bg: AppColors.primaryFixed),
-        const SizedBox(height: Sp.sm),
         Text(title, style: T.headlineMd),
+        const SizedBox(height: Sp.md),
+        for (final p in paragraphs) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(p, style: T.bodyLg.c(AppColors.onSurfaceVariant))),
         const SizedBox(height: Sp.sm),
-        for (final p in paragraphs) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(p, style: T.bodyMd.c(AppColors.onSurfaceVariant))),
-        const SizedBox(height: Sp.sm),
-        PrimaryButton('Got it', onTap: () => Navigator.pop(ctx)),
+        PrimaryButton('Done', onTap: () => Navigator.pop(ctx)),
       ]));
 }

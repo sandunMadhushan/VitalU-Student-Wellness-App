@@ -34,13 +34,13 @@ class LabValue {
 }
 
 const reportCategories = [
-  ('all', 'All Results'),
+  ('all', 'All'),
   ('metabolic', 'Metabolic'),
-  ('vitamins_minerals', 'Vitamins & Minerals'),
+  ('vitamins_minerals', 'Vitamins and minerals'),
   ('lipids', 'Lipids'),
-  ('blood_count', 'Blood Count'),
+  ('blood_count', 'Blood count'),
   ('thyroid', 'Thyroid'),
-  ('kidney_liver', 'Kidney & Liver'),
+  ('kidney_liver', 'Kidney and liver'),
   ('other', 'Other'),
 ];
 
@@ -103,8 +103,8 @@ class _ReportExplainedScreenState extends State<ReportExplainedScreen> {
   Future<void> _pdf() async {
     final vals = _values;
     await sharePdf(
-      title: 'Your Report, Explained',
-      subtitle: '${_r?['panel_name'] ?? 'Lab panel'} • decoded ${pdfDate(DateTime.parse(_r!['created_at']).toLocal())}',
+      title: 'Blood report explained',
+      subtitle: '${_r?['panel_name'] ?? 'Lab panel'} · explained ${pdfDate(DateTime.parse(_r!['created_at']).toLocal())}',
       sections: {
         'Summary': [
           [_r?['summary']?.toString() ?? ''],
@@ -129,7 +129,7 @@ class _ReportExplainedScreenState extends State<ReportExplainedScreen> {
         service: 'Lab report review',
         message: flagged.isEmpty ? 'Routine review of my decoded lab report.' : 'I would like a review of: ${flagged.join(', ')}.',
       );
-      if (mounted) toast(context, 'Consult request sent — the health centre will confirm a time 💜');
+      if (mounted) toast(context, 'Request sent. The health centre will confirm a time.');
     } catch (_) {
       if (mounted) toast(context, 'Could not send the request. Please try again.', error: true);
     }
@@ -144,139 +144,90 @@ class _ReportExplainedScreenState extends State<ReportExplainedScreen> {
     final flagged = vals.where((v) => !v.inRange).toList();
 
     return VPage(
-      header: const MainHeader('VitalU Health Education Library'),
-      nav: NavTab.library,
-      navVariantLibrary: true,
+      header: TitleHeader('Report explained', onLeading: () => goBack(context, '/blood-report'), actions: [
+        if (vals.isNotEmpty) IconButton(tooltip: 'Download PDF', icon: const Icon(Symbols.download_rounded), onPressed: _pdf),
+        if (r != null) IconButton(tooltip: 'Delete report', icon: const Icon(Symbols.delete_rounded), onPressed: _delete),
+      ]),
       onRefresh: _load,
       children: [
-        Container(
-          padding: const EdgeInsets.all(Sp.md),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Rad.lg),
-            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.primaryFixed.withValues(alpha: 0.6), AppColors.surfaceContainerLow]),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              CircleButton(Symbols.arrow_back, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLowest, fg: AppColors.onSurface, shadow: Shadows.tiny, onTap: () => goBack(context, '/blood-report')),
-              const Spacer(),
-              TagPill('Decoded with VitalU Care', icon: Symbols.verified, bg: AppColors.surfaceContainerLowest, fg: AppColors.primary, iconColor: AppColors.primary),
-              if (r != null) ...[const SizedBox(width: 6), CircleButton(Symbols.delete, size: 36, iconSize: 18, onTap: _delete)],
-            ]),
-            const SizedBox(height: Sp.sm),
-            Text('Your Report, Explained', style: T.headlineMd.s(24)),
-            const SizedBox(height: 4),
-            Text('Demystified routine student lab values in plain, gentle English.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-            const SizedBox(height: Sp.md),
-            VCard(
-              padding: const EdgeInsets.all(12),
-              shadow: Shadows.tiny,
-              child: Row(children: [
-                const SizedBox(width: 88, height: 72, child: AssetImg('decoded_report', radius: 16)),
-                const SizedBox(width: Sp.sm),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    TagPill(r?['panel_name'] ?? 'Lab Panel', icon: Symbols.circle, fill: 1, bg: AppColors.tertiaryFixed.withValues(alpha: 0.6), fg: AppColors.onTertiaryFixedVariant, iconColor: AppColors.tertiary),
-                    const SizedBox(height: 6),
-                    if (vals.isNotEmpty)
-                      Text.rich(
-                        TextSpan(children: [
-                          TextSpan(text: '${vals.length - flagged.length} of ${vals.length} indicators', style: T.labelMd),
-                          TextSpan(
-                              text: ' in your optimal zone. ${flagged.isEmpty ? 'Lovely balance!' : '${flagged.length} item${flagged.length == 1 ? '' : 's'} for gentle observation.'}',
-                              style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                        ]),
-                      )
-                    else
-                      Text(
-                          switch (r?['status']) {
-                            'failed' => 'We could not read this report yet.',
-                            'done' => r?['summary'] ?? 'No values found.',
-                            _ => 'Your report is being decoded…',
-                          },
-                          style: T.bodySm.c(AppColors.onSurfaceVariant)),
+        if (_loading) const Loading(),
+        if (!_loading && r == null) const EmptyState(icon: Symbols.lab_profile_rounded, title: 'Report not found', text: 'It may have been deleted.'),
+        if (r != null && vals.isNotEmpty)
+          VCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(r['panel_name'] ?? 'Lab panel', style: T.labelMd.c(AppColors.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              MetricValue('${vals.length - flagged.length}', unit: 'of ${vals.length} values in range', size: 30, color: flagged.isEmpty ? AppColors.tertiary : null),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  height: 8,
+                  child: Row(children: [
+                    for (int i = 0; i < vals.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 2),
+                      Expanded(child: Container(color: vals[i].inRange ? AppColors.tertiary : AppColors.warning)),
+                    ],
                   ]),
                 ),
-              ]),
-            ),
-          ]),
-        ),
-        if (_loading) const Loading(),
-        if (!_loading && r == null) const EmptyState(icon: Symbols.lab_profile, title: 'Report not found', text: 'It may have been deleted.'),
+              ),
+              if (r['summary'] != null) ...[
+                const SizedBox(height: 12),
+                Text(r['summary'], style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+              ],
+            ]),
+          ),
         if (r != null && vals.isEmpty)
           VCard(
-            shadow: Shadows.card,
             child: Column(children: [
-              IconCircle(r['status'] == 'failed' ? Symbols.error : Symbols.hourglass_top, size: 56, bg: AppColors.surfaceContainerLow),
               const SizedBox(height: Sp.sm),
-              Text(r['status'] == 'failed' ? 'We couldn\'t decode this one' : 'Still decoding', style: T.headlineSm),
-              const SizedBox(height: 4),
+              IconCircle(r['status'] == 'failed' ? Symbols.error_rounded : Symbols.hourglass_top_rounded, size: 56, iconSize: 28, fg: r['status'] == 'failed' ? AppColors.error : AppColors.primary),
+              const SizedBox(height: Sp.md),
+              Text(r['status'] == 'failed' ? "Couldn't read this report" : 'Reading your report', style: T.headlineSm),
+              const SizedBox(height: 6),
               Text(
                   r['status'] == 'failed'
                       ? (r['error']?.toString().contains('GEMINI') == true
                           ? 'The report reader is not configured yet. Please try again later.'
-                          : 'Blurry photos or unusual layouts can be tricky. You can retry, or upload a clearer photo or PDF.')
+                          : 'Blurry photos or unusual layouts can be hard to read. Try again, or upload a clearer photo or PDF.')
                       : 'This usually takes under a minute. Pull down to refresh.',
                   textAlign: TextAlign.center,
-                  style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                  style: T.bodyMd.c(AppColors.onSurfaceVariant)),
               const SizedBox(height: Sp.md),
-              PrimaryButton('Try decoding again', leadingIcon: Symbols.refresh, loading: _retrying, onTap: _retrying ? null : _retry),
+              if (r['status'] == 'failed') PrimaryButton('Try again', loading: _retrying, onTap: _retrying ? null : _retry),
             ]),
           ),
         if (vals.isNotEmpty) ...[
-          FullBleed(
-            child: ChipRow(children: [
-              for (final c in cats)
-                VChip(c.$1 == 'all' ? '${c.$2} (${vals.length})' : c.$2,
-                    icon: c.$1 == 'all' ? Symbols.check_circle : null,
-                    selected: _cat == c.$1,
-                    selectedColor: AppColors.inverseSurface,
-                    selectedFg: AppColors.inverseOnSurface,
-                    color: AppColors.surfaceContainer,
-                    onTap: () => setState(() => _cat = c.$1)),
-            ]),
-          ),
+          if (cats.length > 2)
+            FullBleed(
+              child: ChipRow(children: [
+                for (final c in cats) VChip(c.$2, selected: _cat == c.$1, onTap: () => setState(() => _cat = c.$1)),
+              ]),
+            ),
           for (final v in shown) _LabCard(v),
           VCard(
-            color: AppColors.secondaryFixed.withValues(alpha: 0.35),
-            shadow: Shadows.tiny,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                IconCircle(Symbols.medical_services, size: 40, iconSize: 20, bg: AppColors.secondaryFixed, fg: AppColors.secondary, radius: 12),
-                const SizedBox(width: Sp.sm),
+                IconCircle(Symbols.stethoscope_rounded, size: 40, iconSize: 20, fg: AppColors.primary),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Campus Care Check-in', style: T.headlineSm),
+                    Text(flagged.isEmpty ? 'Everything is in range' : 'Worth a check-up', style: T.headlineSm),
                     const SizedBox(height: 2),
                     Text(
                         flagged.isEmpty
-                            ? 'Everything looks balanced. A routine yearly check with campus doctors keeps it that way.'
-                            : 'Some values (like your ${flagged.first.name}) may benefit from a quick professional glance. Campus doctors can provide tailored guidance.',
-                        style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                            ? 'A routine yearly check with the university medical officer keeps it that way.'
+                            : '${flagged.map((v) => v.name).take(3).join(', ')} ${flagged.length == 1 ? 'is' : 'are'} outside the reference range. A doctor can tell you what it means for you.',
+                        style: T.bodyMd.c(AppColors.onSurfaceVariant)),
                   ]),
                 ),
               ]),
               const SizedBox(height: Sp.md),
-              PrimaryButton('Book Campus Health Consult', leadingIcon: Symbols.calendar_today, height: 52, onTap: _book),
-              const SizedBox(height: 4),
-              Center(child: TextLinkButton('Download Decoded PDF', leading: Symbols.download, color: AppColors.primary, onTap: _pdf)),
+              SoftButton('Request a consultation', icon: Symbols.calendar_today_rounded, onTap: _book),
             ]),
           ),
         ],
-        VCard(
-          color: AppColors.surfaceContainer,
-          child: Column(children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Symbols.lock, size: 16, color: AppColors.onSurfaceVariant),
-              const SizedBox(width: 4),
-              Text('Stored privately in your account', style: T.labelSm.c(AppColors.onSurfaceVariant)),
-            ]),
-            const SizedBox(height: 6),
-            Text(
-                'Decoded for educational wellness purposes. VitalU does not provide formal diagnosis or treatment plans. AI can misread values — always check your original report and consult your university health provider for clinical decisions.',
-                textAlign: TextAlign.center,
-                style: T.bodySm.c(AppColors.outline)),
-          ]),
-        ),
+        const PrivacyNote('For education only, not a diagnosis. AI can misread values, so check your original report and ask a doctor about clinical decisions.'),
       ],
     );
   }
@@ -289,53 +240,41 @@ class _LabCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final good = v.inRange;
-    final accent = good ? AppColors.tertiary : AppColors.secondary;
+    final accent = good ? AppColors.tertiary : AppColors.warning;
     return VCard(
-      shadow: Shadows.card,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          IconCircle(v.icon, size: 40, iconSize: 20, bg: AppColors.surfaceContainerLow),
-          const SizedBox(width: Sp.sm),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(v.name, style: T.headlineSm.lh(1.25)),
+              Text(v.name, style: T.headlineSm),
               if (v.subtitle.isNotEmpty) Text(v.subtitle, style: T.bodySm.c(AppColors.onSurfaceVariant)),
             ]),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           TagPill(v.statusLabel,
-              icon: good ? Symbols.check : (v.status == 'low' ? Symbols.south : Symbols.north),
-              bg: good ? AppColors.tertiaryFixed.withValues(alpha: 0.6) : AppColors.secondaryFixed,
-              fg: good ? AppColors.onTertiaryFixedVariant : AppColors.onSecondaryFixedVariant,
+              icon: good ? Symbols.check_rounded : (v.status == 'low' ? Symbols.arrow_downward_rounded : Symbols.arrow_upward_rounded),
+              bg: AppColors.tint(accent),
+              fg: accent,
               iconColor: accent),
         ]),
-        const SizedBox(height: Sp.md),
-        Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-          Text(v.valueText, style: T.headlineLg.c(good ? AppColors.onSurface : AppColors.secondary)),
-          const SizedBox(width: 4),
-          Text(v.unit, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+        const SizedBox(height: 12),
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          MetricValue(v.valueText, unit: v.unit, size: 28),
           const Spacer(),
-          Flexible(child: Text(v.reference, style: T.labelSm.c(AppColors.onSurfaceVariant).w(FontWeight.w500), textAlign: TextAlign.right)),
+          if (v.reference.isNotEmpty) Flexible(child: Text('Range ${v.reference}', style: T.bodySm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.right)),
         ]),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         _Gauge(v),
-        const SizedBox(height: Sp.sm),
-        if (v.explanation.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: good ? AppColors.surfaceContainerLow : AppColors.secondaryFixed.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(Rad.base)),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(v.tipIcon, size: 18, color: good ? AppColors.primary : AppColors.secondary),
-              const SizedBox(width: 8),
-              Expanded(child: Text(v.explanation, style: T.bodySm.c(AppColors.onSurface))),
-            ]),
-          ),
+        if (v.explanation.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(v.explanation, style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.45)),
+        ],
       ]),
     );
   }
 }
 
-/// Three-zone gauge (low / in-range / high) with a pin at the value.
+/// Three-zone gauge (low / in-range / high) with a marker at the value.
 class _Gauge extends StatelessWidget {
   const _Gauge(this.v);
   final LabValue v;
@@ -350,47 +289,46 @@ class _Gauge extends StatelessWidget {
     double f(double x) => ((x - min) / span).clamp(0.0, 1.0);
     final a = lo == null ? 0.0 : f(lo), b = hi == null ? 1.0 : f(hi);
     final pos = f(val);
-    const pink = Color(0xFFFFC7D9), mint = Color(0xFF9EEBC6), lav = Color(0xFFD9D0FF);
+    final ok = AppColors.tint(AppColors.tertiary), out = AppColors.surfaceContainerHigh;
     String n(double x) => LabValue._fmt(x);
-    final labels = [
-      if (lo != null) 'Low (<${n(lo)})',
-      lo != null && hi != null ? 'Optimal' : (hi != null ? '<${n(hi)} Desirable' : '≥${n(lo!)} Optimal'),
-      if (hi != null) 'High (>${n(hi)})',
-    ];
     return Column(children: [
       LayoutBuilder(builder: (context, c) {
         final w = c.maxWidth;
         return SizedBox(
-          height: 14,
+          height: 16,
           child: Stack(clipBehavior: Clip.none, children: [
             Positioned.fill(
-              top: 3,
-              bottom: 3,
+              top: 4,
+              bottom: 4,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
                 child: Row(children: [
-                  if (a > 0) Expanded(flex: (a * 1000).round().clamp(1, 1000), child: Container(color: lo == null ? mint : lav)),
-                  Expanded(flex: ((b - a) * 1000).round().clamp(1, 1000), child: Container(color: mint)),
-                  if (b < 1) Expanded(flex: ((1 - b) * 1000).round().clamp(1, 1000), child: Container(color: pink)),
+                  if (a > 0) Expanded(flex: (a * 1000).round().clamp(1, 1000), child: Container(color: lo == null ? ok : out)),
+                  Expanded(flex: ((b - a) * 1000).round().clamp(1, 1000), child: Container(color: ok)),
+                  if (b < 1) Expanded(flex: ((1 - b) * 1000).round().clamp(1, 1000), child: Container(color: out)),
                 ]),
               ),
             ),
             Positioned(
-              left: (pos * w - 7).clamp(0, w - 14),
+              left: (pos * w - 2).clamp(0, w - 4),
               top: 0,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(color: v.inRange ? AppColors.tertiary : AppColors.secondary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2), boxShadow: Shadows.tiny),
-              ),
+              child: Container(width: 4, height: 16, decoration: BoxDecoration(color: v.inRange ? AppColors.tertiary : AppColors.warning, borderRadius: BorderRadius.circular(2))),
             ),
           ]),
         );
       }),
-      const SizedBox(height: 6),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        for (final l in labels) Text(l, style: T.labelSm.s(10).c(AppColors.onSurfaceVariant).w(FontWeight.w500)),
-      ]),
+      const SizedBox(height: 4),
+      LayoutBuilder(builder: (context, c) {
+        final w = c.maxWidth;
+        final style = T.labelSm.tnum.c(AppColors.onSurfaceVariant);
+        return SizedBox(
+          height: 16,
+          child: Stack(children: [
+            if (lo != null) Positioned(left: (a * w - 20).clamp(0, w - 40), width: 40, child: Text(n(lo), style: style, textAlign: TextAlign.center)),
+            if (hi != null) Positioned(left: (b * w - 20).clamp(0, w - 40), width: 40, child: Text(n(hi), style: style, textAlign: TextAlign.center)),
+          ]),
+        );
+      }),
     ]);
   }
 }
