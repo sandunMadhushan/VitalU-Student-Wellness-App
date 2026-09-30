@@ -27,6 +27,19 @@ class Profile {
   bool get isFemale => sex == 'female';
   String? get faculty => raw['faculty'] as String?;
   String? get academicYear => raw['academic_year'] as String?;
+  String? get registrationNumber => raw['registration_number'] as String?;
+
+  /// Registration step 1 is mandatory: every field must be filled.
+  bool get basicsComplete =>
+      dob != null && sex != null && faculty != null && academicYear != null && (registrationNumber?.trim().isNotEmpty ?? false);
+
+  /// Where a signed-in student should land: step 1 until it is complete, then
+  /// the next unfinished registration step, then home.
+  String get landingRoute {
+    if (!basicsComplete) return '/register/1';
+    if (onboardingCompleted) return '/home';
+    return '/register/${(registrationStep + 1).clamp(2, 3)}';
+  }
   double? get heightCm => _d(raw['height_cm']);
   double? get weightKg => _d(raw['weight_kg']);
   double? get waistCm => _d(raw['waist_cm']);

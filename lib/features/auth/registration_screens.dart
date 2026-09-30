@@ -46,16 +46,22 @@ class _Intro extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
-  const _Actions({required this.label, required this.onContinue, required this.onSkip, this.busy = false, this.skipLabel = 'Skip for now'});
+  const _Actions({required this.label, required this.onContinue, this.onSkip, this.busy = false, this.skipLabel = 'Skip for now', this.note});
   final String label;
-  final VoidCallback onContinue;
-  final VoidCallback onSkip;
+  final VoidCallback? onContinue;
+  final VoidCallback? onSkip;
   final bool busy;
   final String skipLabel;
+
+  /// Shown under the button instead of a skip link, e.g. why it is disabled.
+  final String? note;
   @override
   Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
         PrimaryButton(label, loading: busy, onTap: onContinue),
-        TextLinkButton(skipLabel, color: AppColors.onSurfaceVariant, onTap: onSkip),
+        if (onSkip != null)
+          TextLinkButton(skipLabel, color: AppColors.onSurfaceVariant, onTap: onSkip)
+        else if (note != null)
+          Padding(padding: const EdgeInsets.only(top: 10, bottom: 4), child: Text(note!, style: T.bodySm.c(AppColors.onSurfaceVariant))),
       ]);
 }
 
@@ -96,6 +102,7 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
   String? _sex;
   String? _faculty;
   String? _year;
+  final _regNo = TextEditingController();
   bool _busy = false;
 
   @override
@@ -106,7 +113,17 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
     _sex = p?.sex;
     _faculty = p?.faculty;
     _year = p?.academicYear;
+    _regNo.text = p?.registrationNumber ?? '';
+    _regNo.addListener(() => setState(() {}));
   }
+
+  @override
+  void dispose() {
+    _regNo.dispose();
+    super.dispose();
+  }
+
+  bool get _complete => _dob != null && _sex != null && _faculty != null && _year != null && _regNo.text.trim().length >= 3;
 
   Future<void> _pickDob() async {
     final now = DateTime.now();
@@ -119,21 +136,25 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
     if (d != null) setState(() => _dob = d);
   }
 
-  Future<void> _continue({bool skip = false}) async {
+  Future<void> _continue() async {
+    if (!_complete) return;
     setState(() => _busy = true);
     try {
-      await _saveStep(
-        skip
-            ? {}
-            : {
-                if (_dob != null) 'date_of_birth': DateFormat('yyyy-MM-dd').format(_dob!),
-                if (_sex != null) 'sex': _sex,
-                if (_faculty != null) 'faculty': _faculty,
-                if (_year != null) 'academic_year': _year,
-              },
-        1,
-      );
-      if (mounted) context.push('/register/2');
+      await _saveStep({
+        'date_of_birth': DateFormat('yyyy-MM-dd').format(_dob!),
+        'sex': _sex,
+        'faculty': _faculty,
+        'academic_year': _year,
+        'registration_number': _regNo.text.trim().toUpperCase(),
+      }, 1);
+      if (!mounted) return;
+      // Students who finished registration earlier only needed to complete
+      // the new required fields.
+      if (AppState.instance.profile?.onboardingCompleted ?? false) {
+        context.go('/home');
+      } else {
+        context.push('/register/2');
+      }
     } catch (e) {
       if (mounted) toast(context, 'Could not save. Please try again.', error: true);
     } finally {
@@ -146,11 +167,35 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
     return VPage(
       header: RegistrationHeader(title: 'Step 1 of 3', onBack: () => context.canPop() ? context.pop() : null),
       spacing: Sp.lg,
-      bottom: _Actions(label: 'Continue', busy: _busy, onContinue: () => _continue(), onSkip: () => _continue(skip: true)),
+      bottom: _Actions(label: 'Continue', busy: _busy, onContinue: _complete ? _continue : null, note: _complete ? null : 'Fill in every field to continue'),
       children: [
         const _StepProgress(step: 1),
         const _Intro('Tell us about you', 'This helps VitalU set your daily targets and assessment schedule.'),
         ListGroup(dividerIndent: 60, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Sp.md, 4, Sp.md, 4),
+            child: Row(children: [
+              _icon(Symbols.badge_rounded, AppColors.primary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: TextField(
+                  controller: _regNo,
+                  textCapitalization: TextCapitalization.characters,
+                  textInputAction: TextInputAction.done,
+                  style: T.bodyLg.w(FontWeight.w600),
+                  decoration: InputDecoration(
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                    hintText: 'Registration number',
+                    hintStyle: T.bodyLg.w(FontWeight.w600).c(AppColors.outline),
+                  ),
+                ),
+              ),
+            ]),
+          ),
           ListRow(
             icon: Symbols.cake_rounded,
             color: AppColors.cycle,
@@ -161,9 +206,9 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 12),
             child: Row(children: [
-              IconCircle(Symbols.wc_rounded, size: 32, iconSize: 18, fg: AppColors.water, radius: 8, fill: 1),
-              const SizedBox(width: 12),
-              Expanded(child: Text('Sex', style: T.bodyLg)),
+              _icon(Symbols.wc_rounded, AppColors.water),
+              const SizedBox(width: 14),
+              Expanded(child: Text('Sex', style: T.bodyLg.w(FontWeight.w600))),
               Segmented(
                 options: const ['Female', 'Male'],
                 value: _sex == 'male' ? 'Male' : (_sex == 'female' ? 'Female' : ''),
@@ -178,26 +223,26 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
             subtitle: _faculty,
             value: _faculty == null ? 'Select' : null,
             onTap: () async {
-              final v = await pickOption(context, 'Faculty', faculties, _faculty);
+              final v = await pickOption(context, 'Select your faculty', faculties, _faculty);
               if (v != null) setState(() => _faculty = v);
             },
           ),
           ListRow(
             icon: Symbols.calendar_month_rounded,
             color: AppColors.warning,
-            title: 'Academic year',
-            value: _year ?? 'Select',
+            title: 'Batch',
+            value: _year ?? 'Select your batch',
             onTap: () async {
-              final v = await pickOption(context, 'Academic year', academicYears, _year);
+              final v = await pickOption(context, 'Select your batch', academicYears, _year);
               if (v != null) setState(() => _year = v);
             },
           ),
         ]),
-        Text('Sex is used for body-metric ranges. Health assessments are scheduled by faculty, so check-ins follow your academic calendar.',
-            style: T.bodySm.c(AppColors.onSurfaceVariant)),
       ],
     );
   }
+
+  Widget _icon(IconData icon, Color c) => IconCircle(icon, size: 30, iconSize: 18, bg: c, fg: AppColors.isDark ? AppColors.surface : Colors.white, radius: 8, fill: 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -252,25 +297,26 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
   Widget build(BuildContext context) {
     return VPage(
       header: RegistrationHeader(title: 'Step 2 of 3', onBack: () => goBack(context, '/register/1')),
-      spacing: Sp.lg,
+      spacing: Sp.md,
       bottom: _Actions(label: 'Continue', busy: _busy, onContinue: () => _continue(), onSkip: () => _continue(skip: true), skipLabel: 'Skip this step'),
       children: [
         const _StepProgress(step: 2),
-        const _Intro('Any health history?', 'Optional. Select anything that applies to you or your family. You can change this later in your profile.'),
+        const _Intro('Any health history?', 'Select anything that applies to you or your family. You can change this later in your profile.'),
         VCard(
           color: AppColors.surfaceContainer,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Symbols.lock_rounded, size: 18, color: AppColors.onSurfaceVariant, fill: 1),
-            const SizedBox(width: 10),
-            Expanded(child: Text('VitalU uses this solely to tailor gentle preventative tips — never shared with lecturers or your faculty.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
+            Icon(Symbols.lock_rounded, size: 16, color: AppColors.onSurfaceVariant, fill: 1),
+            const SizedBox(width: 8),
+            Expanded(child: Text('VitalU uses this solely to tailor gentle preventative tips.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
           ]),
         ),
-        Wrap(spacing: 8, runSpacing: 8, children: [
+        Wrap(spacing: 6, runSpacing: 6, children: [
           for (final k in _keys) _chip(conditionByKey(k)!),
           VChip(
             'None of these',
-            icon: Symbols.block_rounded,
+            height: 30,
+            dense: true,
             selected: _none,
             selectedColor: AppColors.onSurfaceVariant,
             onTap: () => setState(() {
@@ -287,6 +333,8 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     final on = _selected.contains(c.key);
     return VChip(
       c.label,
+      height: 30,
+      dense: true,
       selected: on,
       onTap: () => setState(() {
         on ? _selected.remove(c.key) : _selected.add(c.key);
@@ -369,6 +417,11 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
   bool _busy = false;
 
   Future<void> _finish({bool skip = false}) async {
+    if (!(AppState.instance.profile?.basicsComplete ?? false)) {
+      toast(context, 'Complete step 1 before creating your profile.', error: true);
+      context.go('/register/1');
+      return;
+    }
     String? err;
     if (!skip) {
       final h = _h.metric, w = _w.metric, wa = _waist.metric, hi = _hip.metric;
@@ -427,8 +480,8 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         ListGroup(dividerIndent: 60, children: [
           _row('Height', null, Symbols.height_rounded, _h),
           _row('Weight', null, Symbols.monitor_weight_rounded, _w),
-          _row('Waist', 'Optional', Symbols.straighten_rounded, _waist),
-          _row('Hip', 'Optional', Symbols.accessibility_new_rounded, _hip),
+          _row('Waist', null, Symbols.straighten_rounded, _waist),
+          _row('Hip', null, Symbols.accessibility_new_rounded, _hip),
         ]),
       ],
     );
@@ -465,11 +518,11 @@ class RegistrationComplete extends StatelessWidget {
           Text('Gentle reminders and tools crafted for your university rhythm, at your own pace.', textAlign: TextAlign.center, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
         ]),
         ListGroup(header: 'Your space includes', children: [
-          ListRow(icon: Symbols.monitor_heart_rounded, color: AppColors.heart, title: 'Health Tools', subtitle: 'Vitals and daily habits', chevron: false),
-          ListRow(icon: Symbols.restaurant_rounded, color: AppColors.nutrition, title: 'Nutrition Hub', subtitle: 'Meals, diversity and budget', chevron: false),
-          ListRow(icon: Symbols.menu_book_rounded, color: AppColors.water, title: 'Health Education', subtitle: 'Short reads for campus life', chevron: false),
-          ListRow(icon: Symbols.support_agent_rounded, color: AppColors.primary, title: 'Health Support', subtitle: 'Professionals and emergency lines', chevron: false),
-          ListRow(icon: Symbols.insights_rounded, color: AppColors.mind, title: 'My Progress', subtitle: 'Trends and milestones', chevron: false),
+          ListRow(icon: Symbols.monitor_heart_rounded, color: AppColors.heart, title: 'Health tools', subtitle: 'Vitals and daily habits', chevron: false),
+          ListRow(icon: Symbols.restaurant_rounded, color: AppColors.nutrition, title: 'Nutrition hub', subtitle: 'Smart eating', chevron: false),
+          ListRow(icon: Symbols.menu_book_rounded, color: AppColors.water, title: 'Health education', subtitle: 'Short reads for campus life', chevron: false),
+          ListRow(icon: Symbols.support_agent_rounded, color: AppColors.primary, title: 'Health support', subtitle: 'Professionals and emergency lines', chevron: false),
+          ListRow(icon: Symbols.insights_rounded, color: AppColors.mind, title: 'My progress', subtitle: 'Trends and milestones', chevron: false),
         ]),
       ],
     );

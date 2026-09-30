@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
     String next;
     if (AppState.instance.signedIn) {
       final p = AppState.instance.profile ?? await AppState.instance.loadProfile();
-      next = (p == null || p.onboardingCompleted) ? '/home' : '/register/${(p.registrationStep + 1).clamp(1, 3)}';
+      next = p == null ? '/home' : p.landingRoute;
     } else {
       next = seenOnboarding ? '/auth/create' : '/onboarding';
     }

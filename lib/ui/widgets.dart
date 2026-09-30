@@ -373,7 +373,7 @@ class CircleButton extends StatelessWidget {
 
 /// Pill filter chip: outlined when idle, solid in the accent when selected.
 class VChip extends StatelessWidget {
-  const VChip(this.label, {super.key, this.selected = false, this.onTap, this.icon, this.emoji, this.selectedColor, this.selectedFg, this.color, this.fg, this.height = 36});
+  const VChip(this.label, {super.key, this.selected = false, this.onTap, this.icon, this.emoji, this.selectedColor, this.selectedFg, this.color, this.fg, this.height = 36, this.dense = false});
   final String label;
   final bool selected;
   final VoidCallback? onTap;
@@ -384,6 +384,9 @@ class VChip extends StatelessWidget {
   final Color? color;
   final Color? fg;
   final double height;
+
+  /// Tighter padding and type for long chip lists.
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -404,10 +407,10 @@ class VChip extends StatelessWidget {
           onTap: onTap,
           child: Container(
             height: height,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: EdgeInsets.symmetric(horizontal: dense ? 11 : 14),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               if (icon != null) ...[Icon(icon, size: 17, color: c, fill: selected ? 1 : 0), const SizedBox(width: 6)],
-              Flexible(child: Text(label, style: T.labelMd.c(c), overflow: TextOverflow.ellipsis)),
+              Flexible(child: Text(label, style: (dense ? T.labelSm.s(12.5) : T.labelMd).c(c), overflow: TextOverflow.ellipsis)),
             ]),
           ),
         ),

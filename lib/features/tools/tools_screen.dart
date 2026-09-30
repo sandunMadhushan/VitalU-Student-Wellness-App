@@ -16,7 +16,7 @@ class ToolsScreen extends StatelessWidget {
     void go(String r) => context.push(r);
 
     return VPage(
-      header: const MainHeader('Tools'),
+      header: const MainHeader('Health tools'),
       nav: NavTab.tools,
       topPadding: 0,
       children: [

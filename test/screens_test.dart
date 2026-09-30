@@ -62,6 +62,7 @@ final _sample = <String, dynamic>{
   'date_of_birth': '2003-05-14',
   'faculty': 'Faculty of Agriculture',
   'academic_year': '23/24 Batch',
+  'registration_number': 'AG/21/045',
   'height_cm': 172,
   'weight_kg': 64,
   'waist_cm': 78,

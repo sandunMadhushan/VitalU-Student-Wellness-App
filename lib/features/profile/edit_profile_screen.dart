@@ -18,6 +18,7 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final p = AppState.instance.profile!;
   late final _name = TextEditingController(text: p.fullName == 'Student' ? '' : p.fullName);
+  late final _regNo = TextEditingController(text: p.registrationNumber ?? '');
   late DateTime? _dob = p.dob;
   late String? _sex = p.sex;
   late String? _faculty = p.faculty;
@@ -60,6 +61,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   ];
 
   Future<void> _save() async {
+    if (_regNo.text.trim().length < 3 || _dob == null || _sex == null || _faculty == null || _year == null) {
+      return toast(context, 'Registration number, date of birth, sex, faculty and batch are required.', error: true);
+    }
     setState(() => _saving = true);
     try {
       final measured = [_h.metric, _w.metric, _waist.metric, _hip.metric].any((v) => v != null);
@@ -69,6 +73,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'sex': _sex,
         'faculty': _faculty,
         'academic_year': _year,
+        'registration_number': _regNo.text.trim().toUpperCase(),
         'height_cm': _h.metric,
         'weight_kg': _w.metric,
         'waist_cm': _waist.metric,
@@ -163,7 +168,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ListGroup(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(Sp.md, 12, Sp.md, 12),
-              child: VTextField(controller: _name, hint: 'Full name', icon: Symbols.person_rounded),
+              child: Column(children: [
+                VTextField(controller: _name, hint: 'Full name', icon: Symbols.person_rounded),
+                const SizedBox(height: 10),
+                VTextField(controller: _regNo, hint: 'Registration number', icon: Symbols.badge_rounded),
+              ]),
             ),
             ListRow(
               icon: Symbols.cake_rounded,
@@ -198,10 +207,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ListRow(
               icon: Symbols.calendar_month_rounded,
               color: AppColors.warning,
-              title: 'Academic year',
+              title: 'Batch',
               value: _year ?? 'Select',
               onTap: () async {
-                final v = await pickOption(context, 'Academic year', academicYears, _year);
+                final v = await pickOption(context, 'Select your batch', academicYears, _year);
                 if (v != null) setState(() => _year = v);
               },
             ),

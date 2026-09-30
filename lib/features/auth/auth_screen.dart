@@ -47,7 +47,7 @@ class _AuthScreenState extends State<AuthScreen> {
         await db.auth.signInWithPassword(email: email, password: pass);
         final p = await AppState.instance.loadProfile();
         if (!mounted) return;
-        context.go(p == null || p.onboardingCompleted ? '/home' : '/register/${(p.registrationStep + 1).clamp(1, 3)}');
+        context.go(p == null ? '/home' : p.landingRoute);
       } else {
         final res = await db.auth.signUp(email: email, password: pass, data: {'full_name': _name.text.trim()}, emailRedirectTo: authRedirect);
         if (!mounted) return;

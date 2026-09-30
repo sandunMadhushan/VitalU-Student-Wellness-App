@@ -54,7 +54,11 @@ final appRouter = GoRouter(
   refreshListenable: AppState.instance,
   redirect: (context, state) {
     final loc = state.matchedLocation;
-    if (!AppState.instance.signedIn && !_public.contains(loc)) return '/auth/create';
+    if (!AppState.instance.signedIn) return _public.contains(loc) ? null : '/auth/create';
+    // Step 1 of registration is mandatory: until it is complete the only
+    // screen a signed-in student can reach is step 1 itself.
+    final p = AppState.instance.profile;
+    if (p != null && !p.basicsComplete && loc != '/' && loc != '/register/1') return '/register/1';
     return null;
   },
   routes: [
