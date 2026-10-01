@@ -1,14 +1,15 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:pedometer/pedometer.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_state.dart';
+import '../../core/step_sync.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../ui/charts.dart';
@@ -35,13 +36,22 @@ class ActivityScreen extends StatefulWidget {
   State<ActivityScreen> createState() => _ActivityScreenState();
 }
 
-class _ActivityScreenState extends State<ActivityScreen> {
+class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObserver {
   Rec _today = {'steps': 0, 'minutes': 0, 'kcal': 0, 'km': 0.0, 'logs': <Rec>[]};
   Map<String, int> _week = {};
   Map<String, int> _minutesWeek = {};
   DateTime? _lastSync;
   bool _syncing = false;
   Rec? _ipaq;
+
+  // Browser-based step counting (Android Chrome and similar; Safari does not
+  // expose the motion sensor needed for this, so it isn't offered there).
+  StreamSubscription<AccelerometerEvent>? _webSub;
+  bool _webTracking = false;
+  bool _webUnsupported = false;
+  int _webSteps = 0;
+  double _webBaseline = 9.8;
+  DateTime? _webLastStep;
 
   int get _goal => AppState.instance.profile?.stepGoal ?? 8000;
 
@@ -51,7 +61,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    if (!kIsWeb) _sync(silent: true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _webSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Pick up steps the phone's sensor counted while the app was backgrounded.
+    if (state == AppLifecycleState.resumed && !kIsWeb) _sync(silent: true);
   }
 
   Future<void> _load() async {
@@ -69,7 +94,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
     } catch (_) {}
     if (mounted) setState(() {});
   }
-
   Future<void> _runIpaq() async {
     int vigDays = 0, vigMin = 20, modDays = 0, modMin = 20, walkDays = 0, walkMin = 20, sitHours = 6;
     await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
@@ -125,39 +149,79 @@ class _ActivityScreenState extends State<ActivityScreen> {
         }));
   }
 
-  Future<void> _sync() async {
-    if (kIsWeb) return; // no step sensor in browsers — manual entry only
+  /// Reads the phone's built-in step counter. Runs automatically when the
+  /// screen opens and whenever the app resumes, plus on a manual tap.
+  /// [silent] suppresses toasts for the automatic calls, so a denied
+  /// permission or a quiet sensor doesn't nag the student every time.
+  Future<void> _sync({bool silent = false}) async {
+    if (kIsWeb) return; // handled separately via the browser's motion sensor
+    if (_syncing) return;
     setState(() => _syncing = true);
     try {
-      final status = await Permission.activityRecognition.request();
-      if (!status.isGranted && !status.isLimited) {
-        if (mounted) toast(context, 'Allow physical activity access to count steps automatically.', error: true);
-        return;
+      final steps = await StepSync.sync(silent: silent);
+      if (steps != null) {
+        await _load();
+        if (!silent && mounted) toast(context, 'Synced $steps steps');
+      } else if (!silent && mounted) {
+        toast(context, "Couldn't read your phone's step sensor. Allow physical activity access and try again.", error: true);
       }
-      final event = await Pedometer.stepCountStream.first.timeout(const Duration(seconds: 8));
-      final prefs = await SharedPreferences.getInstance();
-      final today = isoDate(DateTime.now());
-      var base = prefs.getInt('ped_base') ?? event.steps;
-      final baseDate = prefs.getString('ped_date');
-      if (baseDate != today || event.steps < base) {
-        // New day (or phone restarted): start counting from the current sensor value.
-        final carried = baseDate == today ? (prefs.getInt('ped_today') ?? 0) : 0;
-        base = event.steps - carried;
-        await prefs.setString('ped_date', today);
-        await prefs.setInt('ped_base', base);
-      }
-      final steps = (event.steps - base).clamp(0, 100000);
-      await prefs.setInt('ped_today', steps);
-      await prefs.setString('ped_last_sync', DateTime.now().toIso8601String());
-      await Repo.upsertSensorSteps(steps);
-      await _load();
-      if (mounted) toast(context, 'Synced $steps steps');
-    } on TimeoutException {
-      if (mounted) toast(context, 'No step data yet. Walk a little and try again.', error: true);
-    } catch (e) {
-      if (mounted) toast(context, 'Step sensor not available on this device.', error: true);
     } finally {
       if (mounted) setState(() => _syncing = false);
+    }
+  }
+
+  /// Browser pedometer: counts a step on each clear peak in accelerometer
+  /// magnitude (standard simple step-detection), while this tab stays open
+  /// and in the foreground. Chrome's sensor permission prompt appears the
+  /// first time a stream is requested from a user gesture, which this button
+  /// provides.
+  Future<void> _toggleWebTracking() async {
+    if (_webTracking) {
+      await _webSub?.cancel();
+      _webSub = null;
+      if (mounted) setState(() => _webTracking = false);
+      return;
+    }
+    try {
+      final logs = (_today['logs'] as List).cast<Rec>();
+      final sensorLog = logs.where((l) => l['source'] == 'sensor').firstOrNull;
+      _webSteps = (sensorLog?['steps'] as int?) ?? 0;
+      _webBaseline = 9.8;
+      _webLastStep = null;
+      _webSub = accelerometerEventStream(samplingPeriod: SensorInterval.gameInterval).listen(
+        _onWebAccelerometerEvent,
+        onError: (_) {
+          _webSub?.cancel();
+          _webSub = null;
+          if (mounted) setState(() {
+            _webTracking = false;
+            _webUnsupported = true;
+          });
+        },
+        cancelOnError: true,
+      );
+      setState(() {
+        _webTracking = true;
+        _webUnsupported = false;
+      });
+      if (mounted) toast(context, 'Tracking steps while this tab is open.');
+    } catch (_) {
+      if (mounted) setState(() => _webUnsupported = true);
+    }
+  }
+
+  void _onWebAccelerometerEvent(AccelerometerEvent e) {
+    final mag = math.sqrt(e.x * e.x + e.y * e.y + e.z * e.z);
+    // A slow-moving baseline tracks gravity/tilt; a peak well above it, with
+    // a minimum gap from the last one, counts as a step.
+    _webBaseline = _webBaseline * 0.9 + mag * 0.1;
+    final now = DateTime.now();
+    final sinceLast = _webLastStep == null ? const Duration(seconds: 1) : now.difference(_webLastStep!);
+    if (mag - _webBaseline > 2.2 && sinceLast > const Duration(milliseconds: 300)) {
+      _webLastStep = now;
+      _webSteps++;
+      Repo.upsertSensorSteps(_webSteps);
+      if (mounted) setState(() {});
     }
   }
 
@@ -301,12 +365,34 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ListRow(
               icon: Symbols.sync_rounded,
               color: AppColors.tertiary,
-              title: 'Phone step counter',
-              subtitle: _syncing ? 'Syncing…' : (_lastSync == null ? 'Tap to sync steps from your phone' : 'Last synced ${_ago(_lastSync!)}'),
-              trailing: _syncing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
-              onTap: _syncing ? null : _sync,
+              title: 'Automatic step counting',
+              subtitle: _syncing ? 'Syncing…' : (_lastSync == null ? "Reading your phone's step sensor" : 'Synced automatically · last update ${_ago(_lastSync!)}'),
+              trailing: _syncing
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : IconButton(tooltip: 'Sync now', icon: const Icon(Symbols.refresh_rounded), onPressed: _sync),
+              chevron: false,
             ),
-          ]),
+          ])
+        else
+          VCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Symbols.sensors_rounded, size: 20, color: c, fill: 1),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Automatic step counting', style: T.headlineSm)),
+              ]),
+              const SizedBox(height: 6),
+              Text(
+                _webUnsupported
+                    ? "This browser doesn't expose a motion sensor VitalU can use (common on iPhone/Safari). Install the VitalU app for automatic tracking, or log activity manually below."
+                    : "Uses your phone's motion sensor while this tab is open and in front — works on Android Chrome. Your browser will ask permission the first time.",
+                style: T.bodyMd.c(AppColors.onSurfaceVariant),
+              ),
+              const SizedBox(height: Sp.sm),
+              if (!_webUnsupported)
+                SoftButton(_webTracking ? 'Stop tracking ($_webSteps steps)' : 'Start tracking in this tab', icon: _webTracking ? Symbols.stop_circle_rounded : Symbols.play_circle_rounded, onTap: _toggleWebTracking),
+            ]),
+          ),
         if (logs.isNotEmpty) ...[
           const SectionHeader('Today'),
           ListGroup(children: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/device_usage.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../ui/charts.dart';
@@ -22,6 +23,7 @@ class ScreenTimeScreen extends StatefulWidget {
 
 class _ScreenTimeScreenState extends State<ScreenTimeScreen> {
   bool _loading = true;
+  bool _readingDevice = false;
   int _today = 0;
   Map<String, int> _week = {};
 
@@ -75,6 +77,35 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen> {
         }));
   }
 
+  Future<void> _readFromDevice() async {
+    if (!DeviceUsage.supported) {
+      return showInfoSheet(
+        context,
+        title: "Can't read this from your phone",
+        icon: Symbols.info_rounded,
+        paragraphs: const [
+          "Automatic screen time is only available on Android right now, where the operating system keeps a usage log VitalU can read with your permission.",
+          "iPhone's own Screen Time data isn't accessible to regular apps like VitalU — only Apple grants that to specialised parental-control apps. You can still check Settings > Screen Time on your iPhone and log the total below.",
+        ],
+      );
+    }
+    setState(() => _readingDevice = true);
+    try {
+      final minutes = await DeviceUsage.readTodayMinutes();
+      if (minutes == null) {
+        if (mounted) {
+          toast(context, "Grant VitalU access under Usage access settings, then tap this again.", error: true);
+        }
+        return;
+      }
+      await Repo.setScreenTime(DateTime.now(), minutes);
+      await _load();
+      if (mounted) toast(context, 'Read ${minutes ~/ 60}h ${minutes % 60}m from your device.');
+    } finally {
+      if (mounted) setState(() => _readingDevice = false);
+    }
+  }
+
   (String, Color, String) get _summary {
     if (_today <= _healthyCapMin) {
       return ('Within a healthy range', AppColors.tertiary, 'Nice balance. Keep taking breaks and look away from the screen every 20 minutes.');
@@ -117,6 +148,17 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen> {
                 ]),
               ),
               PrimaryButton('Log today\'s screen time', leadingIcon: Symbols.edit_rounded, onTap: _logToday),
+              ListGroup(children: [
+                ListRow(
+                  icon: Symbols.sync_rounded,
+                  color: AppColors.mind,
+                  title: 'Read from device',
+                  subtitle: DeviceUsage.supported ? "Fill in today's total from your phone's usage data" : 'Only available on Android',
+                  trailing: _readingDevice ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
+                  chevron: !_readingDevice,
+                  onTap: _readingDevice ? null : _readFromDevice,
+                ),
+              ]),
               const SectionHeader('This week'),
               VCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

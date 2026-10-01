@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
+import '../../core/step_sync.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../ui/text.dart';
@@ -55,7 +56,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _loading = true;
   int _water = 0;
   int _steps = 0;
@@ -83,11 +84,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refreshes steps (and everything else) when the student comes back to
+    // the app, so the dashboard reflects what the phone counted meanwhile.
+    if (state == AppLifecycleState.resumed) _load();
   }
 
   Future<void> _load() async {
     try {
+      // Picks up fresh steps from the phone's sensor so the dashboard is
+      // current even if the student never opens the Activity tracker.
+      await StepSync.sync();
       final now = DateTime.now();
       final today = isoDate(now);
       final ws = weekStart(now);
