@@ -158,7 +158,7 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
     if (_syncing) return;
     setState(() => _syncing = true);
     try {
-      final steps = await StepSync.sync(silent: silent);
+      final steps = await StepSync.sync();
       if (steps != null) {
         await _load();
         if (!silent && mounted) toast(context, 'Synced $steps steps');

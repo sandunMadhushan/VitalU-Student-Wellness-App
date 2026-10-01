@@ -15,22 +15,18 @@ class StepSync {
 
   static bool _busy = false;
 
-  /// Syncs steps from the device sensor. [silent] skips requesting
-  /// permission (only reads a status already granted), so screens can call
-  /// this on every open/resume without ever popping a system dialog
-  /// unprompted or throwing in an environment with no sensor plugin.
-  static Future<int?> sync({bool silent = true}) async {
+  /// Syncs steps from the device sensor, requesting permission if it
+  /// hasn't been granted yet. Safe to call on every screen open or app
+  /// resume: once a student has answered the system prompt, Android does
+  /// not show it again on later calls, so this never nags — it just quietly
+  /// does nothing until permission is granted.
+  static Future<int?> sync() async {
     if (kIsWeb || _busy) return null;
     _busy = true;
     try {
-      if (silent) {
-        final status = await Permission.activityRecognition.status;
-        if (!status.isGranted && !status.isLimited) return null;
-      } else {
-        final status = await Permission.activityRecognition.request();
-        if (!status.isGranted && !status.isLimited) return null;
-      }
-      final event = await Pedometer.stepCountStream.first.timeout(const Duration(seconds: 8));
+      final status = await Permission.activityRecognition.request();
+      if (!status.isGranted && !status.isLimited) return null;
+      final event = await Pedometer.stepCountStream.first.timeout(const Duration(seconds: 15));
       final prefs = await SharedPreferences.getInstance();
       final today = isoDate(DateTime.now());
       var base = prefs.getInt('ped_base') ?? event.steps;
