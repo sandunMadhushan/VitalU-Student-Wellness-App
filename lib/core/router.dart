@@ -30,6 +30,7 @@ import '../features/tools/activity_screen.dart';
 import '../features/tools/bmi_screen.dart';
 import '../features/tools/cycle_screen.dart';
 import '../features/tools/heart_risk_screen.dart';
+import '../features/tools/screen_time_screen.dart';
 import '../features/tools/sleep_screen.dart';
 import '../features/tools/stress_screen.dart';
 import '../features/tools/tools_screen.dart';
@@ -83,6 +84,7 @@ final appRouter = GoRouter(
     _r('/tools/activity', (s) => const ActivityScreen()),
     _r('/tools/sleep', (s) => const SleepScreen()),
     _r('/tools/cycle', (s) => const CycleScreen()),
+    _r('/tools/screen-time', (s) => const ScreenTimeScreen()),
     _r('/diet', (s) => const DietHubScreen(), tab: true),
     _r('/diet/log', (s) => MealLogScreen(initialType: s.uri.queryParameters['type'])),
     _r('/diet/diversity', (s) => const DiversityScreen()),

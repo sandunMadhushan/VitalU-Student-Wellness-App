@@ -60,7 +60,7 @@ class _WhrScreenState extends State<WhrScreen> {
     }
 
     return VPage(
-      header: TitleHeader('Waist-to-hip ratio', onLeading: () => goBack(context, '/tools')),
+      header: TitleHeader('WHR calculator', onLeading: () => goBack(context, '/tools')),
       children: [
         ToolSubBar(onHelp: () => showInfoSheet(context, title: 'About waist-to-hip ratio', paragraphs: const [
               'Waist-to-hip ratio is your waist circumference divided by your hip circumference.',
@@ -116,7 +116,7 @@ class _WhrScreenState extends State<WhrScreen> {
         ListGroup(children: [
           ListRow(icon: Symbols.monitor_weight_rounded, color: AppColors.body, title: 'Compare with BMI', onTap: () => context.pushReplacement('/tools/bmi')),
         ]),
-        const PrivacyNote('Measurements stay private to you.'),
+        const PrivacyNote('A screening measure, not a diagnosis of any disease. Measurements stay private to you.'),
       ],
     );
   }
@@ -129,10 +129,13 @@ class _WhrScreenState extends State<WhrScreen> {
     };
     final s = ratio.toStringAsFixed(2);
     final meaning = switch (cat.$1) {
-      'Low Risk' => 'A ratio of $s means weight is not concentrated around your waist. Unlike BMI, this looks at where fat is stored.',
-      'Moderate Risk' => 'A ratio of $s is slightly above the low-risk range. Regular walking, more vegetables and fibre, and fewer sugary drinks help reduce waist size over time.',
-      _ => 'A ratio of $s suggests more weight is stored around the waist, which is linked to higher heart and metabolic risk. This is not a diagnosis; a campus doctor or dietitian can help.',
+      'Low Risk' => 'A lower waist-to-hip ratio means weight is carried relatively more at the hips than the waist. Unlike BMI, this looks at where fat is stored, not just how much there is.',
+      'Moderate Risk' => 'A ratio of $s is slightly above the low-risk range, suggesting a modest shift toward central (abdominal) fat distribution. Regular walking, more vegetables and fibre, and fewer sugary drinks help reduce waist size over time.',
+      _ => 'Higher waist-to-hip ratio. Your result indicates a greater tendency toward central fat distribution, which is associated with increased cardiometabolic risk. This is not a diagnosis; a campus doctor or dietitian can help.',
     };
+    // 0 = pear-leaning (fat carried more at the hips), 1 = apple-leaning
+    // (fat carried more at the waist), scaled across the chart's own range.
+    final leanToApple = ((ratio - (low - 0.1)) / ((high + 0.1) - (low - 0.1))).clamp(0.0, 1.0);
     return VCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         CategoryLabel('Your ratio', icon: Symbols.straighten_rounded, color: AppColors.body),
@@ -151,9 +154,71 @@ class _WhrScreenState extends State<WhrScreen> {
           markerLabel: s,
           labels: [gaugeLabel('Low < ${low.toStringAsFixed(2)}'), gaugeLabel('Moderate'), gaugeLabel('High > ${high.toStringAsFixed(2)}')],
         ),
+        const SizedBox(height: Sp.lg),
+        BodyShapeDiagram(leanToApple: leanToApple, color: color),
         const SizedBox(height: Sp.md),
         Text(meaning, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
       ]),
     );
   }
+}
+
+/// Two stylised body-shape silhouettes — "pear" (weight carried more at the
+/// hips) and "apple" (weight carried more at the waist) — with the one
+/// closer to the student's own ratio highlighted. Illustrative only.
+class BodyShapeDiagram extends StatelessWidget {
+  const BodyShapeDiagram({super.key, required this.leanToApple, required this.color});
+
+  /// 0 = clearly pear-shaped, 1 = clearly apple-shaped.
+  final double leanToApple;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final pearOn = leanToApple < 0.5;
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      _shape(0.62, 'Pear shape', 'More weight at the hips', pearOn),
+      _shape(0.92, 'Apple shape', 'More weight at the waist', !pearOn),
+    ]);
+  }
+
+  Widget _shape(double waistFactor, String title, String sub, bool on) => Column(children: [
+        Opacity(
+          opacity: on ? 1 : 0.35,
+          child: SizedBox(width: 72, height: 96, child: CustomPaint(painter: _SilhouettePainter(waistFactor: waistFactor, color: on ? color : AppColors.outline))),
+        ),
+        const SizedBox(height: 6),
+        Text(title, style: T.labelMd.w(on ? FontWeight.w700 : FontWeight.w500).c(on ? AppColors.onSurface : AppColors.onSurfaceVariant)),
+        Text(sub, style: T.labelSm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+      ]);
+}
+
+class _SilhouettePainter extends CustomPainter {
+  _SilhouettePainter({required this.waistFactor, required this.color});
+  final double waistFactor;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final paint = Paint()..color = color;
+    canvas.drawCircle(Offset(w / 2, h * 0.12), w * 0.17, paint);
+
+    final shoulder = w * 0.40, waist = w * 0.40 * waistFactor, hip = w * 0.44;
+    final path = Path()
+      ..moveTo(w / 2 - shoulder, h * 0.26)
+      ..quadraticBezierTo(w / 2 - waist * 1.1, h * 0.52, w / 2 - waist, h * 0.58)
+      ..quadraticBezierTo(w / 2 - hip * 1.05, h * 0.68, w / 2 - hip, h * 0.82)
+      ..lineTo(w / 2 - hip * 0.7, h)
+      ..lineTo(w / 2 + hip * 0.7, h)
+      ..lineTo(w / 2 + hip, h * 0.82)
+      ..quadraticBezierTo(w / 2 + hip * 1.05, h * 0.68, w / 2 + waist, h * 0.58)
+      ..quadraticBezierTo(w / 2 + waist * 1.1, h * 0.52, w / 2 + shoulder, h * 0.26)
+      ..quadraticBezierTo(w / 2, h * 0.18, w / 2 - shoulder, h * 0.26)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SilhouettePainter old) => old.waistFactor != waistFactor || old.color != color;
 }

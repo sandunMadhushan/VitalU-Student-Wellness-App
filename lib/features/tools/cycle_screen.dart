@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/app_state.dart';
 import '../../data/repo.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
@@ -77,6 +78,39 @@ class _CycleScreenState extends State<CycleScreen> {
     if (l.length < 2) return false;
     final mx = l.reduce(math.max), mn = l.reduce(math.min);
     return l.any((d) => d > 35 || d < 21) || (mx - mn) > 7;
+  }
+
+  /// Soft, non-diagnostic signals that sometimes co-occur with PCOS, drawn
+  /// from cycle regularity, recent symptom logs and the student's profile.
+  List<String> get _pcosSignals {
+    final p = AppState.instance.profile;
+    final signals = <String>[];
+    if (_irregular) signals.add('Irregular cycle lengths');
+    if (p?.conditions.contains('skin_disease') ?? false) signals.add('A noted skin condition (acne can be linked to hormone shifts)');
+    final bmi = p?.bmi;
+    if (bmi != null && bmi >= 25) signals.add('BMI above the typical range');
+    if (p?.conditions.contains('family_diabetes') ?? false) signals.add('Diabetes in the family');
+    return signals;
+  }
+
+  bool get _pcosDiagnosed => AppState.instance.profile?.conditions.contains('pcos') ?? false;
+
+  /// The upcoming fertile window (ovulation day minus 5, to ovulation day
+  /// plus 1) — the days with the highest chance of pregnancy. An estimate
+  /// from average cycle length, not a method of contraception.
+  (DateTime, DateTime)? get _fertileWindow {
+    if (_cycles.isEmpty) return null;
+    final last = DateTime.parse(_cycles.first['start_date']);
+    final cycleStart = DateTime(last.year, last.month, last.day);
+    final ov = _cycleLen - 14;
+    var start = cycleStart.add(Duration(days: ov - 5 - 1));
+    var end = cycleStart.add(Duration(days: ov + 1 - 1));
+    final today = dayStart(DateTime.now());
+    while (end.isBefore(today)) {
+      start = start.add(Duration(days: _cycleLen));
+      end = end.add(Duration(days: _cycleLen));
+    }
+    return (start, end);
   }
 
   _Phase _phaseFor(int day) {
@@ -223,7 +257,7 @@ class _CycleScreenState extends State<CycleScreen> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: TitleHeader('Cycle', onLeading: () => goBack(context, '/tools')),
+      header: TitleHeader('Cycle tracker', onLeading: () => goBack(context, '/tools')),
       onRefresh: _load,
       children: _loading ? [const Loading()] : _content(),
     );
@@ -286,6 +320,7 @@ class _CycleScreenState extends State<CycleScreen> {
           ]),
         ]),
       ),
+      if (_fertileWindow != null) _fertileCard(),
       PrimaryButton('Log period', leadingIcon: Symbols.water_drop_rounded, onTap: _logPeriod),
       if (phase != null)
         VCard(
@@ -297,22 +332,11 @@ class _CycleScreenState extends State<CycleScreen> {
             Text(phase.insight, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
           ]),
         ),
-      if (_irregular)
-        VCard(
-          color: AppColors.warningContainer,
-          onTap: () => context.push('/library/article/pcos-awareness'),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Symbols.info_rounded, color: AppColors.warning, fill: 1),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text('Your recent cycles have varied a lot. This can happen with stress or routine changes, and is sometimes linked to conditions like PCOS. It is not a diagnosis; consider a check-up if it continues.',
-                  style: T.bodyMd.c(AppColors.onSurface)),
-            ),
-          ]),
-        ),
+      if (!_pcosDiagnosed && _pcosSignals.length >= 2) _pcosCard(),
       const SectionHeader('Today'),
       ListGroup(children: [
         symptom('cramps', 'Cramps', Symbols.healing_rounded, const ['None', 'Mild', 'Moderate', 'Strong']),
+        symptom('cravings', 'Cravings', Symbols.icecream_rounded, const ['None', 'Sweet', 'Salty', 'Carb-heavy', 'Chocolate']),
         symptom('mood', 'Mood', Symbols.mood_rounded, const ['Calm', 'Happy', 'Low', 'Irritable', 'Anxious']),
         symptom('energy', 'Energy', Symbols.bolt_rounded, const ['Low', 'Steady', 'High']),
         symptom('sleep', 'Sleep', Symbols.bedtime_rounded, const ['Restful', 'Okay', 'Restless']),
@@ -321,15 +345,128 @@ class _CycleScreenState extends State<CycleScreen> {
       ListGroup(children: [
         ListRow(icon: Symbols.history_rounded, color: c, title: 'History', value: _lengths.isEmpty ? null : '$_cycleLen-day average', onTap: _history),
       ]),
-      const PrivacyNote('Cycle data is private to you.'),
+      _scienceNote(),
+      const PrivacyNote('A wellness tracker, not a diagnosis of any disease. Cycle data is private to you.'),
     ];
   }
+
+  Widget _fertileCard() {
+    final (start, end) = _fertileWindow!;
+    final fmt = DateFormat('d MMM');
+    return VCard(
+      color: AppColors.tint(AppColors.mind),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Symbols.egg_rounded, color: AppColors.mind, fill: 1),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Higher chance of pregnancy', style: T.headlineSm),
+            const SizedBox(height: 4),
+            Text('${fmt.format(start)} – ${fmt.format(end)}, based on your average cycle.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            const SizedBox(height: 4),
+            Text('An estimate, not a method of contraception. If you want to avoid pregnancy, use a reliable method and talk to a doctor about your options.',
+                style: T.bodySm.c(AppColors.onSurfaceVariant)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _pcosCard() => VCard(
+        color: AppColors.warningContainer,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Symbols.info_rounded, color: AppColors.warning, fill: 1),
+            const SizedBox(width: 10),
+            Expanded(child: Text('A few signs worth discussing', style: T.headlineSm)),
+          ]),
+          const SizedBox(height: 8),
+          Text(
+            'Your recent logs show: ${_pcosSignals.join(', ').toLowerCase()}. Together, these are sometimes associated with PCOS, though each has many other causes. This is not a diagnosis — only a doctor can test for it properly.',
+            style: T.bodyMd.c(AppColors.onSurface),
+          ),
+          const SizedBox(height: Sp.sm),
+          Text('Gentle habits that can help ease and organise your cycle:', style: T.labelLg.semi),
+          const SizedBox(height: 6),
+          for (final t in const [
+            'Favour whole grains, legumes and vegetables over refined carbs and sugary drinks, to keep blood sugar steadier.',
+            'Add omega-3s (fish, flaxseed) and magnesium-rich foods (nuts, leafy greens) — both are linked to easier periods.',
+            'A warm compress on the lower abdomen and gentle yoga or stretching can soothe cramps.',
+            'Regular sleep and lower caffeine can help settle an irregular rhythm over a few cycles.',
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(padding: const EdgeInsets.only(top: 7), child: Container(width: 5, height: 5, decoration: BoxDecoration(color: AppColors.warning, shape: BoxShape.circle))),
+                const SizedBox(width: 10),
+                Expanded(child: Text(t, style: T.bodyMd.c(AppColors.onSurface))),
+              ]),
+            ),
+          const SizedBox(height: 4),
+          SoftButton('Talk to a professional', icon: Symbols.stethoscope_rounded, onTap: () => context.push('/professionals')),
+        ]),
+      );
+
+  Widget _scienceNote() => VCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Symbols.menu_book_rounded, size: 20, color: AppColors.cycle, fill: 1),
+            const SizedBox(width: 8),
+            Expanded(child: Text('What is actually happening', style: T.headlineSm)),
+          ]),
+          const SizedBox(height: 10),
+          Text(
+            'Each cycle, the lining of the womb (endometrium) thickens to prepare for a possible pregnancy. If no egg is fertilised, hormone levels drop, the lining breaks down and leaves the body as a period — then the cycle begins again.',
+            style: T.bodyMd.c(AppColors.onSurfaceVariant),
+          ),
+          const SizedBox(height: Sp.md),
+          const _LiningDiagram(),
+        ]),
+      );
 
   Widget _legend(String label, Color color) => Row(mainAxisSize: MainAxisSize.min, children: [
         Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
         Text(label, style: T.bodySm.c(AppColors.onSurfaceVariant)),
       ]);
+}
+
+/// Illustrative cross-sections of the uterine lining across the four phases:
+/// thin after a period, thickening through the follicular phase, at its
+/// thickest around ovulation, then shed again if no pregnancy occurs.
+class _LiningDiagram extends StatelessWidget {
+  const _LiningDiagram();
+
+  static const _stages = [('Menstrual', 0.15), ('Follicular', 0.55), ('Ovulation', 1.0), ('Luteal', 0.85)];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+      for (final s in _stages)
+        Expanded(
+          child: Column(children: [
+            SizedBox(
+              height: 64,
+              child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                if (s.$1 == 'Ovulation') Icon(Symbols.egg_rounded, size: 12, color: AppColors.mind, fill: 1),
+                const SizedBox(height: 2),
+                Container(
+                  height: 44 * s.$2,
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.cycle.withValues(alpha: 0.25 + 0.5 * s.$2),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  ),
+                ),
+                Container(height: 4, margin: const EdgeInsets.symmetric(horizontal: 6), color: AppColors.outlineVariant),
+              ]),
+            ),
+            const SizedBox(height: 6),
+            Text(s.$1, style: T.labelSm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+          ]),
+        ),
+    ]);
+  }
 }
 
 class _CycleWheel extends CustomPainter {

@@ -93,7 +93,7 @@ class _StressScreenState extends State<StressScreen> {
   Widget build(BuildContext context) {
     final inQuestion = _result == null && _i >= 0;
     return VPage(
-      header: const ConfidentialHeader(label: 'Stress check'),
+      header: const ConfidentialHeader(label: 'Anxiety tracker'),
       spacing: inQuestion ? Sp.lg : Sp.md,
       bottom: inQuestion ? _questionActions() : null,
       children: _result != null ? _resultView() : (_i < 0 ? _intro() : _question()),
@@ -204,6 +204,27 @@ class _StressScreenState extends State<StressScreen> {
         );
     final flag = r['flag'] == true;
     final elevated = [r['depression_level'], r['anxiety_level'], r['stress_level']].any((l) => l != 'Normal' && l != 'Mild');
+
+    // The highest-scoring subscale decides which calming recommendations lead.
+    final scores = {'stress': r['stress'] as int, 'anxiety': r['anxiety'] as int, 'depression': r['depression'] as int};
+    final top = scores.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    final calming = switch (top) {
+      'anxiety' => const [
+          'Try slow breathing: in for 4 counts, hold for 4, out for 6. A few rounds can settle a racing heart or mind.',
+          'Ground yourself by naming 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell and 1 you can taste.',
+          'Cut back on caffeine, especially later in the day — it can mimic or sharpen anxious feelings.',
+        ],
+      'depression' => const [
+          'Small, regular steps help more than big plans: a short walk, daylight, or messaging one friend today.',
+          'Try to keep a simple routine for meals and sleep, even on low-energy days — structure itself is soothing.',
+          'Notice one small thing that went okay today, however minor. It does not have to feel like much.',
+        ],
+      _ => const [
+          'Unclench your jaw and drop your shoulders. Tension often sits there without you noticing.',
+          'Break the next task into one small, concrete next step rather than the whole workload.',
+          'A short walk, stretch or the breathing exercise below can lower stress hormones within minutes.',
+        ],
+    };
     return [
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Your results', style: T.headlineLg),
@@ -237,8 +258,28 @@ class _StressScreenState extends State<StressScreen> {
             : 'Your results are in the normal to mild range. Keep protecting your sleep, short breaks and time with friends, especially around exams.',
         style: T.bodyLg.c(AppColors.onSurfaceVariant),
       ),
+      VCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Symbols.spa_rounded, size: 20, color: AppColors.mind, fill: 1),
+            const SizedBox(width: 8),
+            Expanded(child: Text('To help settle this', style: T.headlineSm)),
+          ]),
+          const SizedBox(height: 10),
+          for (final tip in calming)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(padding: const EdgeInsets.only(top: 7), child: Container(width: 5, height: 5, decoration: BoxDecoration(color: AppColors.mind, shape: BoxShape.circle))),
+                const SizedBox(width: 10),
+                Expanded(child: Text(tip, style: T.bodyMd.c(AppColors.onSurfaceVariant))),
+              ]),
+            ),
+        ]),
+      ),
       if (elevated) PrimaryButton('Talk to a professional', onTap: () => context.push('/professionals')),
       SoftButton('Breathing exercise', icon: Symbols.air_rounded, onTap: () => showBreathing(context)),
+      const PrivacyNote('The DASS-21 is a screening tool. It does not diagnose depression, anxiety or any other condition — only a qualified professional can do that.'),
       Center(child: TextLinkButton('Done', color: AppColors.onSurfaceVariant, onTap: () => goBack(context, '/tools'))),
     ];
   }

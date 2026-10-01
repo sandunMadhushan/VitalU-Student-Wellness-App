@@ -1118,7 +1118,7 @@ class TileGrid extends StatelessWidget {
   final List<Widget> children;
   final double gap;
   @override
-  Widget build(BuildContext context) => Column(children: [
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         for (int i = 0; i < children.length; i += 2) ...[
           if (i > 0) SizedBox(height: gap),
           if (i + 1 < children.length)

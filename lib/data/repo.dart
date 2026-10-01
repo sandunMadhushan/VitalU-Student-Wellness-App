@@ -310,6 +310,22 @@ class Repo {
   static Future<List<Rec>> dailyLogsSince(DateTime from) async =>
       List<Rec>.from(await db.from('menstrual_daily_logs').select().eq('user_id', _uid).gte('log_date', isoDate(from)).order('log_date'));
 
+  // ---------------- Screen time ----------------
+  static Future<int> screenTimeOn(DateTime day) async {
+    final row = await db.from('screen_time_logs').select('minutes').eq('user_id', _uid).eq('log_date', isoDate(day)).maybeSingle();
+    return (row?['minutes'] as int?) ?? 0;
+  }
+
+  static Future<void> setScreenTime(DateTime day, int minutes) async {
+    await db.from('screen_time_logs').upsert({'user_id': _uid, 'log_date': isoDate(day), 'minutes': minutes, 'updated_at': utc(DateTime.now())}, onConflict: 'user_id,log_date');
+    await refreshBadges();
+  }
+
+  static Future<Map<String, int>> screenTimeByDay(DateTime from, DateTime to) async {
+    final rows = await db.from('screen_time_logs').select('log_date, minutes').eq('user_id', _uid).gte('log_date', isoDate(from)).lte('log_date', isoDate(to));
+    return {for (final r in rows) r['log_date'] as String: r['minutes'] as int};
+  }
+
   // ---------------- Assessments ----------------
   static Future<List<Rec>> windows() async => List<Rec>.from(await db.from('assessment_windows').select().order('opens_at'));
 

@@ -38,10 +38,15 @@ class ActivityScreen extends StatefulWidget {
 class _ActivityScreenState extends State<ActivityScreen> {
   Rec _today = {'steps': 0, 'minutes': 0, 'kcal': 0, 'km': 0.0, 'logs': <Rec>[]};
   Map<String, int> _week = {};
+  Map<String, int> _minutesWeek = {};
   DateTime? _lastSync;
   bool _syncing = false;
+  Rec? _ipaq;
 
   int get _goal => AppState.instance.profile?.stepGoal ?? 8000;
+
+  /// WHO/IPAQ baseline: at least 150 minutes of moderate activity a week.
+  static const _weeklyTargetMin = 150;
 
   @override
   void initState() {
@@ -55,11 +60,69 @@ class _ActivityScreenState extends State<ActivityScreen> {
       final ws = weekStart(now);
       _today = await Repo.activityTotals(now);
       _week = await Repo.stepsByDay(ws, ws.add(const Duration(days: 6)));
+      _minutesWeek = await Repo.minutesByDay(ws, ws.add(const Duration(days: 6)));
       final prefs = await SharedPreferences.getInstance();
       final ls = prefs.getString('ped_last_sync');
       _lastSync = ls == null ? null : DateTime.tryParse(ls);
+      final ipaq = await Repo.toolResults('ipaq', limit: 1);
+      _ipaq = ipaq.isEmpty ? null : ipaq.first;
     } catch (_) {}
     if (mounted) setState(() {});
+  }
+
+  Future<void> _runIpaq() async {
+    int vigDays = 0, vigMin = 20, modDays = 0, modMin = 20, walkDays = 0, walkMin = 20, sitHours = 6;
+    await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+          Widget days(String label, int value, ValueChanged<int> onChanged) => Row(children: [
+                Expanded(child: Text(label, style: T.bodyLg)),
+                IconButton.outlined(icon: const Icon(Symbols.remove_rounded), onPressed: value <= 0 ? null : () => set(() => onChanged(value - 1))),
+                SizedBox(width: 28, child: Center(child: Text('$value', style: T.labelLg.tnum))),
+                IconButton.outlined(icon: const Icon(Symbols.add_rounded), onPressed: value >= 7 ? null : () => set(() => onChanged(value + 1))),
+              ]);
+          Widget minutes(int value, ValueChanged<int> onChanged) => Row(children: [
+                Expanded(child: Text('Minutes per day', style: T.bodySm.c(AppColors.onSurfaceVariant))),
+                SizedBox(
+                  width: 160,
+                  child: VSlider(value: value.toDouble(), min: 0, max: 180, divisions: 18, color: AppColors.activity, onChanged: (v) => set(() => onChanged(v.round()))),
+                ),
+                SizedBox(width: 36, child: Text('$value', style: T.labelMd.tnum, textAlign: TextAlign.right)),
+              ]);
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text('Weekly activity check-in', style: T.headlineMd),
+            const SizedBox(height: 4),
+            Text('The IPAQ short form: a 7-day recall of your physical activity.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            const SizedBox(height: Sp.lg),
+            Text('In the last 7 days, on how many days did you do vigorous activity (heavy lifting, aerobics, fast cycling)?', style: T.labelLg),
+            const SizedBox(height: 4),
+            days('Days', vigDays, (v) => vigDays = v),
+            if (vigDays > 0) minutes(vigMin, (v) => vigMin = v),
+            const SizedBox(height: Sp.md),
+            Text('On how many days did you do moderate activity (light loads, regular-pace cycling, doubles tennis), not counting walking?', style: T.labelLg),
+            const SizedBox(height: 4),
+            days('Days', modDays, (v) => modDays = v),
+            if (modDays > 0) minutes(modMin, (v) => modMin = v),
+            const SizedBox(height: Sp.md),
+            Text('On how many days did you walk for at least 10 minutes at a time?', style: T.labelLg),
+            const SizedBox(height: 4),
+            days('Days', walkDays, (v) => walkDays = v),
+            if (walkDays > 0) minutes(walkMin, (v) => walkMin = v),
+            const SizedBox(height: Sp.md),
+            Text('On a typical day, how many hours do you spend sitting?', style: T.labelLg),
+            days('Hours', sitHours, (v) => sitHours = v),
+            const SizedBox(height: Sp.lg),
+            PrimaryButton('See my result', onTap: () async {
+              final met = Ipaq.metMinutes(vigDays: vigDays, vigMin: vigMin, modDays: modDays, modMin: modMin, walkDays: walkDays, walkMin: walkMin);
+              final cat = Ipaq.category(vigDays: vigDays, vigMin: vigMin, modDays: modDays, modMin: modMin, walkDays: walkDays, walkMin: walkMin);
+              try {
+                await Repo.saveToolResult('ipaq', score: met, category: cat, data: {
+                  'vig_days': vigDays, 'vig_min': vigMin, 'mod_days': modDays, 'mod_min': modMin, 'walk_days': walkDays, 'walk_min': walkMin, 'sit_hours': sitHours,
+                });
+              } catch (_) {}
+              if (ctx.mounted) Navigator.pop(ctx);
+              _load();
+            }),
+          ]);
+        }));
   }
 
   Future<void> _sync() async {
@@ -148,9 +211,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final avg = loggedDays.isEmpty ? 0 : (loggedDays.map((d) => _week[isoDate(d)] ?? 0).reduce((a, b) => a + b) / loggedDays.length).round();
     final c = AppColors.activity;
     final logs = (_today['logs'] as List).cast<Rec>();
+    final weekMinutes = _minutesWeek.values.fold<int>(0, (a, b) => a + b);
+    final minutesDiff = weekMinutes - _weeklyTargetMin;
+    final ipaqCat = _ipaq?['category'] as String?;
+    final ipaqMet = (_ipaq?['score'] as num?)?.round();
 
     return VPage(
-      header: TitleHeader('Activity', onLeading: () => goBack(context, '/tools')),
+      header: TitleHeader('Activity tracker', onLeading: () => goBack(context, '/tools')),
       onRefresh: _load,
       children: [
         VCard(
@@ -192,6 +259,40 @@ class _ActivityScreenState extends State<ActivityScreen> {
               highlightLast: false,
               height: 140,
             ),
+            const Divider(height: 28),
+            Row(children: [
+              Icon(minutesDiff >= 0 ? Symbols.trending_up_rounded : Symbols.trending_down_rounded, size: 18, color: minutesDiff >= 0 ? AppColors.tertiary : AppColors.warning),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$weekMinutes active minutes logged this week — ${minutesDiff >= 0 ? '${minutesDiff}m above' : '${-minutesDiff}m below'} the $_weeklyTargetMin min/week baseline.',
+                  style: T.bodySm.c(AppColors.onSurfaceVariant),
+                ),
+              ),
+            ]),
+          ]),
+        ),
+        VCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(Symbols.checklist_rounded, size: 20, color: c, fill: 1),
+              const SizedBox(width: 8),
+              Expanded(child: Text('IPAQ weekly check-in', style: T.headlineSm)),
+            ]),
+            const SizedBox(height: 6),
+            if (ipaqCat == null)
+              Text('A short, validated 7-day activity recall (vigorous, moderate, walking and sitting).', style: T.bodyMd.c(AppColors.onSurfaceVariant))
+            else ...[
+              Row(children: [
+                TagPill(ipaqCat, bg: AppColors.tint(_ipaqColor(ipaqCat)), fg: _ipaqColor(ipaqCat)),
+                const SizedBox(width: 8),
+                Text('$ipaqMet MET-min/week', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+              ]),
+              const SizedBox(height: 6),
+              Text(_ipaqTip(ipaqCat), style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            ],
+            const SizedBox(height: Sp.sm),
+            SoftButton(ipaqCat == null ? 'Start check-in' : 'Retake check-in', icon: Symbols.edit_rounded, onTap: _runIpaq),
           ]),
         ),
         PrimaryButton('Log activity', leadingIcon: Symbols.add_rounded, onTap: _logManual),
@@ -219,10 +320,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
               ),
           ]),
         ],
-        const PrivacyNote('Activity stays private to you. No leaderboards.'),
+        const PrivacyNote('A wellness tracker, not a diagnosis of any disease. Activity stays private to you, with no leaderboards.'),
       ],
     );
   }
+
+  Color _ipaqColor(String cat) => switch (cat) {
+        'High' => AppColors.tertiary,
+        'Moderate' => AppColors.warning,
+        _ => AppColors.error,
+      };
+
+  String _ipaqTip(String cat) => switch (cat) {
+        'High' => 'You are meeting a high activity level. Keep mixing intensities and let your body rest when it needs to.',
+        'Moderate' => 'A solid, moderate base. Adding one more vigorous session or a few extra walking days would lift this further.',
+        _ => 'Your reported activity is on the low side. Short walks between lectures and taking the stairs are easy ways to add minutes.',
+      };
 
   Widget _stat(String value, String unit, String label) => Expanded(
         child: Column(children: [
@@ -240,5 +353,24 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (d.inMinutes < 60) return '${d.inMinutes} min ago';
     if (d.inHours < 24) return '${d.inHours} h ago';
     return DateFormat('d MMM').format(t);
+  }
+}
+
+/// IPAQ Short Form (7-day recall) scoring: continuous MET-minutes/week plus
+/// the standard three-level categorical score.
+class Ipaq {
+  Ipaq._();
+
+  static int metMinutes({required int vigDays, required int vigMin, required int modDays, required int modMin, required int walkDays, required int walkMin}) =>
+      (8.0 * vigDays * vigMin + 4.0 * modDays * modMin + 3.3 * walkDays * walkMin).round();
+
+  static String category({required int vigDays, required int vigMin, required int modDays, required int modMin, required int walkDays, required int walkMin}) {
+    final total = metMinutes(vigDays: vigDays, vigMin: vigMin, modDays: modDays, modMin: modMin, walkDays: walkDays, walkMin: walkMin);
+    final activeDays = (vigDays > 0 ? 1 : 0) + (modDays > 0 ? 1 : 0) + (walkDays > 0 ? 1 : 0);
+    final anyDaysCombined = [if (vigDays > 0) vigDays, if (modDays > 0) modDays, if (walkDays > 0) walkDays];
+    final combinedDays = anyDaysCombined.isEmpty ? 0 : anyDaysCombined.reduce((a, b) => a > b ? a : b);
+    if ((vigDays >= 3 && total >= 1500) || (activeDays >= 3 && combinedDays >= 7 && total >= 3000)) return 'High';
+    if ((vigDays >= 3 && vigMin >= 20) || (modDays >= 5 && modMin >= 30) || (walkDays >= 5 && walkMin >= 30) || (activeDays >= 1 && combinedDays >= 5 && total >= 600)) return 'Moderate';
+    return 'Low';
   }
 }

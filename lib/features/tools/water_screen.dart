@@ -10,6 +10,7 @@ import '../../data/weather.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
+import 'tool_widgets.dart';
 
 class _Preset {
   const _Preset(this.ml, this.title, this.sub, this.icon);
@@ -20,10 +21,10 @@ class _Preset {
 }
 
 const _presets = [
-  _Preset(150, 'Small cup', 'Tea cup or small glass', Symbols.coffee_rounded),
-  _Preset(250, 'Glass', 'Standard glass', Symbols.local_drink_rounded),
-  _Preset(500, 'Bottle', 'Small water bottle', Symbols.water_full_rounded),
-  _Preset(750, 'Large bottle', 'Sports bottle', Symbols.water_bottle_large_rounded),
+  _Preset(250, 'Standard glass', 'A regular drinking glass', Symbols.local_drink_rounded),
+  _Preset(500, 'Water bottle', '500 ml bottle', Symbols.water_full_rounded),
+  _Preset(1000, 'Water bottle', '1 L bottle', Symbols.water_bottle_large_rounded),
+  _Preset(750, 'Sports tumbler', '750 ml tumbler', Symbols.sports_rounded),
 ];
 
 String sipLabel(DateTime t) {
@@ -142,18 +143,16 @@ class _WaterScreenState extends State<WaterScreen> {
     final c = AppColors.water;
 
     return VPage(
-      header: TitleHeader('Water', onLeading: () => goBack(context, '/tools')),
+      header: TitleHeader('Water intake tracker', onLeading: () => goBack(context, '/tools')),
       onRefresh: _load,
       children: [
         VCard(
           child: Row(children: [
-            Ring(
-              value: pct,
-              size: 112,
-              stroke: 12,
-              color: c,
-              child: Text('${(pct * 100).round()}%', style: T.metric(22)),
-            ),
+            Column(children: [
+              AnimatedWaterBottle(value: pct, color: c),
+              const SizedBox(height: 6),
+              Text('${(pct * 100).round()}%', style: T.labelMd.tnum.c(AppColors.onSurfaceVariant)),
+            ]),
             const SizedBox(width: Sp.lg),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -199,8 +198,15 @@ class _WaterScreenState extends State<WaterScreen> {
           ListGroup(children: [for (final r in _logs) _entry(r)]),
         ListGroup(
           header: 'Settings',
-          footer: 'Suggested target: ${Fmt.litres(Calc.waterTargetFor(AppState.instance.profile?.weightKg))} L (35 ml per kg of body weight).',
+          footer: 'Target = body weight (kg) × 35 ml. Tap to update your weight or set a goal yourself.',
           children: [
+            ListRow(
+              icon: Symbols.monitor_weight_rounded,
+              color: c,
+              title: 'Body weight',
+              value: AppState.instance.profile?.weightKg == null ? 'Add weight' : '${AppState.instance.profile!.weightKg!.round()} kg',
+              onTap: _adjustGoal,
+            ),
             ListRow(icon: Symbols.flag_rounded, color: c, title: 'Daily goal', value: '${Fmt.litres(_goal)} L', onTap: _adjustGoal),
             ListRow(
               icon: Symbols.notifications_active_rounded,
@@ -217,24 +223,48 @@ class _WaterScreenState extends State<WaterScreen> {
             ),
           ],
         ),
+        const PrivacyNote('A wellness tracker, not a diagnosis of any disease.'),
       ],
     );
   }
 
   Future<void> _adjustGoal() async {
+    double weight = AppState.instance.profile?.weightKg ?? 60;
     double v = _goal.toDouble();
-    final suggested = Calc.waterTargetFor(AppState.instance.profile?.weightKg);
+    bool useWeight = true;
     await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+          final suggested = Calc.waterTargetFor(weight);
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('Daily goal', style: T.headlineMd),
             const SizedBox(height: 4),
-            Text('Suggested for you: ${Fmt.litres(suggested)} L (35 ml per kg). Drink more in hot weather or after sport.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            Text('Amount of water (ml) = body weight (kg) × 35.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.lg),
-            Center(child: MetricValue(Fmt.litres(v), unit: 'L', size: 40)),
-            VSlider(value: v, min: 1500, max: 4000, divisions: 25, color: AppColors.water, onChanged: (x) => set(() => v = x)),
+            Text('Body weight', style: T.labelLg),
+            const SizedBox(height: 8),
+            Row(children: [
+              IconButton.outlined(icon: const Icon(Symbols.remove_rounded), onPressed: () => set(() => weight = (weight - 1).clamp(35, 150))),
+              Expanded(child: Center(child: MetricValue(weight.round().toString(), unit: 'kg', size: 28))),
+              IconButton.outlined(icon: const Icon(Symbols.add_rounded), onPressed: () => set(() => weight = (weight + 1).clamp(35, 150))),
+            ]),
+            const SizedBox(height: Sp.sm),
+            Text('Target from weight: ${Fmt.litres(suggested)} L a day.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            const SizedBox(height: Sp.lg),
+            const Divider(),
+            const SizedBox(height: Sp.sm),
+            Row(children: [
+              Expanded(child: Text('Use this as my goal', style: T.labelLg)),
+              Switch(value: useWeight, onChanged: (x) => set(() => useWeight = x)),
+            ]),
+            if (!useWeight) ...[
+              const SizedBox(height: Sp.sm),
+              Center(child: MetricValue(Fmt.litres(v), unit: 'L', size: 36)),
+              VSlider(value: v, min: 1500, max: 4000, divisions: 25, color: AppColors.water, onChanged: (x) => set(() => v = x)),
+            ],
+            Text('Drink more in hot weather or after sport — we add a suggestion automatically.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
             PrimaryButton('Save', onTap: () async {
-              await AppState.instance.updateProfile({'water_goal_ml': v.round()});
+              final goal = useWeight ? suggested : v.round();
+              await AppState.instance.updateProfile({'weight_kg': weight, 'water_goal_ml': goal});
               if (ctx.mounted) Navigator.pop(ctx);
               if (mounted) setState(() {});
             }),

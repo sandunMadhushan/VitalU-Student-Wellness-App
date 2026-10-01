@@ -112,6 +112,13 @@ class Calc {
     return ('High Risk', 'Worth a check-up');
   }
 
+  /// Weight range (kg) that keeps a person of [heightCm] inside the normal
+  /// BMI band (18.5–24.9), for setting a gain/loss target.
+  static (double, double) normalWeightRangeFor(double heightCm) {
+    final m2 = (heightCm / 100) * (heightCm / 100);
+    return (18.5 * m2, 24.9 * m2);
+  }
+
   /// Suggested daily water target (ml) ≈ 35 ml/kg, clamped to a sensible student range.
   static int waterTargetFor(double? weightKg) {
     if (weightKg == null) return 2500;

@@ -169,7 +169,7 @@ class _SleepScreenState extends State<SleepScreen> {
                   ),
                 ]),
               ),
-              const PrivacyNote('Sleep data stays private to you.'),
+              const PrivacyNote('A wellness tracker, not a diagnosis of any sleep disorder. Data stays private to you.'),
             ],
     );
   }

@@ -167,6 +167,77 @@ class ToolSubBar extends StatelessWidget {
       ]);
 }
 
+/// An empty bottle outline that animates its fill level, for hydration
+/// progress. [value] is 0..1+ (values over 1 show the bottle full, with the
+/// overflow reflected only in the label the caller shows alongside it).
+class AnimatedWaterBottle extends StatelessWidget {
+  const AnimatedWaterBottle({super.key, required this.value, this.width = 64, this.height = 132, this.color});
+  final double value;
+  final double width;
+  final double height;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? AppColors.water;
+    return SizedBox(
+      width: width,
+      height: height,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: value.clamp(0, 1)),
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeOutCubic,
+        builder: (_, v, _) => CustomPaint(painter: _BottlePainter(v, c, AppColors.surfaceContainerHigh)),
+      ),
+    );
+  }
+}
+
+class _BottlePainter extends CustomPainter {
+  _BottlePainter(this.fill, this.color, this.track);
+  final double fill;
+  final Color color;
+  final Color track;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final neckW = w * 0.34, neckH = h * 0.12, bodyTop = neckH + h * 0.05, r = w * 0.16;
+    final body = RRect.fromRectAndRadius(Rect.fromLTWH(0, bodyTop, w, h - bodyTop), Radius.circular(r));
+    final neck = RRect.fromRectAndRadius(Rect.fromLTWH((w - neckW) / 2, 0, neckW, neckH + 4), Radius.circular(w * 0.06));
+
+    canvas.drawRRect(neck, Paint()..color = track);
+    canvas.drawRRect(body, Paint()..color = track);
+
+    canvas.save();
+    canvas.clipRRect(body);
+    final fillTop = (h - bodyTop) * (1 - fill) + bodyTop;
+    canvas.drawRect(Rect.fromLTWH(0, fillTop, w, h - fillTop), Paint()..color = color);
+    if (fill > 0.02) {
+      final wave = Path()
+        ..moveTo(0, fillTop + 2)
+        ..quadraticBezierTo(w * 0.25, fillTop - 3, w * 0.5, fillTop + 2)
+        ..quadraticBezierTo(w * 0.75, fillTop + 7, w, fillTop + 2)
+        ..lineTo(w, fillTop)
+        ..lineTo(0, fillTop)
+        ..close();
+      canvas.drawPath(wave, Paint()..color = color.withValues(alpha: 0.7));
+    }
+    canvas.restore();
+
+    final outline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..color = AppColors.outlineVariant;
+    canvas.drawRRect(body, outline);
+    canvas.drawRRect(neck, outline);
+    canvas.drawLine(Offset((w - neckW) / 2, neckH - 2), Offset((w + neckW) / 2, neckH - 2), Paint()..color = AppColors.outlineVariant..strokeWidth = 2.5);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BottlePainter old) => old.fill != fill || old.color != color;
+}
+
 Future<void> showInfoSheet(BuildContext context, {required String title, required List<String> paragraphs, IconData icon = Symbols.info_rounded}) {
   return showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: T.headlineMd),
