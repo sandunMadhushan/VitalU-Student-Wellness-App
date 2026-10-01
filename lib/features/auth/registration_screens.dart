@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
 import '../../data/catalog.dart';
 import '../../data/models.dart';
+import '../../data/repo.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -103,7 +105,13 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
   String? _faculty;
   String? _year;
   final _regNo = TextEditingController();
+  final _nameInit = TextEditingController();
+  final _username = TextEditingController();
+  String? _usernameError;
+  bool _checkingUsername = false;
   bool _busy = false;
+
+  static final _usernameFormat = RegExp(r'^[a-z][a-z0-9_.]{2,19}$');
 
   @override
   void initState() {
@@ -114,16 +122,31 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
     _faculty = p?.faculty;
     _year = p?.academicYear;
     _regNo.text = p?.registrationNumber ?? '';
-    _regNo.addListener(() => setState(() {}));
+    _nameInit.text = p?.nameWithInitials ?? '';
+    _username.text = p?.username ?? '';
+    for (final c in [_regNo, _nameInit, _username]) {
+      c.addListener(() => setState(() {}));
+    }
   }
 
   @override
   void dispose() {
     _regNo.dispose();
+    _nameInit.dispose();
+    _username.dispose();
     super.dispose();
   }
 
-  bool get _complete => _dob != null && _sex != null && _faculty != null && _year != null && _regNo.text.trim().length >= 3;
+  bool get _usernameValid => _usernameFormat.hasMatch(_username.text.trim().toLowerCase());
+
+  bool get _complete =>
+      _dob != null &&
+      _sex != null &&
+      _faculty != null &&
+      _year != null &&
+      _regNo.text.trim().length >= 3 &&
+      _nameInit.text.trim().length >= 3 &&
+      _usernameValid;
 
   Future<void> _pickDob() async {
     final now = DateTime.now();
@@ -138,14 +161,29 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
 
   Future<void> _continue() async {
     if (!_complete) return;
-    setState(() => _busy = true);
+    final username = _username.text.trim().toLowerCase();
+    setState(() {
+      _busy = true;
+      _usernameError = null;
+    });
     try {
+      if (username != (AppState.instance.profile?.username ?? '').toLowerCase()) {
+        setState(() => _checkingUsername = true);
+        final available = await Repo.usernameAvailable(username);
+        setState(() => _checkingUsername = false);
+        if (!available) {
+          setState(() => _usernameError = 'That username is taken. Try another.');
+          return;
+        }
+      }
       await _saveStep({
         'date_of_birth': DateFormat('yyyy-MM-dd').format(_dob!),
         'sex': _sex,
         'faculty': _faculty,
         'academic_year': _year,
         'registration_number': _regNo.text.trim().toUpperCase(),
+        'name_with_initials': _nameInit.text.trim(),
+        'username': username,
       }, 1);
       if (!mounted) return;
       // Students who finished registration earlier only needed to complete
@@ -154,6 +192,12 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
         context.go('/home');
       } else {
         context.push('/register/2');
+      }
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') {
+        setState(() => _usernameError = 'That username is taken. Try another.');
+      } else if (mounted) {
+        toast(context, 'Could not save. Please try again.', error: true);
       }
     } catch (e) {
       if (mounted) toast(context, 'Could not save. Please try again.', error: true);
@@ -172,30 +216,10 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
         const _StepProgress(step: 1),
         const _Intro('Tell us about you', 'This helps VitalU set your daily targets and assessment schedule.'),
         ListGroup(dividerIndent: 60, children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(Sp.md, 4, Sp.md, 4),
-            child: Row(children: [
-              _icon(Symbols.badge_rounded, AppColors.primary),
-              const SizedBox(width: 14),
-              Expanded(
-                child: TextField(
-                  controller: _regNo,
-                  textCapitalization: TextCapitalization.characters,
-                  textInputAction: TextInputAction.done,
-                  style: T.bodyLg.w(FontWeight.w600),
-                  decoration: InputDecoration(
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    hintText: 'Registration number',
-                    hintStyle: T.bodyLg.w(FontWeight.w600).c(AppColors.outline),
-                  ),
-                ),
-              ),
-            ]),
-          ),
+          _textRow(Symbols.badge_rounded, AppColors.primary, _nameInit, 'Name with initials', hint: 'H.M.S. Perera', capitalize: TextCapitalization.words),
+          _textRow(Symbols.account_circle_rounded, AppColors.mind, _username, 'Username',
+              hint: 'hmsperera', lowercase: true, error: _usernameError, suffix: _checkingUsername ? const _MiniSpinner() : null),
+          _textRow(Symbols.badge_rounded, AppColors.heart, _regNo, 'Registration number', hint: 'AG/21/045', capitalize: TextCapitalization.characters),
           ListRow(
             icon: Symbols.cake_rounded,
             color: AppColors.cycle,
@@ -243,6 +267,61 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
   }
 
   Widget _icon(IconData icon, Color c) => IconCircle(icon, size: 30, iconSize: 18, bg: c, fg: AppColors.isDark ? AppColors.surface : Colors.white, radius: 8, fill: 1);
+
+  Widget _textRow(
+    IconData icon,
+    Color c,
+    TextEditingController ctrl,
+    String hintLabel, {
+    required String hint,
+    TextCapitalization capitalize = TextCapitalization.none,
+    bool lowercase = false,
+    String? error,
+    Widget? suffix,
+  }) {
+    final field = Padding(
+      padding: const EdgeInsets.fromLTRB(Sp.md, 4, Sp.md, 4),
+      child: Row(children: [
+        _icon(icon, c),
+        const SizedBox(width: 14),
+        Expanded(
+          child: TextField(
+            controller: ctrl,
+            textCapitalization: capitalize,
+            textInputAction: TextInputAction.done,
+            inputFormatters: lowercase ? [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_.]')), LowerCaseTextFormatter()] : null,
+            style: T.bodyLg.w(FontWeight.w600),
+            decoration: InputDecoration(
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              hintText: hint,
+              hintStyle: T.bodyLg.w(FontWeight.w600).c(AppColors.outline),
+              prefixText: lowercase ? '@' : null,
+              prefixStyle: T.bodyLg.w(FontWeight.w600).c(AppColors.onSurfaceVariant),
+            ),
+          ),
+        ),
+        ?suffix,
+      ]),
+    );
+    if (error == null) return field;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      field,
+      Padding(padding: const EdgeInsets.fromLTRB(Sp.md + 44, 0, Sp.md, 8), child: Text(error, style: T.bodySm.c(AppColors.error))),
+    ]);
+  }
+}
+
+class _MiniSpinner extends StatelessWidget {
+  const _MiniSpinner();
+  @override
+  Widget build(BuildContext context) => const Padding(
+        padding: EdgeInsets.only(left: 8),
+        child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+      );
 }
 
 // ---------------------------------------------------------------------------

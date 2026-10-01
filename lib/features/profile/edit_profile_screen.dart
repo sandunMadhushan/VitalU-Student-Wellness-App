@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import '../../core/app_state.dart';
 import '../../data/catalog.dart';
+import '../../data/repo.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -18,7 +21,10 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final p = AppState.instance.profile!;
   late final _name = TextEditingController(text: p.fullName == 'Student' ? '' : p.fullName);
+  late final _nameInit = TextEditingController(text: p.nameWithInitials ?? '');
+  late final _username = TextEditingController(text: p.username ?? '');
   late final _regNo = TextEditingController(text: p.registrationNumber ?? '');
+  String? _usernameError;
   late DateTime? _dob = p.dob;
   late String? _sex = p.sex;
   late String? _faculty = p.faculty;
@@ -61,14 +67,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   ];
 
   Future<void> _save() async {
-    if (_regNo.text.trim().length < 3 || _dob == null || _sex == null || _faculty == null || _year == null) {
-      return toast(context, 'Registration number, date of birth, sex, faculty and batch are required.', error: true);
+    final username = _username.text.trim().toLowerCase();
+    if (_regNo.text.trim().length < 3 ||
+        _nameInit.text.trim().length < 3 ||
+        username.length < 3 ||
+        _dob == null ||
+        _sex == null ||
+        _faculty == null ||
+        _year == null) {
+      return toast(context, 'Name with initials, username, registration number, date of birth, sex, faculty and batch are required.', error: true);
     }
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _usernameError = null;
+    });
     try {
+      if (username != (p.username ?? '').toLowerCase() && !await Repo.usernameAvailable(username)) {
+        if (mounted) setState(() => _usernameError = 'That username is taken. Try another.');
+        return;
+      }
       final measured = [_h.metric, _w.metric, _waist.metric, _hip.metric].any((v) => v != null);
       await AppState.instance.updateProfile({
         'full_name': _name.text.trim().isEmpty ? null : _name.text.trim(),
+        'name_with_initials': _nameInit.text.trim(),
+        'username': username,
         'date_of_birth': _dob == null ? null : DateFormat('yyyy-MM-dd').format(_dob!),
         'sex': _sex,
         'faculty': _faculty,
@@ -91,6 +113,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (mounted) {
         toast(context, 'Profile updated');
         goBack(context, '/profile');
+      }
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') {
+        if (mounted) setState(() => _usernameError = 'That username is taken. Try another.');
+      } else if (mounted) {
+        toast(context, 'Could not save changes. Please try again.', error: true);
       }
     } catch (e) {
       if (mounted) toast(context, 'Could not save changes. Please try again.', error: true);
@@ -170,6 +198,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               padding: const EdgeInsets.fromLTRB(Sp.md, 12, Sp.md, 12),
               child: Column(children: [
                 VTextField(controller: _name, hint: 'Full name', icon: Symbols.person_rounded),
+                const SizedBox(height: 10),
+                VTextField(controller: _nameInit, hint: 'Name with initials', icon: Symbols.badge_rounded),
+                const SizedBox(height: 10),
+                VTextField(
+                  controller: _username,
+                  hint: 'Username',
+                  icon: Symbols.alternate_email_rounded,
+                  errorText: _usernameError,
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_.]')), LowerCaseTextFormatter()],
+                  onChanged: (_) {
+                    if (_usernameError != null) setState(() => _usernameError = null);
+                  },
+                ),
                 const SizedBox(height: 10),
                 VTextField(controller: _regNo, hint: 'Registration number', icon: Symbols.badge_rounded),
               ]),

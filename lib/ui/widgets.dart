@@ -1207,8 +1207,30 @@ Future<R?> showVSheet<R>(BuildContext context, {required Widget Function(BuildCo
   );
 }
 
+/// Forces input to lower case as it is typed, e.g. for a username field.
+class LowerCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) => newValue.copyWith(text: newValue.text.toLowerCase());
+}
+
 class VTextField extends StatelessWidget {
-  const VTextField({super.key, this.controller, this.hint, this.icon, this.keyboard, this.obscure = false, this.suffix, this.onChanged, this.maxLines = 1, this.validator, this.autofill, this.textInputAction, this.onSubmitted});
+  const VTextField({
+    super.key,
+    this.controller,
+    this.hint,
+    this.icon,
+    this.keyboard,
+    this.obscure = false,
+    this.suffix,
+    this.onChanged,
+    this.maxLines = 1,
+    this.validator,
+    this.autofill,
+    this.textInputAction,
+    this.onSubmitted,
+    this.errorText,
+    this.inputFormatters,
+  });
   final TextEditingController? controller;
   final String? hint;
   final IconData? icon;
@@ -1222,6 +1244,10 @@ class VTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
 
+  /// Shown under the field in the error colour, e.g. "That username is taken."
+  final String? errorText;
+  final List<TextInputFormatter>? inputFormatters;
+
   @override
   Widget build(BuildContext context) {
     return TextFormField(
@@ -1234,9 +1260,11 @@ class VTextField extends StatelessWidget {
       autofillHints: autofill,
       textInputAction: textInputAction,
       onFieldSubmitted: onSubmitted,
+      inputFormatters: inputFormatters,
       style: T.bodyLg,
       decoration: InputDecoration(
         hintText: hint,
+        errorText: errorText,
         prefixIcon: icon == null ? null : Icon(icon, color: AppColors.onSurfaceVariant, size: 20),
         suffixIcon: suffix,
       ),

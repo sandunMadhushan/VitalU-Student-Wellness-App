@@ -23,6 +23,16 @@ class Repo {
 
   static String get _uid => uid!;
 
+  // ---------------- Account ----------------
+
+  /// Whether no other student has taken [name] (case-insensitive). Backed by
+  /// a security-definer function since row-level security otherwise hides
+  /// every profile but the caller's own.
+  static Future<bool> usernameAvailable(String name) async {
+    final r = await db.rpc('username_available', params: {'name': name});
+    return r as bool;
+  }
+
   // ---------------- Water ----------------
   static Future<List<Rec>> waterOn(DateTime day) async {
     final s = dayStart(day);

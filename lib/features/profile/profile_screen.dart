@@ -263,9 +263,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(width: Sp.md),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(p.fullName, style: T.headlineMd, maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 2),
-              Text('Edit profile', style: T.bodyMd.c(AppColors.primary)),
+              Text(p.displayName, style: T.headlineMd, maxLines: 1, overflow: TextOverflow.ellipsis),
+              if (p.username != null) ...[
+                const SizedBox(height: 1),
+                Text('@${p.username}', style: T.bodyMd.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+              if (p.faculty != null || p.registrationNumber != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  [p.faculty, p.registrationNumber].whereType<String>().join(' · '),
+                  style: T.labelMd.c(AppColors.primary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ]),
           ),
           Icon(Symbols.chevron_right_rounded, color: AppColors.outline),

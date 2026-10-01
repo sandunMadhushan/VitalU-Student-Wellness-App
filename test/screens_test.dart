@@ -50,7 +50,6 @@ import 'package:vitalu/features/tools/stress_screen.dart';
 import 'package:vitalu/features/tools/tools_screen.dart';
 import 'package:vitalu/features/tools/water_screen.dart';
 import 'package:vitalu/features/tools/whr_screen.dart';
-import 'package:vitalu/ui/text.dart';
 import 'package:vitalu/ui/theme.dart';
 import 'package:vitalu/ui/tokens.dart';
 
@@ -63,6 +62,8 @@ final _sample = <String, dynamic>{
   'faculty': 'Faculty of Agriculture',
   'academic_year': '23/24 Batch',
   'registration_number': 'AG/21/045',
+  'name_with_initials': 'N.H. Perera',
+  'username': 'nimalperera',
   'height_cm': 172,
   'weight_kg': 64,
   'waist_cm': 78,

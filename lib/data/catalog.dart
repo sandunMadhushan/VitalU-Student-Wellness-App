@@ -40,13 +40,15 @@ Condition? conditionByKey(String k) {
 }
 
 const faculties = <String>[
-  'Faculty of Applied Sciences',
   'Faculty of Agriculture',
-  'Faculty of Management Studies',
-  'Faculty of Medicine & Allied Sciences',
-  'Faculty of Social Sciences & Humanities',
-  'Faculty of Technology',
-  'Other Academic Department',
+  'Faculty of Allied Health Sciences',
+  'Faculty of Arts',
+  'Faculty of Dental Sciences',
+  'Faculty of Engineering',
+  'Faculty of Management',
+  'Faculty of Medicine',
+  'Faculty of Science',
+  'Faculty of Veterinary Medicine and Animal Science',
 ];
 
 const academicYears = <String>['21/22 Batch', '22/23 Batch', '23/24 Batch', '24/25 Batch', '25/26 Batch'];

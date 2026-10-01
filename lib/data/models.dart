@@ -28,10 +28,22 @@ class Profile {
   String? get faculty => raw['faculty'] as String?;
   String? get academicYear => raw['academic_year'] as String?;
   String? get registrationNumber => raw['registration_number'] as String?;
+  String? get nameWithInitials => raw['name_with_initials'] as String?;
+  String? get username => raw['username'] as String?;
+
+  /// Name shown on the profile card: the official initials form once set,
+  /// otherwise the plain full name.
+  String get displayName => (nameWithInitials?.trim().isNotEmpty ?? false) ? nameWithInitials! : fullName;
 
   /// Registration step 1 is mandatory: every field must be filled.
   bool get basicsComplete =>
-      dob != null && sex != null && faculty != null && academicYear != null && (registrationNumber?.trim().isNotEmpty ?? false);
+      dob != null &&
+      sex != null &&
+      faculty != null &&
+      academicYear != null &&
+      (registrationNumber?.trim().isNotEmpty ?? false) &&
+      (nameWithInitials?.trim().isNotEmpty ?? false) &&
+      (username?.trim().isNotEmpty ?? false);
 
   /// Where a signed-in student should land: step 1 until it is complete, then
   /// the next unfinished registration step, then home.
