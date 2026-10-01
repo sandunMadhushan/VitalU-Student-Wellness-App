@@ -13,6 +13,7 @@ import '../features/diet/meal_log_screen.dart';
 import '../features/diet/meal_planner_screen.dart';
 import '../features/diet/nutrition_today_screen.dart';
 import '../features/diet/plate_screen.dart';
+import '../features/habits/habits_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/library/article_screen.dart';
 import '../features/library/library_screen.dart';
@@ -92,9 +93,10 @@ final appRouter = GoRouter(
     _r('/diet/planner', (s) => const MealPlannerScreen()),
     _r('/diet/budget', (s) => const BudgetScreen()),
     _r('/diet/today', (s) => const NutritionTodayScreen()),
-    _r('/progress', (s) => const ProgressScreen(), tab: true),
+    _r('/progress', (s) => const ProgressScreen()),
     _r('/milestones', (s) => const MilestonesScreen()),
     _r('/notifications', (s) => const NotificationsScreen()),
+    _r('/habits', (s) => const HabitsScreen(), tab: true),
     _r('/library', (s) => const LibraryScreen(), tab: true),
     _r('/library/article/:slug', (s) => ArticleScreen(slug: s.pathParameters['slug']!)),
     _r('/blood-report', (s) => const BloodUploadScreen()),

@@ -553,7 +553,7 @@ class VSlider extends StatelessWidget {
 // Page scaffold, app bars & bottom navigation
 // ---------------------------------------------------------------------------
 
-enum NavTab { home, tools, diet, progress, library, profile }
+enum NavTab { home, tools, diet, habits, library, profile }
 
 /// Page shell: an app bar from [header], a padded list of [children], an
 /// optional sticky [bottom] action and the tab bar when [nav] is set.
@@ -563,7 +563,6 @@ class VPage extends StatelessWidget {
     required this.children,
     this.header,
     this.nav,
-    this.navVariantLibrary = false,
     this.padding = const EdgeInsets.symmetric(horizontal: Sp.margin),
     this.bottom,
     this.background,
@@ -576,7 +575,6 @@ class VPage extends StatelessWidget {
   final List<Widget> children;
   final Widget? header;
   final NavTab? nav;
-  final bool navVariantLibrary;
   final EdgeInsetsGeometry padding;
   final Widget? bottom;
   final Color? background;
@@ -588,7 +586,7 @@ class VPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
-    final showNav = nav != null && nav != NavTab.library;
+    final showNav = nav != null;
     final h = header;
     Widget scroll(BuildContext ctx) => CustomScrollView(physics: const AlwaysScrollableScrollPhysics(), slivers: [
           if (h is VHeader)
@@ -817,12 +815,11 @@ class BackTitleRow extends StatelessWidget {
       ]);
 }
 
-//// Floating tab bar: a frosted-glass capsule that hovers above the content,
+/// Floating tab bar: a frosted-glass capsule that hovers above the content,
 /// with a pill that slides to the active tab.
 class BottomNav extends StatelessWidget {
-  const BottomNav({super.key, required this.current, this.library = false});
+  const BottomNav({super.key, required this.current});
   final NavTab current;
-  final bool library;
 
   static const height = 64.0;
 
@@ -833,7 +830,8 @@ class BottomNav extends StatelessWidget {
     (NavTab.home, Symbols.home_rounded, 'Home', '/home'),
     (NavTab.tools, Symbols.vital_signs_rounded, 'Tools', '/tools'),
     (NavTab.diet, Symbols.nutrition_rounded, 'Diet', '/diet'),
-    (NavTab.progress, Symbols.monitoring_rounded, 'Progress', '/progress'),
+    (NavTab.habits, Symbols.local_fire_department_rounded, 'Habits', '/habits'),
+    (NavTab.library, Symbols.menu_book_rounded, 'Learn', '/library'),
     (NavTab.profile, Symbols.account_circle_rounded, 'Profile', '/profile'),
   ];
 

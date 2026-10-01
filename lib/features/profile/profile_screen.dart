@@ -215,6 +215,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
             ListGroup(header: 'Records', children: [
+              ListRow(icon: Symbols.monitoring_rounded, color: AppColors.mind, title: 'Progress & trends', subtitle: 'Charts, assessments and milestones', onTap: () => context.push('/progress')),
               ListRow(icon: Symbols.event_note_rounded, color: AppColors.primary, title: 'Appointments & requests', onTap: _appointments),
               ListRow(icon: Symbols.lab_profile_rounded, color: AppColors.heart, title: 'Blood reports', onTap: () => context.push('/blood-report')),
               ListRow(icon: Symbols.notifications_rounded, color: AppColors.warning, title: 'Notifications', onTap: () => context.push('/notifications')),

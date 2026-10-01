@@ -148,8 +148,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: const MainHeader('Progress'),
-      nav: NavTab.progress,
+      header: TitleHeader('Progress', onLeading: () => goBack(context, '/profile')),
       onRefresh: _load,
       topPadding: 0,
       children: [
@@ -157,9 +156,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
           width: double.infinity,
           child: Segmented(
             small: false,
-            options: const ['Habits', 'Assessments'],
-            value: _habits ? 'Habits' : 'Assessments',
-            onChanged: (v) => setState(() => _habits = v == 'Habits'),
+            options: const ['Trends', 'Assessments'],
+            value: _habits ? 'Trends' : 'Assessments',
+            onChanged: (v) => setState(() => _habits = v == 'Trends'),
           ),
         ),
         if (_loading) const Loading() else ...(_habits ? _habitsView() : _assessmentView()),

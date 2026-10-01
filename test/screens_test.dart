@@ -31,6 +31,7 @@ import 'package:vitalu/features/diet/meal_planner_screen.dart';
 import 'package:vitalu/features/diet/nutrition_today_screen.dart';
 import 'package:vitalu/features/diet/plate_screen.dart';
 import 'package:vitalu/features/home/home_screen.dart';
+import 'package:vitalu/features/habits/habits_screen.dart';
 import 'package:vitalu/features/library/library_screen.dart';
 import 'package:vitalu/features/onboarding/onboarding_screen.dart';
 import 'package:vitalu/features/profile/about_screen.dart';
@@ -117,6 +118,7 @@ final _screens = <String, Widget Function()>{
   'progress': () => const ProgressScreen(),
   'milestones': () => const MilestonesScreen(),
   'notifications': () => const NotificationsScreen(),
+  'habits': () => const HabitsScreen(),
   'library': () => const LibraryScreen(),
   'blood_upload': () => const BloodUploadScreen(),
   'profile': () => const ProfileScreen(),

@@ -122,18 +122,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final explore = visible.where((a) => a != featured && !rec.contains(a)).toList();
 
     return VPage(
-      header: TitleHeader(_savedOnly ? 'Saved articles' : 'Library', actions: [
-        IconButton(tooltip: 'Search', icon: const Icon(Symbols.search_rounded), onPressed: _search),
-        IconButton(
-          tooltip: _savedOnly ? 'Show all articles' : 'Show saved',
-          isSelected: _savedOnly,
-          icon: const Icon(Symbols.bookmarks_rounded),
-          selectedIcon: Icon(Symbols.bookmarks_rounded, fill: 1, color: AppColors.primary),
-          onPressed: () => setState(() => _savedOnly = !_savedOnly),
-        ),
-      ]),
+      header: const MainHeader('Learn'),
+      nav: NavTab.library,
+      topPadding: 0,
       onRefresh: _load,
       children: [
+        Row(children: [
+          Expanded(child: Text(_savedOnly ? 'Your saved articles' : 'Short reads on health and student life', style: T.bodyMd.c(AppColors.onSurfaceVariant))),
+          IconButton(tooltip: 'Search', icon: const Icon(Symbols.search_rounded), onPressed: _search),
+          IconButton(
+            tooltip: _savedOnly ? 'Show all articles' : 'Show saved',
+            isSelected: _savedOnly,
+            icon: const Icon(Symbols.bookmarks_rounded),
+            selectedIcon: Icon(Symbols.bookmarks_rounded, fill: 1, color: AppColors.primary),
+            onPressed: () => setState(() => _savedOnly = !_savedOnly),
+          ),
+        ]),
         FullBleed(
           child: ChipRow(children: [
             for (final t in libraryTopics) VChip(t.$2, selected: _topic == t.$1, onTap: () => setState(() => _topic = t.$1)),

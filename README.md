@@ -1,49 +1,93 @@
 # VitalU — Student Wellness App
 
 VitalU is a Flutter + Supabase mobile app that gives university students a single, private place to
-track their physical and mental wellbeing, get AI-assisted help reading their own health data, and stay
-connected to campus health support — built around Sri Lankan university life (local emergency numbers,
-Sri Lankan rupees, local campus foods, and local academic-year batches).
+track their physical and mental wellbeing, get AI-assisted help reading their own health data, build
+healthier daily habits, and stay connected to campus health support — built around Sri Lankan university
+life (local emergency numbers, Sri Lankan rupees, local campus foods, and local academic-year batches).
 
 It started from the concept paper and UI mock-ups in the parent folder and is now a working, installable
-Android/iOS app backed by a real Supabase project (Postgres database, Auth, Storage and Edge Functions).
+Android/iOS app backed by a real Supabase project (Postgres database, Auth, Storage and Edge Functions),
+with a custom light/dark design system built around the Manrope typeface and a floating tab bar.
 
 ## What problem it solves
 
 University students rarely have one place that pulls together body metrics, mental-health check-ins,
 nutrition, sleep, activity and lab results — most of that either lives in someone's head, in scattered
-paper reports, or isn't tracked at all. VitalU gives students:
+paper reports, or isn't tracked at all. On top of that, a needs assessment of the student population
+found recurring unhealthy patterns — emotional/sweet-craving eating, sedentary days, smoking, high screen
+time, low fruit intake, skipped breakfasts, sugar-sweetened drinks and frequent fast food — that nobody
+was actively helping students work on. VitalU gives students:
 
 * A private, encrypted "health profile" they own and control.
 * Lightweight daily tools instead of clinical-grade trackers, so logging something takes seconds.
+* A dedicated **Habits** hub that names those exact patterns and offers small, non-judgemental swaps a
+  student can pledge to try.
 * Plain-English AI explanations of things students normally can't interpret themselves (a blood test
   report, a photographed meal).
 * A gentle nudge toward campus health services and emergency numbers when they actually need them,
   without turning the app into a diagnostic or clinical tool.
 
+## Navigation
+
+Five tabs sit in a floating bottom bar: **Home · Tools · Diet · Habits · Learn · Profile**. Progress
+(trends and periodic assessments) and a few other screens are reached from Home or Profile rather than
+being tabs themselves, keeping the bar to a manageable set of daily destinations.
+
 ## Key features
 
 ### Onboarding & Account
-* Splash + onboarding walkthrough, sign up / log in with email+password or Google, and a 3-step guided
-  registration (body basics, health background, wellness goals) that seeds the student's profile.
+* Splash + onboarding walkthrough, sign up / log in with email+password or Google.
+* A 3-step guided registration — the first step (registration number, name with initials, a unique
+  username, date of birth, sex, faculty and academic batch) is mandatory before a student can use the
+  app at all; body measurements and health background follow in steps 2 and 3.
 * Light, Dark and System theme modes, picked from the Profile screen and persisted on-device.
 
 ### Home
-* A daily overview: greeting, today's snapshot (hydration, steps, sleep), a breathing/mindfulness
-  exercise, and quick links into the rest of the app.
+* A daily overview: greeting, a "Today" card with concentric rings for water/steps/sleep, quick tiles for
+  meals, food variety and mood, a "Body" section (BMI and waist-to-hip ratio on a zoned scale), and a
+  **Progress** section showing this week's average for every tracked habit against its own baseline
+  (personal goal or a health guideline such as 150 active minutes a week), with a fluctuation indicator
+  and a link to the full Progress view.
+* A breathing/mindfulness exercise and quick links into the rest of the app.
+
+### Habits
+* A supportive, non-judgemental hub addressing the patterns found in the needs assessment: stress/sweet
+  cravings, long sitting stretches, smoking or vaping, high screen time, low fruit intake, skipped
+  breakfasts, sugary drinks and frequent fried/packaged food.
+* Each habit has a short, reframing insight (why the habit is common, not a character flaw), one concrete
+  swap to try, a link into the relevant tracker, and a pledge toggle that tracks how many days a student
+  has stuck with it — all private to the student.
 
 ### Periodic Wellness Assessments
 * Term-based self-assessments across six sections — Body Measurements, Nutrition & Eating, Lifestyle &
   Daily Rhythm, Physical Activity, Sleep & Rest, and Stress & Wellbeing — released in scheduled windows
-  per term/faculty, with a completion summary at the end.
+  per term/faculty, with a completion summary at the end. Reached from Home or Profile → Progress.
 * With consent, de-identified, faculty-level results (only for groups of 5+ students) can feed a
   read-only research view for the university — anonymous, aggregate, and never reachable from the app
   itself.
 
 ### Health Tools
-Quick, standalone calculators and trackers: **BMI**, **Waist-Hip Ratio**, **Heart disease risk**,
-**Water intake**, **Stress check**, **Activity/step tracking** (device pedometer), **Sleep tracking**,
-and a **Menstrual cycle** tracker.
+Quick, standalone calculators and trackers, each carrying an explicit "not a diagnosis" note:
+* **BMI calculator** — category, a target weight range for the normal BMI band, and short tips
+  personalised from the student's own recent logs (breakfast frequency, diet diversity, activity).
+* **WHR calculator** — waist-to-hip ratio with a pear/apple body-shape diagram illustrating central vs
+  peripheral fat distribution.
+* **CVD risk indicator** — a factor-based cardiovascular risk check (age, sex, BMI, smoking, activity,
+  family history, diabetes, hypertension, optional blood pressure/glucose/cholesterol), pre-filled from
+  the profile, with recommendations shown regardless of risk level.
+* **Water intake tracker** — target = body weight (kg) × 35 ml, an animated bottle-fill visual, quick-add
+  presets (standard glass, 500 ml/1 L bottles, sports tumbler) and automatic heat-based extra-intake tips
+  from the student's approximate location.
+* **Anxiety tracker** — the validated DASS-21 self-check (21 items, separate depression/anxiety/stress
+  scores) with calming recommendations tailored to whichever scale scores highest.
+* **Activity tracker** — daily step/activity logging (device pedometer or manual) plus a weekly IPAQ
+  short-form check-in (MET-minutes and a Low/Moderate/High category) and a weekly active-minutes
+  comparison against the 150-minutes-a-week baseline.
+* **Sleep tracker** — bedtime, wake time and quality.
+* **Screen time tracker** — daily screen time against a healthy-range guideline, with eye-strain tips.
+* **Cycle tracker** (shown for female students) — phase wheel and predictions, symptom and craving
+  logging, a non-diagnostic note on signs sometimes associated with PCOS with soothing recommendations, a
+  short illustrated note on the menstrual cycle, and an estimated fertile-window date range.
 
 ### Diet & Nutrition
 * A diet hub with a **visual plate planner** (half veg, quarter grains, quarter protein, plus fruit),
@@ -53,11 +97,12 @@ and a **Menstrual cycle** tracker.
   which food groups it covers, so logging food doesn't require manual data entry.
 
 ### Progress & Motivation
-* Trends across all trackers, unlockable milestones/badges for consistent healthy habits, and an
-  exportable PDF wellness summary.
+* Trends across all trackers (water, sleep, activity, mood) and periodic assessment history, unlockable
+  milestones/badges for consistent healthy habits, and an exportable PDF wellness summary — reached from
+  Home's Progress section or Profile → Records.
 * In-app reminders and notifications (hydration, sleep window, check-ins).
 
-### Health Education Library
+### Health Education Library ("Learn")
 * Short, student-friendly articles on nutrition, mental health, sleep and preventative care, with
   text-to-speech and share support.
 
@@ -72,26 +117,29 @@ and a **Menstrual cycle** tracker.
   contact section.
 
 ### Profile
-* A single health record view (BMI/WHR, family history, allergies, medications, conditions, lifestyle
-  goals), avatar upload, research-participation consent toggle, appointment history, and account
-  settings — all editable and all private to the student by default.
+* An identity card (name with initials, @username, faculty and registration number), a single health
+  record view (BMI/WHR, family history, allergies, medications, conditions, lifestyle goals), avatar
+  upload, research-participation consent toggle, appointment history, and account settings — all editable
+  and all private to the student by default.
 
 ## Privacy & security model
 
 * Every table is protected by Postgres row-level security: a student can only ever read or write their
   own rows; reference/catalogue tables are read-only for everyone.
+* A security-definer `username_available()` function lets the app check handle availability during sign-up
+  without exposing any other student's profile data.
 * Blood reports live in a private per-user storage bucket; avatars live in a public one.
 * The only aggregate view of assessment data is a service-role-only analytics view used for anonymised,
   minimum-group-size research reporting — the app itself never has access to other students' data.
 
 ## Tech stack
 
-* **Flutter** (Material 3, `go_router` for navigation, custom "Serene Pastel Sanctuary" design system
-  with full light/dark theming)
+* **Flutter** (Material 3, `go_router` for navigation, a custom light/dark design system built on the
+  Manrope typeface, lavender-tinted surfaces and a floating frosted-glass tab bar)
 * **Supabase** — Postgres database with RLS, Auth (email + Google OAuth), Storage, and Edge Functions
 * **Google Gemini** (via Supabase Edge Functions) for blood-report reading and meal-photo analysis
 * Device integrations: pedometer (step counting), image picker, PDF export/printing, share sheet,
-  text-to-speech, `url_launcher` for calls/email
+  text-to-speech, `url_launcher` for calls/email, IP-based geolocation for heat-aware hydration tips
 
 ## Run it
 
@@ -106,10 +154,12 @@ The Supabase URL and publishable key are in `lib/core/config.dart` (project **Vi
 
 ## Backend (Supabase project `VitalU`)
 
-* **Database** – profiles, trackers (water, activity, sleep, mood, cycle), diet (meals, diversity, budget
-  planner, grocery lists), tool results, periodic assessments & windows, education library, professionals,
-  appointments, emergency contacts, notifications, badges and blood reports. Row-level security is on for every
-  table: students can only read/write their own rows; catalogue tables are read-only.
+* **Database** – profiles (including registration number, name with initials and username), trackers
+  (water, activity, sleep, screen time, mood, cycle, habit pledges), diet (meals, diversity, budget
+  planner, grocery lists), tool results (BMI, WHR, CVD, DASS-21, IPAQ), periodic assessments & windows,
+  education library, professionals, appointments, emergency contacts, notifications, badges and blood
+  reports. Row-level security is on for every table: students can only read/write their own rows;
+  catalogue tables are read-only.
 * **Research analytics** – `analytics.assessment_faculty_summary` aggregates *only* completed periodic
   assessments of students who gave research consent, by faculty and term, and hides groups smaller than 5.
   It is only reachable with the service-role key (never from the app).
@@ -153,7 +203,9 @@ The Supabase URL and publishable key are in `lib/core/config.dart` (project **Vi
 lib/
   core/      app state, router, theme mode, config, PDF export
   data/      models, catalogue data, Supabase repository
-  ui/        design tokens (Serene Pastel Sanctuary, light + dark), text styles, shared widgets, charts
-  features/  onboarding, auth, home, assessments, tools, diet, progress, library, blood, support, profile
-assets/images/  illustrations from the UI mock-ups + app icon
+  ui/        design tokens (light + dark), text styles, shared widgets, charts
+  features/  onboarding, auth, home, assessments, tools, diet, habits, progress, library, blood, support, profile
+assets/
+  fonts/     Manrope (bundled, used across the app)
+  images/    app icon
 ```

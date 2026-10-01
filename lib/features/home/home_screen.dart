@@ -62,11 +62,23 @@ class _HomeScreenState extends State<HomeScreen> {
   int _activeMinutes = 0;
   int _mealsToday = 0;
   int _diversityToday = 0;
+  int _diversityWeek = 0;
   Rec? _sleep;
   Rec? _mood;
   Rec? _openWindow;
   Rec? _nextWindow;
   Rec? _assessment;
+
+  // Weekly snapshots used to compare this week's average against each
+  // tracker's baseline requirement.
+  Map<String, int> _waterWeek = {};
+  Map<String, int> _stepsWeek = {};
+  Map<String, int> _minutesWeek = {};
+  List<Rec> _sleepWeek = [];
+  List<Rec> _moodWeek = [];
+
+  /// WHO/IPAQ baseline: at least 150 minutes of moderate activity a week.
+  static const _activeMinutesBaseline = 150;
 
   @override
   void initState() {
@@ -78,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final now = DateTime.now();
       final today = isoDate(now);
+      final ws = weekStart(now);
       final results = await Future.wait([
         Repo.waterTotal(now),
         Repo.activityTotals(now),
@@ -85,7 +98,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Repo.moodLatest(),
         Repo.currentAndNextWindow(),
         Repo.mealsOn(now),
-        Repo.diversityBetween(weekStart(now), now),
+        Repo.diversityBetween(ws, now),
+        Repo.waterByDay(7),
+        Repo.stepsByDay(ws, ws.add(const Duration(days: 6))),
+        Repo.minutesByDay(ws, ws.add(const Duration(days: 6))),
+        Repo.sleepBetween(ws, now),
+        Repo.moodsSince(ws),
       ]);
       _water = results[0] as int;
       final act = results[1] as Rec;
@@ -100,7 +118,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _nextWindow = next;
       _assessment = open == null ? null : await Repo.assessmentFor(open['id']);
       _mealsToday = (results[5] as List).length;
-      _diversityToday = (results[6] as List).where((r) => r['log_date'] == today).map((r) => r['food_group']).toSet().length;
+      final diversityRows = results[6] as List<Rec>;
+      _diversityToday = diversityRows.where((r) => r['log_date'] == today).map((r) => r['food_group']).toSet().length;
+      _diversityWeek = diversityRows.map((r) => r['food_group']).toSet().length;
+      _waterWeek = results[7] as Map<String, int>;
+      _stepsWeek = results[8] as Map<String, int>;
+      _minutesWeek = results[9] as Map<String, int>;
+      _sleepWeek = results[10] as List<Rec>;
+      _moodWeek = results[11] as List<Rec>;
       await AppState.instance.refreshUnread();
     } catch (e) {
       debugPrint('home load: $e');
@@ -187,6 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ]),
       SectionHeader('Body', trailing: p?.measuredAt == null ? null : Text('Updated ${DateFormat('d MMM').format(p!.measuredAt!.toLocal())}', style: T.labelMd.c(AppColors.onSurfaceVariant))),
       bodyMetricTiles(p, _go),
+      SectionHeader('Progress', subtitle: 'This week versus your baseline', trailing: TextLinkButton('Full view', onTap: () => _go('/progress'))),
+      _progressSection(p, waterGoal: waterGoal, stepGoal: stepGoal, sleepGoalMin: sleepGoalMin),
       if (!_windowActive && _nextWindow != null)
         ListGroup(children: [
           ListRow(
@@ -269,6 +296,49 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ]),
       ]),
+    );
+  }
+
+  /// This week's average for every tracked habit, each measured against its
+  /// own baseline requirement (a personal goal, or a health guideline for
+  /// activity), with the fluctuation shown as a delta.
+  Widget _progressSection(Profile? p, {required int waterGoal, required int stepGoal, required int sleepGoalMin}) {
+    final now = DateTime.now();
+    final ws = weekStart(now);
+    final daysSoFar = now.difference(ws).inDays + 1;
+
+    final waterAvg = _waterWeek.values.isEmpty ? 0 : (_waterWeek.values.fold<int>(0, (a, b) => a + b) / daysSoFar).round();
+    final stepsAvg = _stepsWeek.values.isEmpty ? 0 : (_stepsWeek.values.fold<int>(0, (a, b) => a + b) / daysSoFar).round();
+    final activeMinutesWeek = _minutesWeek.values.fold<int>(0, (a, b) => a + b);
+    final sleepAvgMin = _sleepWeek.isEmpty ? 0 : (_sleepWeek.map(Repo.sleepMinutes).fold<int>(0, (a, b) => a + b) / _sleepWeek.length).round();
+    final moodDays = _moodWeek.map((m) => isoDate(DateTime.parse(m['logged_at']).toLocal())).toSet().length;
+
+    return ListGroup(children: [
+      _progressRow('Water', Symbols.water_drop_rounded, AppColors.water, Fmt.litres(waterAvg), 'L/day avg', waterAvg, waterGoal, onTap: () => _go('/tools/water')),
+      _progressRow('Sleep', Symbols.bedtime_rounded, AppColors.sleep, (sleepAvgMin / 60).toStringAsFixed(1), 'h/night avg', sleepAvgMin, sleepGoalMin, onTap: () => _go('/tools/sleep')),
+      _progressRow('Steps', Symbols.directions_walk_rounded, AppColors.activity, Fmt.thousands(stepsAvg), '/day avg', stepsAvg, stepGoal, onTap: () => _go('/tools/activity')),
+      _progressRow('Active minutes', Symbols.bolt_rounded, AppColors.activity, '$activeMinutesWeek', 'min this week', activeMinutesWeek, _activeMinutesBaseline, onTap: () => _go('/tools/activity')),
+      _progressRow('Food variety', Symbols.nutrition_rounded, AppColors.nutrition, '$_diversityWeek', 'of 8 groups this week', _diversityWeek, 8, onTap: () => _go('/diet/diversity')),
+      _progressRow('Mood check-ins', Symbols.mood_rounded, AppColors.mind, '$moodDays', 'of $daysSoFar days so far', moodDays, daysSoFar, onTap: () => showMoodPicker(context, onSaved: _load)),
+    ]);
+  }
+
+  Widget _progressRow(String label, IconData icon, Color c, String value, String unit, num actual, num baseline, {required VoidCallback onTap}) {
+    final pct = baseline <= 0 ? 1.0 : actual / baseline;
+    final onTrack = pct >= 0.9;
+    final deltaColor = onTrack ? AppColors.tertiary : (pct >= 0.5 ? AppColors.warning : AppColors.error);
+    final deltaText = onTrack ? 'On track' : '${(pct * 100).clamp(0, 999).round()}% of baseline';
+    return ListRow(
+      icon: icon,
+      color: c,
+      title: label,
+      subtitle: '$value $unit',
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(onTrack ? Symbols.trending_up_rounded : Symbols.trending_down_rounded, size: 16, color: deltaColor),
+        const SizedBox(width: 4),
+        Text(deltaText, style: T.labelMd.c(deltaColor)),
+      ]),
+      onTap: onTap,
     );
   }
 

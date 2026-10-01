@@ -326,6 +326,17 @@ class Repo {
     return {for (final r in rows) r['log_date'] as String: r['minutes'] as int};
   }
 
+  // ---------------- Habits ----------------
+  static Future<List<Rec>> habitPledges() async => List<Rec>.from(await db.from('habit_pledges').select().eq('user_id', _uid).eq('active', true));
+
+  static Future<void> setHabitPledge(String key, bool active) async {
+    if (active) {
+      await db.from('habit_pledges').upsert({'user_id': _uid, 'habit_key': key, 'active': true, 'started_at': isoDate(DateTime.now())}, onConflict: 'user_id,habit_key');
+    } else {
+      await db.from('habit_pledges').update({'active': false}).eq('user_id', _uid).eq('habit_key', key);
+    }
+  }
+
   // ---------------- Assessments ----------------
   static Future<List<Rec>> windows() async => List<Rec>.from(await db.from('assessment_windows').select().order('opens_at'));
 
