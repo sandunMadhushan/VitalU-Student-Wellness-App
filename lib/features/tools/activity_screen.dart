@@ -97,11 +97,11 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
   Future<void> _runIpaq() async {
     int vigDays = 0, vigMin = 20, modDays = 0, modMin = 20, walkDays = 0, walkMin = 20, sitHours = 6;
     await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
-          Widget days(String label, int value, ValueChanged<int> onChanged) => Row(children: [
+          Widget stepper(String label, int value, ValueChanged<int> onChanged, {int max = 7}) => Row(children: [
                 Expanded(child: Text(label, style: T.bodyLg)),
                 IconButton.outlined(icon: const Icon(Symbols.remove_rounded), onPressed: value <= 0 ? null : () => set(() => onChanged(value - 1))),
                 SizedBox(width: 28, child: Center(child: Text('$value', style: T.labelLg.tnum))),
-                IconButton.outlined(icon: const Icon(Symbols.add_rounded), onPressed: value >= 7 ? null : () => set(() => onChanged(value + 1))),
+                IconButton.outlined(icon: const Icon(Symbols.add_rounded), onPressed: value >= max ? null : () => set(() => onChanged(value + 1))),
               ]);
           Widget minutes(int value, ValueChanged<int> onChanged) => Row(children: [
                 Expanded(child: Text('Minutes per day', style: T.bodySm.c(AppColors.onSurfaceVariant))),
@@ -118,21 +118,21 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
             const SizedBox(height: Sp.lg),
             Text('In the last 7 days, on how many days did you do vigorous activity (heavy lifting, aerobics, fast cycling)?', style: T.labelLg),
             const SizedBox(height: 4),
-            days('Days', vigDays, (v) => vigDays = v),
+            stepper('Days', vigDays, (v) => vigDays = v),
             if (vigDays > 0) minutes(vigMin, (v) => vigMin = v),
             const SizedBox(height: Sp.md),
             Text('On how many days did you do moderate activity (light loads, regular-pace cycling, doubles tennis), not counting walking?', style: T.labelLg),
             const SizedBox(height: 4),
-            days('Days', modDays, (v) => modDays = v),
+            stepper('Days', modDays, (v) => modDays = v),
             if (modDays > 0) minutes(modMin, (v) => modMin = v),
             const SizedBox(height: Sp.md),
             Text('On how many days did you walk for at least 10 minutes at a time?', style: T.labelLg),
             const SizedBox(height: 4),
-            days('Days', walkDays, (v) => walkDays = v),
+            stepper('Days', walkDays, (v) => walkDays = v),
             if (walkDays > 0) minutes(walkMin, (v) => walkMin = v),
             const SizedBox(height: Sp.md),
             Text('On a typical day, how many hours do you spend sitting?', style: T.labelLg),
-            days('Hours', sitHours, (v) => sitHours = v),
+            stepper('Hours', sitHours, (v) => sitHours = v, max: 18),
             const SizedBox(height: Sp.lg),
             PrimaryButton('See my result', onTap: () async {
               final met = Ipaq.metMinutes(vigDays: vigDays, vigMin: vigMin, modDays: modDays, modMin: modMin, walkDays: walkDays, walkMin: walkMin);
