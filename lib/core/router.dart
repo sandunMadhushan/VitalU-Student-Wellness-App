@@ -9,6 +9,7 @@ import '../features/blood/report_explained_screen.dart';
 import '../features/diet/budget_screen.dart';
 import '../features/diet/diet_hub_screen.dart';
 import '../features/diet/diversity_screen.dart';
+import '../features/diet/meal_counter_screen.dart';
 import '../features/diet/meal_log_screen.dart';
 import '../features/diet/meal_planner_screen.dart';
 import '../features/diet/nutrition_today_screen.dart';
@@ -88,6 +89,7 @@ final appRouter = GoRouter(
     _r('/tools/screen-time', (s) => const ScreenTimeScreen()),
     _r('/diet', (s) => const DietHubScreen(), tab: true),
     _r('/diet/log', (s) => MealLogScreen(initialType: s.uri.queryParameters['type'])),
+    _r('/diet/counter', (s) => const MealCounterScreen()),
     _r('/diet/diversity', (s) => const DiversityScreen()),
     _r('/diet/plate', (s) => const PlateScreen()),
     _r('/diet/planner', (s) => const MealPlannerScreen()),

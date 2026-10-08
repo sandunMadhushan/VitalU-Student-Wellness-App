@@ -57,6 +57,12 @@ class _DietHubScreenState extends State<DietHubScreen> {
       onRefresh: _load,
       topPadding: 0,
       children: [
+        HeroBanner(
+          title: 'Eat well,\nfeel your best',
+          subtitle: 'Balanced meals, tracked simply.',
+          accent: AppColors.nutrition,
+          illustration: 'eating_together_tjhx',
+        ),
         VCard(
           onTap: () => _go('/diet/today'),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -91,6 +97,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
           ListGroup(children: [for (final t in mealTypes) _mealRow(t)]),
         const SectionHeader('Plan and learn'),
         ListGroup(children: [
+          ListRow(icon: Symbols.calculate_rounded, color: AppColors.nutrition, title: 'Meal calorie counter', subtitle: 'Build a meal by portion and see the kcal', onTap: () => _go('/diet/counter')),
           ListRow(icon: Symbols.nutrition_rounded, color: AppColors.nutrition, title: 'Dietary diversity', subtitle: 'Eight food groups this week', onTap: () => _go('/diet/diversity')),
           ListRow(icon: Symbols.pie_chart_rounded, color: AppColors.water, title: 'Healthy plate guide', subtitle: 'Portions without a food scale', onTap: () => _go('/diet/plate')),
           ListRow(icon: Symbols.calendar_month_rounded, color: AppColors.primary, title: 'Meal planner', subtitle: 'Plan the week around lectures', onTap: () => _go('/diet/planner')),

@@ -26,6 +26,7 @@ import 'package:vitalu/features/blood/blood_upload_screen.dart';
 import 'package:vitalu/features/diet/budget_screen.dart';
 import 'package:vitalu/features/diet/diet_hub_screen.dart';
 import 'package:vitalu/features/diet/diversity_screen.dart';
+import 'package:vitalu/features/diet/meal_counter_screen.dart';
 import 'package:vitalu/features/diet/meal_log_screen.dart';
 import 'package:vitalu/features/diet/meal_planner_screen.dart';
 import 'package:vitalu/features/diet/nutrition_today_screen.dart';
@@ -110,6 +111,7 @@ final _screens = <String, Widget Function()>{
   'screen_time': () => const ScreenTimeScreen(),
   'diet': () => const DietHubScreen(),
   'meal_log': () => const MealLogScreen(),
+  'meal_counter': () => const MealCounterScreen(),
   'diversity': () => const DiversityScreen(),
   'plate': () => const PlateScreen(),
   'planner': () => const MealPlannerScreen(),
