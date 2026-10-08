@@ -26,6 +26,7 @@ dependencies:
   http: ^1.6.0
   http_parser: ^4.1.2
   sensors_plus: ^7.1.0
+  flutter_svg: ^2.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -36,6 +37,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/illustrations/
   fonts:
     - family: Manrope
       fonts:

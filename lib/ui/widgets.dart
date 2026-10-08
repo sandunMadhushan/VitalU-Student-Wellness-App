@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -1133,6 +1134,56 @@ class TileGrid extends StatelessWidget {
       ]);
 }
 
+/// Warm hero banner for a hub screen (Home, Tools, Diet, Habits): a soft
+/// pastel-tinted gradient card with a short headline and an illustration,
+/// used once per screen rather than on every card. [accent] sets both the
+/// gradient tint and the illustration's recolored brand hue.
+class HeroBanner extends StatelessWidget {
+  const HeroBanner({super.key, required this.title, required this.subtitle, required this.accent, required this.illustration, this.illustrationHeight = 108});
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final String illustration;
+  final double illustrationHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = AppColors.isDark;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Rad.xl),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(accent.withValues(alpha: dark ? 0.30 : 0.16), AppColors.surfaceContainerLowest),
+            Color.alphaBlend(accent.withValues(alpha: dark ? 0.12 : 0.05), AppColors.surfaceContainerLowest),
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: T.headlineLg.lh(1.15)),
+              const SizedBox(height: 6),
+              Text(subtitle, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
+        ),
+        SizedBox(
+          width: 108,
+          height: illustrationHeight,
+          child: SvgPicture.asset('assets/illustrations/$illustration.svg', fit: BoxFit.contain, alignment: Alignment.bottomCenter),
+        ),
+      ]),
+    );
+  }
+}
+
 class PrivacyNote extends StatelessWidget {
   const PrivacyNote(this.text, {super.key, this.icon = Symbols.lock_rounded, this.center = true});
   final String text;
@@ -1345,27 +1396,56 @@ class Segmented extends StatelessWidget {
   }
 }
 
-/// Concentric progress rings, outermost first, each on a faint track in its
-/// own colour. Progress past 100% keeps the ring closed.
-class ConcentricRings extends StatelessWidget {
-  const ConcentricRings({super.key, required this.rings, this.size = 132, this.stroke = 12, this.gap = 3});
-  final List<(double, Color)> rings;
-  final double size;
-  final double stroke;
-  final double gap;
+/// A soft, pastel-tinted card for a single tracked metric: an icon ring,
+/// the value against its goal, and a label — built to read at a glance in
+/// a row of three or four, rather than crammed into one dense dial.
+class MetricRingCard extends StatelessWidget {
+  const MetricRingCard({super.key, required this.icon, required this.color, required this.label, required this.value, this.unit = '', required this.goal, required this.progress, required this.onTap});
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+  final String unit;
+  final String goal;
+  final double progress;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: size,
-        height: size,
-        child: Stack(alignment: Alignment.center, children: [
-          for (int i = 0; i < rings.length; i++)
+  Widget build(BuildContext context) {
+    final dark = AppColors.isDark;
+    final bg = Color.alphaBlend(color.withValues(alpha: dark ? 0.20 : 0.11), AppColors.surfaceContainerLowest);
+    final over = progress >= 1;
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(Rad.xl),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Ring(
-              value: rings[i].$1,
-              size: size - i * 2 * (stroke + gap),
-              stroke: stroke,
-              color: rings[i].$2,
+              value: progress,
+              size: 52,
+              stroke: 6,
+              color: color,
+              child: Icon(over ? Symbols.check_rounded : icon, size: 20, color: color, fill: 1),
             ),
-        ]),
-      );
+            const SizedBox(height: 10),
+            Text(label, style: T.labelMd.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 2),
+            Text.rich(
+              TextSpan(text: value, children: [if (unit.isNotEmpty) TextSpan(text: ' $unit', style: T.bodySm.c(AppColors.onSurfaceVariant))]),
+              style: T.metric(19),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 1),
+            Text('of $goal', style: T.bodySm.c(AppColors.outline), maxLines: 1, overflow: TextOverflow.ellipsis),
+          ]),
+        ),
+      ),
+    );
+  }
 }
+

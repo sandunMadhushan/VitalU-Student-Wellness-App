@@ -191,7 +191,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final mood = _mood == null ? null : moodInfo(_mood!['mood']);
 
     return [
-      Text(DateFormat('EEEE, d MMMM').format(DateTime.now()), style: T.labelLg.c(AppColors.onSurfaceVariant)),
+      HeroBanner(
+        title: 'Track your health,\nstay in control',
+        subtitle: DateFormat('EEEE, d MMMM').format(DateTime.now()),
+        accent: AppColors.primary,
+        illustration: 'healthy_habit_bh5w',
+      ),
       if (_windowActive) _assessmentCard(),
       _todayCard(
         water: (_water, waterGoal),
@@ -261,33 +266,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ];
   }
 
-  /// Hero summary: water, steps and sleep as concentric rings with a legend.
+  /// Hero summary: water, steps and sleep as a row of soft pastel ring cards.
   Widget _todayCard({required (int, int) water, required (int, int) steps, required (int, int) sleep, required int activeMinutes}) {
-    Widget legend(String label, Color c, String value, String unit, String goal, String route) => InkWell(
-          borderRadius: BorderRadius.circular(Rad.base),
-          onTap: () => _go(route),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(width: 4, height: 38, margin: const EdgeInsets.only(top: 2), decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(label, style: T.labelMd.c(AppColors.onSurfaceVariant)),
-                  const SizedBox(height: 1),
-                  Text.rich(
-                    TextSpan(text: value, children: [TextSpan(text: ' $unit', style: T.bodySm.c(AppColors.onSurfaceVariant)), TextSpan(text: '  /  $goal', style: T.bodySm.c(AppColors.outline))]),
-                    style: T.metric(19),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ]),
-              ),
-            ]),
-          ),
-        );
     return VCard(
-      padding: const EdgeInsets.fromLTRB(18, 18, 12, 18),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
           Expanded(child: Text('Today', style: T.headlineMd)),
@@ -295,22 +277,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ]),
         const SizedBox(height: 14),
         Row(children: [
-          ConcentricRings(
-            size: 132,
-            stroke: 13,
-            rings: [
-              (water.$2 == 0 ? 0 : water.$1 / water.$2, AppColors.water),
-              (steps.$2 == 0 ? 0 : steps.$1 / steps.$2, AppColors.activity),
-              (sleep.$2 == 0 ? 0 : sleep.$1 / sleep.$2, AppColors.sleep),
-            ],
-          ),
-          const SizedBox(width: 18),
           Expanded(
-            child: Column(children: [
-              legend('Water', AppColors.water, Fmt.litres(water.$1), 'L', '${Fmt.litres(water.$2)} L', '/tools/water'),
-              legend('Steps', AppColors.activity, Fmt.thousands(steps.$1), '', Fmt.thousands(steps.$2), '/tools/activity'),
-              legend('Sleep', AppColors.sleep, sleep.$1 == 0 ? '0' : Fmt.hm(sleep.$1).replaceAll(' 0m', ''), sleep.$1 == 0 ? 'h' : '', '${(sleep.$2 / 60).round()} h', '/tools/sleep'),
-            ]),
+            child: MetricRingCard(
+              icon: Symbols.water_drop_rounded,
+              color: AppColors.water,
+              label: 'Water',
+              value: Fmt.litres(water.$1),
+              unit: 'L',
+              goal: '${Fmt.litres(water.$2)} L',
+              progress: water.$2 == 0 ? 0 : water.$1 / water.$2,
+              onTap: () => _go('/tools/water'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: MetricRingCard(
+              icon: Symbols.directions_walk_rounded,
+              color: AppColors.activity,
+              label: 'Steps',
+              value: Fmt.thousands(steps.$1),
+              goal: Fmt.thousands(steps.$2),
+              progress: steps.$2 == 0 ? 0 : steps.$1 / steps.$2,
+              onTap: () => _go('/tools/activity'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: MetricRingCard(
+              icon: Symbols.bedtime_rounded,
+              color: AppColors.sleep,
+              label: 'Sleep',
+              value: sleep.$1 == 0 ? '0h' : Fmt.hm(sleep.$1).replaceAll(' 0m', ''),
+              goal: '${(sleep.$2 / 60).round()} h',
+              progress: sleep.$2 == 0 ? 0 : sleep.$1 / sleep.$2,
+              onTap: () => _go('/tools/sleep'),
+            ),
           ),
         ]),
       ]),

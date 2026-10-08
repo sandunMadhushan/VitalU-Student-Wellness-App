@@ -111,13 +111,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
       topPadding: 0,
       onRefresh: _load,
       children: [
-        VCard(
-          color: AppColors.tint(AppColors.primary),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Symbols.auto_awesome_rounded, color: AppColors.primary, fill: 1),
-            const SizedBox(width: 12),
-            Expanded(child: Text(quote, style: T.bodyLg.w(FontWeight.w600).lh(1.4))),
-          ]),
+        HeroBanner(
+          title: 'Small changes,\nbig difference',
+          subtitle: quote,
+          accent: AppColors.cycle,
+          illustration: 'mindfulness_scgo',
+          illustrationHeight: 96,
         ),
         Text(
           "Small, steady swaps — not strict rules. Pick one that fits your week, pledge it, and build from there.",

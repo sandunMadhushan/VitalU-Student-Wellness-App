@@ -20,7 +20,12 @@ class ToolsScreen extends StatelessWidget {
       nav: NavTab.tools,
       topPadding: 0,
       children: [
-        Text('Quick checks and daily trackers. Results stay private to you.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        HeroBanner(
+          title: 'Quick checks,\nclear answers',
+          subtitle: 'Results stay private to you.',
+          accent: AppColors.mind,
+          illustration: 'doctors_hwty',
+        ),
         TileGrid(children: [
           // Check-ups first, then the daily trackers.
           ToolBlock(icon: Symbols.monitor_weight_rounded, color: AppColors.body, kind: 'Body', title: 'BMI calculator', text: 'Category, target range and tips', action: 'Check', onTap: () => go('/tools/bmi')),
