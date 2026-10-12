@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
+import '../../core/push.dart';
 import '../../data/catalog.dart';
 import '../../data/repo.dart';
 import '../../ui/text.dart';
@@ -20,6 +21,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _loading = true;
   List<Rec> _items = [];
   String _filter = 'All';
+  bool? _phoneOn;
 
   @override
   void initState() {
@@ -31,7 +33,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       _items = await Repo.notifications();
     } catch (_) {}
-    if (mounted) setState(() => _loading = false);
+    final on = Push.supported ? await Push.enabled() : null;
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        _phoneOn = on;
+      });
+    }
+  }
+
+  Future<void> _phone() async {
+    if (_phoneOn == true) {
+      await Push.showTest();
+      if (mounted) toast(context, 'Test notification sent. Check your notification shade.');
+      return;
+    }
+    var on = await Push.requestPermission();
+    if (!on) {
+      // Already declined once: only the system settings can turn it back on.
+      await Push.openSettings();
+      on = await Push.enabled();
+    }
+    if (mounted) setState(() => _phoneOn = on);
   }
 
   String _ago(DateTime t) {
@@ -81,6 +104,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             const SizedBox(height: Sp.md),
             PrimaryButton('Save', onTap: () async {
               await AppState.instance.updateProfile({'quiet_hours_start': f(start), 'quiet_hours_end': f(end)});
+              Push.sync();
               if (ctx.mounted) Navigator.pop(ctx);
             }),
           ]);
@@ -118,6 +142,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         if (today.isNotEmpty) ListGroup(header: 'Today', dividerIndent: 68, children: [for (final n in today) _row(n)]),
         if (earlier.isNotEmpty) ListGroup(header: 'Earlier', dividerIndent: 68, children: [for (final n in earlier) _row(n)]),
         ListGroup(children: [
+          if (_phoneOn != null)
+            ListRow(
+              icon: _phoneOn! ? Symbols.notifications_active_rounded : Symbols.notifications_off_rounded,
+              color: _phoneOn! ? AppColors.primary : AppColors.error,
+              title: 'Phone notifications',
+              subtitle: _phoneOn! ? 'On. Tap to send a test notification' : 'Off. Tap to turn on reminders on your phone',
+              onTap: _phone,
+            ),
           ListRow(icon: Symbols.do_not_disturb_on_rounded, color: AppColors.sleep, title: 'Quiet hours', subtitle: 'No reminders while you sleep or study', onTap: _quietHours),
         ]),
       ],

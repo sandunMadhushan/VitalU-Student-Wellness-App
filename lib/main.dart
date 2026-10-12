@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/app_state.dart';
 import 'core/config.dart';
+import 'core/push.dart';
 import 'core/router.dart';
 import 'core/sfx.dart';
 import 'ui/badge_ui.dart';
@@ -19,6 +20,7 @@ Future<void> main() async {
   await AppState.instance.init();
   await AppState.instance.loadThemeMode();
   await Sfx.load();
+  await Push.init();
   runApp(const VitalUApp());
 }
 

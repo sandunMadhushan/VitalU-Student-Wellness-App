@@ -91,7 +91,9 @@ class _WaterScreenState extends State<WaterScreen> {
         // celebrates that one, so only show the day pop-up otherwise.
         if (mounted && (earnedBefore || info.streak < StreakBadge.length)) await showStreakDayPopup(context, StreakKind.water, info);
       }
+      if (_total >= _goal) await Repo.clearScheduled('/tools/water');
       if (_nudge && _total < _goal) {
+        await Repo.clearScheduled('/tools/water');
         await Repo.schedule(
           title: 'Time for water',
           body: 'A glass now keeps you on track. You are at ${Fmt.litres(_total)}L of ${Fmt.litres(_goal)}L.',
@@ -182,6 +184,7 @@ class _WaterScreenState extends State<WaterScreen> {
               onChanged: (v) async {
                 setState(() => _nudge = v);
                 await AppState.instance.updateProfile({'water_nudge_enabled': v});
+                if (!v) await Repo.clearScheduled('/tools/water');
               },
             ),
           ),

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_state.dart';
+import '../../core/push.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -34,7 +35,11 @@ class _SplashScreenState extends State<SplashScreen> {
     final elapsed = DateTime.now().difference(started);
     const minShow = Duration(milliseconds: 900);
     if (elapsed < minShow) await Future.delayed(minShow - elapsed);
-    if (mounted) context.go(next);
+    if (!mounted) return;
+    context.go(next);
+    // Opened by tapping a phone notification: land on its screen.
+    final launch = AppState.instance.signedIn ? Push.takeLaunchRoute() : null;
+    if (launch != null && next == '/home') context.push(launch);
   }
 
   @override

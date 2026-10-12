@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
+import '../../core/push.dart';
 import '../../core/step_sync.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
@@ -86,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) => Push.askOnce());
   }
 
   @override

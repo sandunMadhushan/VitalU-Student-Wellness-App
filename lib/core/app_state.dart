@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/models.dart';
+import 'push.dart';
 
 SupabaseClient get db => Supabase.instance.client;
 String? get uid => db.auth.currentUser?.id;
@@ -47,6 +48,7 @@ class AppState extends ChangeNotifier {
       if (event.event == AuthChangeEvent.signedOut) {
         profile = null;
         unreadCount = 0;
+        Push.clear();
         notifyListeners();
       } else if (event.session != null && (event.event == AuthChangeEvent.signedIn || event.event == AuthChangeEvent.initialSession)) {
         await loadProfile();
@@ -78,6 +80,7 @@ class AppState extends ChangeNotifier {
       profile = Profile(row);
       await refreshUnread();
       notifyListeners();
+      Push.sync();
     } catch (e) {
       debugPrint('loadProfile failed: $e');
     }

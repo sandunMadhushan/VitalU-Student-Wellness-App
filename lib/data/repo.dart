@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/app_state.dart';
 import '../core/badges.dart';
+import '../core/push.dart';
 
 typedef Rec = Map<String, dynamic>;
 
@@ -455,20 +456,19 @@ class Repo {
 
   /// Removes upcoming, not-yet-shown notifications that open [route], so a
   /// tracker can replace its own schedule without touching anything else.
-  static Future<void> clearScheduled(String route) => db
-      .from('notifications')
-      .delete()
-      .eq('user_id', _uid)
-      .eq('route', route)
-      .isFilter('read_at', null)
-      .gt('scheduled_for', utc(DateTime.now()));
-
-  static Future<void> scheduleMany(List<Rec> rows) async {
-    if (rows.isNotEmpty) await db.from('notifications').insert(rows);
+  static Future<void> clearScheduled(String route) async {
+    await db.from('notifications').delete().eq('user_id', _uid).eq('route', route).isFilter('read_at', null).gt('scheduled_for', utc(DateTime.now()));
+    Push.sync();
   }
 
-  static Future<void> schedule({required String title, String? body, String category = 'reminder', String? label, String? icon, String? route, required DateTime at}) =>
-      db.from('notifications').insert({
+  static Future<void> scheduleMany(List<Rec> rows) async {
+    if (rows.isEmpty) return;
+    await db.from('notifications').insert(rows);
+    Push.sync();
+  }
+
+  static Future<void> schedule({required String title, String? body, String category = 'reminder', String? label, String? icon, String? route, required DateTime at}) async {
+    await db.from('notifications').insert({
         'title': title,
         'body': body,
         'category': category,
@@ -477,6 +477,8 @@ class Repo {
         'route': route,
         'scheduled_for': utc(at),
       });
+    Push.sync();
+  }
 
   // ---------------- Badges ----------------
   static Future<List<Rec>> badges() async => List<Rec>.from(await db.from('badges').select().order('sort_order'));
