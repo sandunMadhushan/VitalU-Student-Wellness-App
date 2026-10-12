@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../data/catalog.dart';
 import '../../data/repo.dart';
+import '../../ui/badge_ui.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -37,15 +38,10 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
-  (Color, String) _tone(String cat) => switch (cat) {
-        'nourish' => (AppColors.nutrition, 'Nourish'),
-        'rest' => (AppColors.sleep, 'Rest'),
-        _ => (AppColors.primary, 'Learning'),
-      };
-
   void _explain() => showInfoSheet(context, title: 'How milestones work', icon: Symbols.military_tech_rounded, paragraphs: const [
         'Milestones unlock automatically as you use VitalU: drinking water, sleeping well, moving, logging meals, reading articles and checking in on your mood.',
-        'They are private and never compared with anyone else. There are no streaks to lose.',
+        'Some badges, like Aqua Achiever, Rainbow Plate and Move Maker, need a goal met three days in a row. Miss a day and the streak simply starts again.',
+        'Badges are private and never compared with anyone else.',
       ]);
 
   @override
@@ -104,23 +100,19 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
 
   Widget _badge(Rec b) {
     final earned = _earned[b['code']];
-    final (fg, _) = _tone(b['category']);
     final on = earned != null;
     return VCard(
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 12),
+      padding: const EdgeInsets.fromLTRB(8, 14, 8, 12),
       radius: Rad.lg,
-      onTap: () => showInfoSheet(context, title: b['title'], icon: iconByName(b['icon']), paragraphs: [
-        b['description'] ?? '',
-        on ? 'Earned on ${DateFormat('d MMMM yyyy').format(earned)}.' : 'Not yet earned. ${b['pending_label'] ?? ''}'.trim(),
-      ]),
+      onTap: () => on
+          ? showBadgePopup(context, code: b['code'], title: b['title'], description: b['description'], icon: b['icon'], category: b['category'])
+          : showInfoSheet(context, title: b['title'], icon: iconByName(b['icon']), paragraphs: [
+              b['description'] ?? '',
+              'Not yet earned. ${b['pending_label'] ?? ''}'.trim(),
+            ]),
       child: Column(children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(color: on ? AppColors.tint(fg) : AppColors.surfaceContainerHigh, shape: BoxShape.circle),
-          child: Icon(on ? iconByName(b['icon']) : Symbols.lock_rounded, size: on ? 26 : 22, color: on ? fg : AppColors.outline, fill: on ? 1 : 0),
-        ),
-        const SizedBox(height: 10),
+        BadgeArt(code: b['code'], icon: b['icon'], category: b['category'], size: 58, locked: !on),
+        const SizedBox(height: 8),
         Text(b['title'], style: T.labelMd.semi.c(on ? AppColors.onSurface : AppColors.onSurfaceVariant), maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
         const SizedBox(height: 2),
         Text(on ? DateFormat('d MMM').format(earned) : (b['pending_label'] ?? 'Locked'),

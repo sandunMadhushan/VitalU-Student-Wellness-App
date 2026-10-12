@@ -81,7 +81,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
       if (!mounted) return;
       final text = StringBuffer('VitalU weekly food plan (${money(_planned)} of ${money(_budget)})\n\n');
       for (final l in lines) {
-        text.writeln('• ${l['name']} × ${l['servings']} — ${money(l['total'] as num)}');
+        text.writeln('• ${l['name']} × ${l['servings']}: ${money(l['total'] as num)}');
       }
       text.writeln('\nShopping list:');
       final groups = <String>{for (final i in chosen) ...List<String>.from(i['food_groups'] ?? const [])};

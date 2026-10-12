@@ -1397,7 +1397,7 @@ class Segmented extends StatelessWidget {
 }
 
 /// A soft, pastel-tinted card for a single tracked metric: an icon ring,
-/// the value against its goal, and a label — built to read at a glance in
+/// the value against its goal, and a label, built to read at a glance in
 /// a row of three or four, rather than crammed into one dense dial.
 class MetricRingCard extends StatelessWidget {
   const MetricRingCard({super.key, required this.icon, required this.color, required this.label, required this.value, this.unit = '', required this.goal, required this.progress, required this.onTap});

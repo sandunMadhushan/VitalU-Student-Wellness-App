@@ -84,14 +84,14 @@ const _days = [
 /// Periodic university health assessment (≈5 minutes, six sections).
 /// Activity items follow the IPAQ-SF structure; stress items use the PSS-4.
 const assessmentQuestions = <AQuestion>[
-  // 1 — Body measurements
+  // 1: Body measurements
   AQuestion(id: 'height_cm', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.height_rounded, text: 'What is your height?', help: 'Use your most recent measurement. You can skip if unsure.', type: AType.number, unit: 'cm', min: 100, max: 230, optional: true),
-  AQuestion(id: 'weight_kg', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.monitor_weight_rounded, text: 'What is your weight?', help: 'A recent reading is perfect — no judgment, ever.', type: AType.number, unit: 'kg', min: 25, max: 250, optional: true),
+  AQuestion(id: 'weight_kg', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.monitor_weight_rounded, text: 'What is your weight?', help: 'A recent reading is perfect. No judgment, ever.', type: AType.number, unit: 'kg', min: 25, max: 250, optional: true),
   AQuestion(id: 'waist_cm', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.straighten_rounded, text: 'What is your waist circumference?', help: 'Measure at the narrowest point above the navel after a relaxed breath out.', type: AType.number, unit: 'cm', min: 40, max: 200, optional: true),
   AQuestion(id: 'hip_cm', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.accessibility_new_rounded, text: 'What is your hip circumference?', help: 'Measure around the widest part of your hips.', type: AType.number, unit: 'cm', min: 50, max: 200, optional: true),
   AQuestion(id: 'sbp', section: 0, category: 'Clinical', categoryIcon: Symbols.monitor_heart_rounded, text: 'Do you know your recent blood pressure (upper/systolic number)?', help: 'Only if measured in the last 6 months. Skip if you don\'t know.', type: AType.number, unit: 'mmHg', min: 70, max: 220, optional: true),
 
-  // 2 — Nutrition
+  // 2: Nutrition
   AQuestion(id: 'fruit_veg', section: 1, category: 'Fruit & Vegetables', categoryIcon: Symbols.nutrition_rounded, text: 'On a typical day, how many servings of fruit and vegetables do you eat?', options: [
     AOption('0-1', '0–1 servings', 'Rarely have fruit or veg', 0),
     AOption('2-3', '2–3 servings', 'Some with most meals', 1),
@@ -115,14 +115,14 @@ const assessmentQuestions = <AQuestion>[
     AOption('2+', '2 or more per day', null, 0),
   ]),
 
-  // 3 — Lifestyle
+  // 3: Lifestyle
   AQuestion(id: 'balance', section: 2, category: 'Daily Balance & Energy', categoryIcon: Symbols.balance_rounded, text: 'How easily are you able to balance academic coursework with daily downtime and meals?', options: [
     AOption('smooth', 'Smoothly balanced', 'I regularly take breaks and eat on schedule.', 3),
     AOption('manageable', 'Manageable, with occasional rushes', 'Busier around assignment deadlines, but generally okay.', 2),
     AOption('compromised', 'Often compromised', 'I frequently skip meals or study through resting hours.', 1),
     AOption('overwhelmed', 'Constantly overwhelmed', 'Struggling to find time for basic self-care.', 0),
   ]),
-  AQuestion(id: 'tobacco', section: 2, category: 'Tobacco & Vaping', categoryIcon: Symbols.smoke_free_rounded, text: 'Do you currently smoke or vape?', help: 'Confidential — this helps estimate heart-health risk at a population level.', options: [
+  AQuestion(id: 'tobacco', section: 2, category: 'Tobacco & Vaping', categoryIcon: Symbols.smoke_free_rounded, text: 'Do you currently smoke or vape?', help: 'Confidential. This helps estimate heart-health risk at a population level.', options: [
     AOption('never', 'Never', null, 2),
     AOption('former', 'I used to, but quit', null, 1),
     AOption('sometimes', 'Occasionally', null, 0),
@@ -140,7 +140,7 @@ const assessmentQuestions = <AQuestion>[
     AOption('4+', 'More than 4 hours', null, 0),
   ]),
 
-  // 4 — Physical activity (IPAQ-SF structure)
+  // 4: Physical activity (IPAQ-SF structure)
   AQuestion(id: 'vigorous_days', section: 3, category: 'Vigorous Activity', categoryIcon: Symbols.sprint_rounded, text: 'During the last 7 days, on how many days did you do vigorous activity (running, fast cycling, sports) for at least 10 minutes?', options: _days),
   AQuestion(id: 'moderate_days', section: 3, category: 'Moderate Activity', categoryIcon: Symbols.pedal_bike_rounded, text: 'On how many days did you do moderate activity (carrying loads, easy cycling, dancing) for at least 10 minutes?', options: _days),
   AQuestion(id: 'walk_days', section: 3, category: 'Walking', categoryIcon: Symbols.directions_walk_rounded, text: 'On how many days did you walk for at least 10 minutes at a time?', options: _days),
@@ -150,7 +150,7 @@ const assessmentQuestions = <AQuestion>[
     AOption('10+', '10 hours or more', null, 0),
   ]),
 
-  // 5 — Sleep
+  // 5: Sleep
   AQuestion(id: 'sleep_hours', section: 4, category: 'Sleep Duration', categoryIcon: Symbols.bedtime_rounded, text: 'On average, how many hours do you sleep per night?', options: [
     AOption('<5', 'Less than 5 hours', null, 4.5),
     AOption('5-6', '5–6 hours', null, 5.5),
@@ -164,7 +164,7 @@ const assessmentQuestions = <AQuestion>[
     AOption('very_bad', 'Very bad', null, 0),
   ]),
 
-  // 6 — Stress (PSS-4)
+  // 6: Stress (PSS-4)
   AQuestion(id: 'pss1', section: 5, category: 'Perceived Stress', categoryIcon: Symbols.psychology_rounded, text: 'In the last month, how often have you felt that you were unable to control the important things in your life?', help: 'Take a slow breath. There are no right or wrong answers.', options: _freq),
   AQuestion(id: 'pss2', section: 5, category: 'Perceived Stress', categoryIcon: Symbols.psychology_rounded, text: 'In the last month, how often have you felt confident about your ability to handle your personal problems?', help: 'Take a slow breath. There are no right or wrong answers.', options: _freqRev),
   AQuestion(id: 'pss3', section: 5, category: 'Perceived Stress', categoryIcon: Symbols.psychology_rounded, text: 'In the last month, how often have you felt that things were going your way?', help: 'Take a slow breath. There are no right or wrong answers.', options: _freqRev),

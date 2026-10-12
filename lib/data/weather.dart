@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 /// location permission needed) via ipapi.co, then reads the current
 /// temperature for that spot from Open-Meteo. Both services are free and
 /// require no API key. Any failure (offline, rate limited, blocked) just
-/// means no heat-based suggestion is shown — never blocks the water tracker.
+/// means no heat-based suggestion is shown, never blocks the water tracker.
 class Weather {
   Weather._();
   static double? _cachedTempC;

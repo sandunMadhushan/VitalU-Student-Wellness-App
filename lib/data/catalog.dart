@@ -87,6 +87,10 @@ IconData iconByName(String? name) {
   switch (name) {
     case 'water_drop':
       return Symbols.water_drop_rounded;
+    case 'menstrual_health':
+      return Symbols.menstrual_health_rounded;
+    case 'self_improvement':
+      return Symbols.self_improvement_rounded;
     case 'verified':
       return Symbols.verified_rounded;
     case 'auto_stories':

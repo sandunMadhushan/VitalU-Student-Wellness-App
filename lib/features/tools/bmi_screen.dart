@@ -8,6 +8,7 @@ import '../../data/repo.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
+import 'bmi_plan.dart';
 import 'tool_widgets.dart';
 
 class BmiScreen extends StatefulWidget {
@@ -88,35 +89,22 @@ class _BmiScreenState extends State<BmiScreen> {
     return (AppColors.error, Symbols.priority_high_rounded, 'Obesity');
   }
 
-  /// Short, direct "try this" tips, personalised from the student's own
-  /// recent logs where a signal is available, falling back to a general tip.
-  List<String> _tips(double bmi) {
-    final tips = <String>[];
-    if (bmi < 18.5) {
-      tips.add('Add nutrient-dense foods such as eggs, dhal, milk, nuts or other protein-rich foods to your meals.');
-      if (_breakfastDays < 4) tips.add('Plan a simple breakfast instead of regularly skipping it — it adds up over a week.');
-      tips.add('Three solid meals plus two snacks a day is easier on the stomach than fewer, bigger ones.');
-    } else if (bmi < 25) {
-      tips.add('Your weight is in the healthy range. Keep your current routine of regular meals, movement and sleep.');
-      if (_avgSteps < 6000) tips.add('A short daily walk helps maintain this, even on heavy study days.');
-    } else {
-      if (_breakfastDays < 4) tips.add('Plan a simple breakfast instead of regularly skipping it — it tends to reduce heavier snacking later.');
-      if (_diversity7d < 5) tips.add('Add another food group to your meals today — more variety, not less food, is the easiest first step.');
-      if (_avgSteps < 6000) tips.add('Add a short walk or another form of movement to your day — even 15–20 minutes helps.');
-      tips.add('Reduce sugar-sweetened drinks and choose water more often.');
-      if (bmi >= 30) tips.add('A campus dietitian can help build a plan that fits lecture hours and canteen options.');
-    }
-    return tips;
-  }
+  /// Notes drawn from the student's own recent logs, shown only when a
+  /// log actually points at something worth changing.
+  List<(IconData, String)> _fromLogs(double bmi) => [
+        if (_breakfastDays < 4) (Symbols.bakery_dining_rounded, 'You logged breakfast on $_breakfastDays of the last 7 days. A simple, regular breakfast is one of the easiest wins.'),
+        if (_diversity7d < 5) (Symbols.palette_rounded, 'Your meals covered $_diversity7d food groups this week. Adding one more group, not more food, is a great next step.'),
+        if (_avgSteps < 6000) (Symbols.directions_walk_rounded, 'You averaged ${Fmt.thousands(_avgSteps)} steps a day this week. A 15 to 20 minute walk would lift that nicely.'),
+      ];
 
   void _target(double bmi) {
     final (minKg, maxKg) = Calc.normalWeightRangeFor(_heightCm);
     final diff = bmi < 18.5 ? minKg - _weightKg : (bmi >= 25 ? _weightKg - maxKg : 0.0);
     showInfoSheet(context, title: 'Your target weight range', paragraphs: [
-      'For your height, a BMI in the normal range (18.5–24.9) is about ${minKg.toStringAsFixed(0)}–${maxKg.toStringAsFixed(0)} kg.',
-      if (bmi < 18.5) 'Gaining roughly ${diff.toStringAsFixed(1)} kg would bring you into that range — a gradual, steady goal is healthiest.',
+      'For your height, a BMI in the normal range (18.5 to 24.9) is about ${minKg.toStringAsFixed(0)}–${maxKg.toStringAsFixed(0)} kg.',
+      if (bmi < 18.5) 'Gaining roughly ${diff.toStringAsFixed(1)} kg would bring you into that range. A gradual, steady goal is healthiest.',
       if (bmi >= 25) 'Losing roughly ${diff.toStringAsFixed(1)} kg would bring you into that range. Aim for slow, sustainable change rather than a crash diet.',
-      if (bmi >= 18.5 && bmi < 25) 'You are already within this range — the goal now is to maintain it.',
+      if (bmi >= 18.5 && bmi < 25) 'You are already within this range. The goal now is to maintain it.',
       'This is a population guideline, not a personal prescription. Muscle mass, bone structure and overall health matter too.',
     ]);
   }
@@ -151,7 +139,6 @@ class _BmiScreenState extends State<BmiScreen> {
               'For South Asian adults, health risks can start at lower values (around 23), so a waist measurement is a helpful companion.',
               'BMI does not account for muscle, bone structure or where fat is stored. It is a screening indicator, not a diagnosis.',
             ])),
-        if (_bmi != null) _result(_bmi!, pos),
         StepperMeasureCard(
           icon: Symbols.height_rounded,
           title: 'Height',
@@ -181,20 +168,24 @@ class _BmiScreenState extends State<BmiScreen> {
           onChanged: (v) => setState(() => _weightKg = (v * 2).round() / 2),
         ),
         PrimaryButton(_bmi == null ? 'Calculate' : 'Update result', loading: _saving, onTap: _calculate),
+        if (_bmi != null) ..._result(_bmi!, pos),
         if (_bmi != null)
           ListGroup(children: [
             ListRow(icon: Symbols.target_rounded, color: AppColors.body, title: 'My target weight range', subtitle: 'What would bring you into the normal range', onTap: () => _target(_bmi!)),
             ListRow(icon: Symbols.accessibility_new_rounded, color: AppColors.body, title: 'Waist-to-height ratio', subtitle: 'A companion measure for central body fat', onTap: _whtr),
           ]),
+        if (_bmi != null) BmiMeaningCard(plan: bmiPlanFor(bmiBand(_bmi!)), color: _style(_bmi!).$1, bmi: _bmi!),
         const PrivacyNote('A screening tool, not a diagnosis of any disease. Only you can see this.'),
       ],
     );
   }
 
-  Widget _result(double bmi, double Function(double) pos) {
+  List<Widget> _result(double bmi, double Function(double) pos) {
     final st = _style(bmi);
-    final tips = _tips(bmi);
-    return Column(children: [
+    final band = bmiBand(bmi);
+    final plan = bmiPlanFor(band);
+    final notes = _signalsLoaded ? _fromLogs(bmi) : const <(IconData, String)>[];
+    return [
       VCard(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           CategoryLabel('Your BMI', icon: Symbols.monitor_weight_rounded, color: AppColors.body, trailing: _updated ? 'Just updated' : 'Last saved'),
@@ -220,30 +211,34 @@ class _BmiScreenState extends State<BmiScreen> {
           ),
         ]),
       ),
-      VCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Symbols.lightbulb_rounded, size: 20, color: AppColors.warning, fill: 1),
-            const SizedBox(width: 8),
-            Expanded(child: Text('Try this', style: T.headlineSm)),
+      PlanHero(plan: plan, color: st.$1),
+      for (int i = 0; i < plan.sections.length; i++) PlanSectionCard(section: plan.sections[i], color: st.$1, index: i),
+      if (notes.isNotEmpty)
+        VCard(
+          color: AppColors.tint(AppColors.warning),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(Symbols.insights_rounded, size: 20, color: AppColors.warning, fill: 1),
+              const SizedBox(width: 8),
+              Expanded(child: Text('From your recent logs', style: T.headlineSm)),
+            ]),
+            const SizedBox(height: 10),
+            for (final n in notes)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Icon(n.$1, size: 18, color: AppColors.warning),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(n.$2, style: T.bodyMd.c(AppColors.onSurface))),
+                ]),
+              ),
           ]),
-          const SizedBox(height: 10),
-          for (final t in tips)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(padding: const EdgeInsets.only(top: 7), child: Container(width: 5, height: 5, decoration: BoxDecoration(color: st.$1, shape: BoxShape.circle))),
-                const SizedBox(width: 10),
-                Expanded(child: Text(t, style: T.bodyMd.c(AppColors.onSurfaceVariant))),
-              ]),
-            ),
-          if (!_signalsLoaded) Text('Personalising from your recent logs…', style: T.bodySm.c(AppColors.outline)),
-        ]),
-      ),
+        ),
+      WeeklyGoals(band: band, goals: plan.goals, color: st.$1),
       if (bmi >= 30)
         ListGroup(children: [
           ListRow(icon: Symbols.stethoscope_rounded, color: AppColors.primary, title: 'Talk to a professional', subtitle: 'A campus doctor or dietitian can help you plan', onTap: () => context.push('/professionals')),
         ]),
-    ]);
+    ];
   }
 }

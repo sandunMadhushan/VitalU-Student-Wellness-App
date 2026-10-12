@@ -1,5 +1,5 @@
 name: vitalu
-description: "VitalU — personalised student health & wellness companion."
+description: "VitalU: personalised student health & wellness companion."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -27,6 +27,8 @@ dependencies:
   http_parser: ^4.1.2
   sensors_plus: ^7.1.0
   flutter_svg: ^2.3.0
+  audioplayers: ^6.8.1
+  confetti: ^0.8.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -38,6 +40,8 @@ flutter:
   assets:
     - assets/images/
     - assets/illustrations/
+    - assets/badges/
+    - assets/sounds/
   fonts:
     - family: Manrope
       fonts:

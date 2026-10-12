@@ -114,6 +114,19 @@ class _AboutScreenState extends State<AboutScreen> {
             ListRow(icon: Symbols.mail_rounded, color: AppColors.water, title: 'Email', value: _email, chevron: false, onTap: () => launchUrl(Uri(scheme: 'mailto', path: _email, query: 'subject=VitalU support'))),
           ],
         ),
+        ListGroup(children: [
+          ListRow(
+            icon: Symbols.palette_rounded,
+            color: AppColors.mind,
+            title: 'Credits',
+            subtitle: 'Illustrations and sounds',
+            onTap: () => showInfoSheet(context, title: 'Credits', icon: Symbols.palette_rounded, paragraphs: const [
+              'Illustrations by unDraw (undraw.co), used under the unDraw licence.',
+              'Sounds: "Water Glass Pour", "Quick Win Success Fanfare" and "Peaceful Spa Bells" by BudgetPixel (budgetpixel.com), licensed under Creative Commons Attribution 4.0 (CC BY 4.0).',
+              'Badge mascots and the body and cycle diagrams were drawn for VitalU.',
+            ]),
+          ),
+        ]),
         Text('© ${DateTime.now().year} VitalU research project. For general wellbeing support, not a diagnostic tool.',
             textAlign: TextAlign.center, style: T.bodySm.c(AppColors.onSurfaceVariant)),
       ],

@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
+import '../../core/badges.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
+import '../../ui/badge_ui.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -25,6 +27,7 @@ class DietHubScreen extends StatefulWidget {
 class _DietHubScreenState extends State<DietHubScreen> {
   bool _loading = true;
   List<Rec> _meals = [];
+  int _streakVersion = 0;
 
   @override
   void initState() {
@@ -36,7 +39,12 @@ class _DietHubScreenState extends State<DietHubScreen> {
     try {
       _meals = await Repo.mealsOn(DateTime.now());
     } catch (_) {}
-    if (mounted) setState(() => _loading = false);
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        _streakVersion++;
+      });
+    }
   }
 
   Future<void> _go(String path) async {
@@ -95,6 +103,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
           const Loading()
         else
           ListGroup(children: [for (final t in mealTypes) _mealRow(t)]),
+        StreakBadgeCard(kind: StreakKind.food, version: _streakVersion),
         const SectionHeader('Plan and learn'),
         ListGroup(children: [
           ListRow(icon: Symbols.calculate_rounded, color: AppColors.nutrition, title: 'Meal calorie counter', subtitle: 'Build a meal by portion and see the kcal', onTap: () => _go('/diet/counter')),

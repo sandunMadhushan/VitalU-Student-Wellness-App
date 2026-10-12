@@ -47,7 +47,6 @@ import 'package:vitalu/features/tools/activity_screen.dart';
 import 'package:vitalu/features/tools/bmi_screen.dart';
 import 'package:vitalu/features/tools/cycle_screen.dart';
 import 'package:vitalu/features/tools/heart_risk_screen.dart';
-import 'package:vitalu/features/tools/screen_time_screen.dart';
 import 'package:vitalu/features/tools/sleep_screen.dart';
 import 'package:vitalu/features/tools/stress_screen.dart';
 import 'package:vitalu/features/tools/tools_screen.dart';
@@ -108,7 +107,6 @@ final _screens = <String, Widget Function()>{
   'activity': () => const ActivityScreen(),
   'sleep': () => const SleepScreen(),
   'cycle': () => const CycleScreen(),
-  'screen_time': () => const ScreenTimeScreen(),
   'diet': () => const DietHubScreen(),
   'meal_log': () => const MealLogScreen(),
   'meal_counter': () => const MealCounterScreen(),
@@ -140,7 +138,8 @@ Future<void> _font(String family, List<String> files) async {
 
 void main() {
   final filter = Platform.environment['SCREENS']?.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toSet();
-  const size = Size(390, 1500);
+  // HEIGHT=4000 captures long pages in one image.
+  final size = Size(390, double.tryParse(Platform.environment['HEIGHT'] ?? '') ?? 1500);
   const dpr = 2.0;
 
   setUpAll(() async {

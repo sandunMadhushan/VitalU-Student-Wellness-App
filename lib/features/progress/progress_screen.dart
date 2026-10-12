@@ -94,10 +94,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
         filename: 'VitalU_Wellness_Summary_${isoDate(DateTime.now())}.pdf',
         sections: {
           'Body measurements': [
-            ['Height', p?.heightCm == null ? '—' : '${p!.heightCm!.round()} cm'],
-            ['Weight', p?.weightKg == null ? '—' : '${p!.weightKg} kg'],
-            ['BMI', p?.bmi == null ? '—' : p!.bmi!.toStringAsFixed(1)],
-            ['Waist-to-hip ratio', p?.whr == null ? '—' : p!.whr!.toStringAsFixed(2)],
+            ['Height', p?.heightCm == null ? 'Not set' : '${p!.heightCm!.round()} cm'],
+            ['Weight', p?.weightKg == null ? 'Not set' : '${p!.weightKg} kg'],
+            ['BMI', p?.bmi == null ? 'Not set' : p!.bmi!.toStringAsFixed(1)],
+            ['Waist-to-hip ratio', p?.whr == null ? 'Not set' : p!.whr!.toStringAsFixed(2)],
           ],
           'Last 7 days': [
             ['Average water', '${_avg(_waterSeries(last7)).toStringAsFixed(1)} L/day'],
@@ -201,7 +201,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           goal: sleepGoal, onTap: () => context.push('/tools/sleep')),
       _trendCard('Active minutes', Symbols.directions_walk_rounded, AppColors.activity, _avg(m).round().toString(), 'min a day', _trend(m, mp), m, labels,
           onTap: () => context.push('/tools/activity')),
-      _trendCard('Mood', Symbols.mood_rounded, AppColors.mind, topMood ?? '—', topMood == null ? null : 'most often', null, moodSeries, labels,
+      _trendCard('Mood', Symbols.mood_rounded, AppColors.mind, topMood ?? '-', topMood == null ? null : 'most often', null, moodSeries, labels,
           onTap: () => context.push('/home')),
       const SectionHeader('Water, last 4 weeks'),
       VCard(

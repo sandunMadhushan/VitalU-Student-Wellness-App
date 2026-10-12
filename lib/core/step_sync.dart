@@ -18,7 +18,7 @@ class StepSync {
   /// Syncs steps from the device sensor, requesting permission if it
   /// hasn't been granted yet. Safe to call on every screen open or app
   /// resume: once a student has answered the system prompt, Android does
-  /// not show it again on later calls, so this never nags — it just quietly
+  /// not show it again on later calls, so this never nags, it just quietly
   /// does nothing until permission is granted.
   static Future<int?> sync() async {
     if (kIsWeb || _busy) return null;

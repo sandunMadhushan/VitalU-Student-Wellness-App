@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
@@ -45,6 +45,75 @@ class _WhrScreenState extends State<WhrScreen> {
     }
   }
 
+  void _howItWorks() => showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('How it works', style: T.headlineMd),
+        const SizedBox(height: Sp.sm),
+        Text('Waist-to-hip ratio is your waist measurement divided by your hip measurement. It shows where your body stores fat.', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+        const SizedBox(height: Sp.md),
+        const MeasureGuide(),
+        const SizedBox(height: Sp.md),
+        Text('What the numbers mean', style: T.headlineSm),
+        const SizedBox(height: 6),
+        Text('WHO guidance links a ratio of 0.85 or more (women) and 0.90 or more (men) with a higher risk of heart and metabolic disease.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        const SizedBox(height: Sp.md),
+        const WaistHeightRule(),
+        const SizedBox(height: Sp.lg),
+        PrimaryButton('Done', onTap: () => Navigator.pop(ctx)),
+      ]));
+
+  /// Waist compared with half of the student's height, when height is known.
+  Widget _waistToHeight() {
+    final height = AppState.instance.profile?.heightCm;
+    if (height == null) return const WaistHeightRule();
+    final half = height / 2;
+    final ratio = _waist / height;
+    final ok = ratio < 0.5;
+    final c = ok ? AppColors.tertiary : AppColors.warning;
+    return VCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        CategoryLabel('Waist-to-height check', icon: Symbols.height_rounded, color: AppColors.body),
+        const SizedBox(height: 8),
+        Row(children: [
+          Text(ratio.toStringAsFixed(2), style: T.metric(36)),
+          const SizedBox(width: Sp.md),
+          Icon(ok ? Symbols.check_circle_rounded : Symbols.error_rounded, color: c, fill: 1),
+          const SizedBox(width: 6),
+          Flexible(child: Text(ok ? 'Below 0.5, healthy' : '0.5 or above', style: T.headlineSm.c(c))),
+        ]),
+        const SizedBox(height: Sp.md),
+        LayoutBuilder(builder: (context, box) {
+          final maxCm = (height * 0.7).clamp(_waist + 10, 400.0);
+          final w = box.maxWidth;
+          return SizedBox(
+            height: 50,
+            child: Stack(children: [
+              Positioned(left: 0, right: 0, top: 28, child: Bar(value: _waist / maxCm, height: 10, color: c)),
+              Positioned(
+                left: (half / maxCm * w - 1).clamp(0.0, w - 2),
+                top: 20,
+                child: Container(width: 2, height: 26, color: AppColors.onSurface),
+              ),
+              Positioned(
+                left: (half / maxCm * w - 90).clamp(0.0, w - 180),
+                top: 0,
+                width: 180,
+                child: Text('Half your height: ${half.round()} cm', textAlign: TextAlign.center, maxLines: 1, style: T.labelSm.c(AppColors.onSurfaceVariant)),
+              ),
+            ]),
+          );
+        }),
+        Text('Your waist is ${_waist.round()} cm and half your height (${height.round()} cm) is ${half.round()} cm.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        const SizedBox(height: Sp.sm),
+        Text(
+          ok
+              ? 'Great: your waist is less than half your height. Keeping it that way helps protect you from type 2 diabetes and heart disease.'
+              : 'As a general guide, aim to keep your waist under half your height. Regular activity, more vegetables and fewer sugary drinks help bring it down over time.',
+          style: T.bodyMd.c(AppColors.onSurfaceVariant),
+        ),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final sex = _ref == 'male' ? 'male' : 'female';
@@ -62,12 +131,10 @@ class _WhrScreenState extends State<WhrScreen> {
     return VPage(
       header: TitleHeader('WHR calculator', onLeading: () => goBack(context, '/tools')),
       children: [
-        ToolSubBar(onHelp: () => showInfoSheet(context, title: 'About waist-to-hip ratio', paragraphs: const [
-              'Waist-to-hip ratio is your waist circumference divided by your hip circumference.',
-              'WHO guidance links a ratio of 0.85 or more (women) and 0.90 or more (men) with substantially increased cardiometabolic risk.',
-              'Measure your waist at the narrowest point above the navel after breathing out, and your hips at the widest part, keeping the tape level with the floor.',
-            ])),
+        ToolSubBar(onHelp: _howItWorks),
         if (ratio != null && cat != null) _result(ratio, cat, low, high, pos(ratio)),
+        if (ratio != null) _waistToHeight(),
+        const MeasureGuideCard(),
         VCard(
           child: Row(children: [
             Expanded(
@@ -86,7 +153,7 @@ class _WhrScreenState extends State<WhrScreen> {
         StepperMeasureCard(
           icon: Symbols.straighten_rounded,
           title: 'Waist',
-          subtitle: 'Narrowest point above the navel, after breathing out',
+          subtitle: 'Narrowest point above your belly button, after breathing out',
           display: _disp(_waist, _wUnit),
           unitLabel: _wUnit,
           units: const ['cm', 'in'],
@@ -100,7 +167,7 @@ class _WhrScreenState extends State<WhrScreen> {
         StepperMeasureCard(
           icon: Symbols.accessibility_new_rounded,
           title: 'Hip',
-          subtitle: 'Widest part of the hips, tape level',
+          subtitle: 'Widest part around your hips and buttocks, tape level',
           display: _disp(_hip, _hUnit),
           unitLabel: _hUnit,
           units: const ['cm', 'in'],
@@ -113,9 +180,6 @@ class _WhrScreenState extends State<WhrScreen> {
         ),
         PrimaryButton('Calculate', onTap: _calculate),
         if (ratio != null) SoftButton('Save to my profile', icon: Symbols.bookmark_add_rounded, onTap: _saving ? null : _save),
-        ListGroup(children: [
-          ListRow(icon: Symbols.monitor_weight_rounded, color: AppColors.body, title: 'Compare with BMI', onTap: () => context.pushReplacement('/tools/bmi')),
-        ]),
         const PrivacyNote('A screening measure, not a diagnosis of any disease. Measurements stay private to you.'),
       ],
     );
@@ -163,8 +227,8 @@ class _WhrScreenState extends State<WhrScreen> {
   }
 }
 
-/// Two stylised body-shape silhouettes — "pear" (weight carried more at the
-/// hips) and "apple" (weight carried more at the waist) — with the one
+/// Two stylised body-shape silhouettes, "pear" (weight carried more at the
+/// hips) and "apple" (weight carried more at the waist), with the one
 /// closer to the student's own ratio highlighted. Illustrative only.
 class BodyShapeDiagram extends StatelessWidget {
   const BodyShapeDiagram({super.key, required this.leanToApple, required this.color});
@@ -221,4 +285,80 @@ class _SilhouettePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SilhouettePainter old) => old.waistFactor != waistFactor || old.color != color;
+}
+
+/// The figure with both tape positions, and what each colour means.
+class MeasureGuide extends StatelessWidget {
+  const MeasureGuide({super.key});
+
+  static const waistColor = Color(0xFF1A6FE0);
+  static const hipColor = Color(0xFFD13C78);
+
+  @override
+  Widget build(BuildContext context) {
+    Widget key(Color c, String title, String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Padding(padding: const EdgeInsets.only(top: 3), child: Container(width: 14, height: 14, decoration: BoxDecoration(color: c, shape: BoxShape.circle))),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: T.labelLg.c(c)),
+                Text(text, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              ]),
+            ),
+          ]),
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Container(
+        decoration: BoxDecoration(color: AppColors.isDark ? AppColors.surfaceContainerHigh : const Color(0xFFF3EEFA), borderRadius: BorderRadius.circular(Rad.lg)),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: SizedBox(height: 260, child: SvgPicture.asset('assets/illustrations/measure_waist_hip.svg', fit: BoxFit.contain)),
+      ),
+      const SizedBox(height: Sp.md),
+      key(waistColor, 'Waist: the narrowest point', 'Wrap the tape around the narrowest part of your middle, usually 2 to 3 cm above your belly button. Breathe out gently, then measure.'),
+      key(hipColor, 'Hips: the widest point', 'Wrap the tape around the widest part of your hips and buttocks.'),
+      key(AppColors.onSurfaceVariant, 'Tips for an accurate reading', 'Stand straight with your feet together. Keep the tape level with the floor and snug, but not pressing into the skin. Measure over bare skin or light clothing.'),
+    ]);
+  }
+}
+
+/// The measuring guide as a card on the calculator itself.
+class MeasureGuideCard extends StatelessWidget {
+  const MeasureGuideCard({super.key});
+  @override
+  Widget build(BuildContext context) => VCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Symbols.straighten_rounded, size: 20, color: AppColors.body, fill: 1),
+            const SizedBox(width: 8),
+            Expanded(child: Text('How to measure', style: T.headlineSm)),
+          ]),
+          const SizedBox(height: Sp.md),
+          const MeasureGuide(),
+        ]),
+      );
+}
+
+/// The general "waist under half your height" guideline.
+class WaistHeightRule extends StatelessWidget {
+  const WaistHeightRule({super.key});
+  @override
+  Widget build(BuildContext context) => VCard(
+        color: AppColors.tint(AppColors.body),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Symbols.tips_and_updates_rounded, color: AppColors.body, fill: 1),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Keep your waist under half your height', style: T.headlineSm),
+              const SizedBox(height: 4),
+              Text(
+                'As a general health guideline, your waist should be less than half of your height. For example, if you are 160 cm tall, aim for a waist under 80 cm. A healthy waist-to-height ratio may help lower the risk of type 2 diabetes and cardiovascular disease.',
+                style: T.bodyMd.c(AppColors.onSurfaceVariant),
+              ),
+            ]),
+          ),
+        ]),
+      );
 }

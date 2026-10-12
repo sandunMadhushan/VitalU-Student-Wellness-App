@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_state.dart';
 import 'core/config.dart';
 import 'core/router.dart';
+import 'core/sfx.dart';
+import 'ui/badge_ui.dart';
 import 'ui/theme.dart';
 import 'ui/tokens.dart';
 
@@ -16,6 +18,7 @@ Future<void> main() async {
   await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseKey);
   await AppState.instance.init();
   await AppState.instance.loadThemeMode();
+  await Sfx.load();
   runApp(const VitalUApp());
 }
 
@@ -33,7 +36,7 @@ class VitalUApp extends StatelessWidget {
           ThemeMode.dark => Brightness.dark,
           ThemeMode.system => platformBrightness,
         };
-        // AppColors is a set of global (non-context) getters — see ui/tokens.dart —
+        // AppColors is a set of global (non-context) getters, see ui/tokens.dart,
         // so flipping it requires forcing every widget below to rebuild from
         // scratch. We do that with a KeyedSubtree keyed on the resolved
         // brightness, which fully remounts the page content on change.
@@ -53,7 +56,10 @@ class VitalUApp extends StatelessWidget {
           routerConfig: appRouter,
           themeMode: ThemeMode.light,
           theme: buildTheme(resolved),
-          builder: (context, child) => KeyedSubtree(key: ValueKey(resolved), child: child!),
+          builder: (context, child) => KeyedSubtree(
+            key: ValueKey(resolved),
+            child: BadgeCelebrationHost(navigatorKey: rootNavigatorKey, child: child!),
+          ),
         );
       },
     );

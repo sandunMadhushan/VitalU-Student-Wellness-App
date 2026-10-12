@@ -12,9 +12,9 @@ import '../../ui/widgets.dart';
 import 'tool_widgets.dart';
 
 /// Factor-based cardiovascular risk indicator. Each answer carries a point
-/// value; the total is shown as a share of the maximum possible for the
-/// factors that were actually answered, so leaving the optional blood tests
-/// blank never inflates the score.
+/// value; the total is shown against the maximum possible for the factors
+/// that were actually answered. Every question is optional, so skipping one
+/// never inflates (or deflates) the score.
 class _Factor {
   const _Factor(this.key, this.label, this.points, {this.note});
   final String key;
@@ -34,16 +34,18 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
   Rec? _result;
   bool _editing = false;
 
-  // Inputs — prefilled from the profile where possible, editable here.
-  String _age = '30-45';
-  String _sex = 'female';
+  // Inputs, prefilled from the profile where possible and editable here.
+  // A null answer means "skipped".
+  String? _age;
+  String? _sex;
   double _heightCm = 165;
   double _weightKg = 60;
-  String _smoking = 'never';
-  String _activity = 'active';
-  bool _familyHistory = false;
+  String? _smoking;
+  String? _activity;
+  bool? _familyHistory;
   bool _diabetes = false;
   bool _hypertension = false;
+  bool _noConditions = false;
   final _sys = TextEditingController();
   final _dia = TextEditingController();
   final _glucose = TextEditingController();
@@ -64,7 +66,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
     if (p?.sex != null) _sex = p!.sex!;
     _heightCm = p?.heightCm ?? _heightCm;
     _weightKg = p?.weightKg ?? _weightKg;
-    _familyHistory = (p?.conditions.contains('family_heart') ?? false) || (p?.conditions.contains('family_hypertension') ?? false);
+    if ((p?.conditions.contains('family_heart') ?? false) || (p?.conditions.contains('family_hypertension') ?? false)) _familyHistory = true;
     _hypertension = p?.conditions.contains('high_bp') ?? false;
     _heightCtrl.text = _heightCm.round().toString();
     _weightCtrl.text = _weightKg.round().toString();
@@ -98,17 +100,22 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
 
   double? get _bmi => Calc.bmi(_heightCm, _weightKg);
 
+  bool get _conditionsAnswered => _noConditions || _diabetes || _hypertension;
+
+  /// Highest points each factor can add, used for the "out of" total.
+  static const _maxPoints = {'age': 3, 'sex': 1, 'bmi': 2, 'smoking': 2, 'activity': 2, 'family': 2, 'diabetes': 2, 'hypertension': 2, 'bp': 2, 'glucose': 2, 'cholesterol': 2};
+
   List<_Factor> get _factors {
     final bmi = _bmi;
     return [
-      _Factor('age', 'Age', const {'under-30': 0, '30-45': 1, '46-60': 2, 'over-60': 3}[_age]!),
-      _Factor('sex', 'Sex', _sex == 'male' ? 1 : 0),
+      if (_age != null) _Factor('age', 'Age', const {'under-30': 0, '30-45': 1, '46-60': 2, 'over-60': 3}[_age]!),
+      if (_sex != null) _Factor('sex', 'Sex', _sex == 'male' ? 1 : 0),
       if (bmi != null) _Factor('bmi', 'Body mass index', bmi < 25 ? 0 : (bmi < 30 ? 1 : 2), note: 'BMI ${bmi.toStringAsFixed(1)}'),
-      _Factor('smoking', 'Smoking', const {'never': 0, 'occasional': 1, 'daily': 2}[_smoking]!),
-      _Factor('activity', 'Physical activity', const {'active': 0, 'rarely': 1, 'inactive': 2}[_activity]!),
-      _Factor('family', 'Family history of heart attack', _familyHistory ? 2 : 0),
-      _Factor('diabetes', 'Diabetes', _diabetes ? 2 : 0),
-      _Factor('hypertension', 'High blood pressure (diagnosed)', _hypertension ? 2 : 0),
+      if (_smoking != null) _Factor('smoking', 'Smoking', const {'never': 0, 'occasional': 1, 'daily': 2}[_smoking]!),
+      if (_activity != null) _Factor('activity', 'Physical activity', const {'active': 0, 'rarely': 1, 'inactive': 2}[_activity]!),
+      if (_familyHistory != null) _Factor('family', 'Family history of heart attack', _familyHistory! ? 2 : 0),
+      if (_conditionsAnswered) _Factor('diabetes', 'Diabetes', _diabetes ? 2 : 0),
+      if (_conditionsAnswered) _Factor('hypertension', 'High blood pressure (diagnosed)', _hypertension ? 2 : 0),
       if (_bpPoints != null) _Factor('bp', 'Blood pressure', _bpPoints!, note: '$_sysVal/$_diaVal mmHg'),
       if (_glucosePoints != null) _Factor('glucose', 'Fasting blood sugar', _glucosePoints!, note: '$_glucoseVal mg/dL'),
       if (_cholesterolPoints != null) _Factor('cholesterol', 'Total cholesterol', _cholesterolPoints!, note: '$_cholesterolVal mg/dL'),
@@ -149,8 +156,9 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
       return toast(context, 'Enter both systolic and diastolic, or leave both blank.', error: true);
     }
     final factors = _factors;
+    if (factors.isEmpty) return toast(context, 'Answer at least one question to see a result.', error: true);
     final score = factors.fold<int>(0, (a, f) => a + f.points);
-    final maxPossible = 3 + 1 + (_bmi != null ? 2 : 0) + 2 + 2 + 2 + 2 + 2 + (_bpPoints != null ? 2 : 0) + (_glucosePoints != null ? 2 : 0) + (_cholesterolPoints != null ? 2 : 0);
+    final maxPossible = factors.fold<int>(0, (a, f) => a + _maxPoints[f.key]!);
     final pct = maxPossible == 0 ? 0.0 : score / maxPossible;
     final category = pct < 0.35 ? 'low' : (pct < 0.6 ? 'moderate' : 'high');
 
@@ -202,15 +210,33 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
 
   // ---------------------------------------------------------------------------
   List<Widget> _form() {
-    Widget choice(String title, String value, List<(String, String)> opts, ValueChanged<String> onPick) => _section(
+    // Tapping the selected chip again clears it, so any answer can be skipped.
+    Widget choice(String title, String? value, List<(String, String)> opts, ValueChanged<String?> onPick) => _section(
           title,
-          Wrap(spacing: 8, runSpacing: 8, children: [for (final o in opts) VChip(o.$2, selected: value == o.$1, selectedColor: AppColors.heart, onTap: () => setState(() => onPick(o.$1)))]),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final o in opts) VChip(o.$2, selected: value == o.$1, selectedColor: AppColors.heart, onTap: () => setState(() => onPick(value == o.$1 ? null : o.$1))),
+          ]),
         );
 
     return [
-      Text('A cardiovascular risk factor check. We pre-fill what we can from your profile — change anything that is out of date.', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+      Text('A cardiovascular risk factor check. We pre-fill what we can from your profile, so change anything that is out of date.', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+      VCard(
+        color: AppColors.tint(AppColors.water),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Symbols.tips_and_updates_rounded, color: AppColors.water, fill: 1),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('More answers, more accurate result', style: T.headlineSm),
+              const SizedBox(height: 4),
+              Text('Filling in as many sections as you can gives a more accurate picture of your heart health. Every field is optional, though, so skip anything you are unsure about.',
+                  style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
+        ]),
+      ),
       const ToolSubBar(),
-      choice('Age', _age, const [('under-30', 'Under 30'), ('30-45', '30–45'), ('46-60', '46–60'), ('over-60', 'Over 60')], (v) => _age = v),
+      choice('Age', _age, const [('under-30', 'Under 30'), ('30-45', '30 to 45'), ('46-60', '46 to 60'), ('over-60', 'Over 60')], (v) => _age = v),
       choice('Sex', _sex, const [('female', 'Female'), ('male', 'Male')], (v) => _sex = v),
       _section(
         'Height and weight',
@@ -226,13 +252,27 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
       _section(
         'Family history',
         note: 'Do your parents or siblings have a history of heart attacks or stroke?',
-        Wrap(spacing: 8, runSpacing: 8, children: [VChip('Yes', selected: _familyHistory, selectedColor: AppColors.heart, onTap: () => setState(() => _familyHistory = !_familyHistory))]),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          VChip('Yes', selected: _familyHistory == true, selectedColor: AppColors.heart, onTap: () => setState(() => _familyHistory = _familyHistory == true ? null : true)),
+          VChip('No', selected: _familyHistory == false, selectedColor: AppColors.heart, onTap: () => setState(() => _familyHistory = _familyHistory == false ? null : false)),
+        ]),
       ),
       _section(
         'Existing conditions',
+        note: 'Select all that apply, or None.',
         Wrap(spacing: 8, runSpacing: 8, children: [
-          VChip('Diabetes', selected: _diabetes, selectedColor: AppColors.heart, onTap: () => setState(() => _diabetes = !_diabetes)),
-          VChip('Hypertension (high BP)', selected: _hypertension, selectedColor: AppColors.heart, onTap: () => setState(() => _hypertension = !_hypertension)),
+          VChip('Diabetes', selected: _diabetes, selectedColor: AppColors.heart, onTap: () => setState(() {
+                _diabetes = !_diabetes;
+                if (_diabetes) _noConditions = false;
+              })),
+          VChip('Hypertension (high BP)', selected: _hypertension, selectedColor: AppColors.heart, onTap: () => setState(() {
+                _hypertension = !_hypertension;
+                if (_hypertension) _noConditions = false;
+              })),
+          VChip('None', selected: _noConditions, selectedColor: AppColors.heart, onTap: () => setState(() {
+                _noConditions = !_noConditions;
+                if (_noConditions) _diabetes = _hypertension = false;
+              })),
         ]),
       ),
       _section(
@@ -283,7 +323,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
           Text('$title risk', style: T.headlineMd.c(color)),
           const SizedBox(height: 6),
           Text(
-            'This reflects the risk factors you entered — not a 10-year clinical risk estimate. It does not rule out risk, even at the low end, and it is not a diagnosis.',
+            'This reflects the risk factors you entered.',
             textAlign: TextAlign.center,
             style: T.bodyMd.c(AppColors.onSurfaceVariant),
           ),
@@ -296,7 +336,11 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
             icon: _factorIcon(e.key),
             color: AppColors.heart,
             title: _factorLabel(e.key),
-            trailing: Text(_pointsLabel(e.value as int), style: T.labelMd.c(e.value == 0 ? AppColors.tertiary : (e.value == 1 ? AppColors.warning : AppColors.error))),
+            trailing: TagPill(
+              _pointsLabel(e.value as int),
+              bg: AppColors.tint(_pointsColor(e.value as int)),
+              fg: _pointsColor(e.value as int),
+            ),
           ),
       ]),
       const SectionHeader('What you can do'),
@@ -321,7 +365,8 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
     ];
   }
 
-  String _pointsLabel(int p) => p == 0 ? 'Not a factor' : (p == 1 ? 'Some risk' : 'Higher risk');
+  String _pointsLabel(int p) => p == 0 ? 'Low risk' : (p == 1 ? 'Some risk' : 'Higher risk');
+  Color _pointsColor(int p) => p == 0 ? AppColors.tertiary : (p == 1 ? AppColors.warning : AppColors.error);
 
   String _factorLabel(String k) => switch (k) {
         'age' => 'Age',
@@ -353,7 +398,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
         _ => Symbols.favorite_rounded,
       };
 
-  /// Always offered, regardless of risk level — a low score narrows risk, it
+  /// Always offered, regardless of risk level: a low score narrows risk, it
   /// never rules it out.
   List<String> _recommendations(Map<String, dynamic> factors, Map<String, dynamic> d) {
     final tips = <String>[];
@@ -364,8 +409,8 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> {
     if ((factors['glucose'] ?? 0) > 0 || d['diabetes'] == true) tips.add('Favour whole grains and pulses over refined carbs and sugary drinks to support steady blood sugar.');
     if ((factors['cholesterol'] ?? 0) > 0) tips.add('Oily fish, nuts and olive oil in place of fried food and ghee can help improve cholesterol over time.');
     if ((factors['family'] ?? 0) > 0) tips.add('With a family history, regular blood pressure, sugar and cholesterol checks are worthwhile even without symptoms.');
-    if (tips.isEmpty) tips.add('Your current habits support heart health. Keep walking, sleeping well and eating a varied diet — regular check-ups still matter.');
-    tips.add('This tool estimates risk from the factors you entered; it cannot see everything about your health, so a normal result does not guarantee you are risk-free.');
+    if (tips.isEmpty) tips.add('Your current habits support heart health. Keep walking, sleeping well and eating a varied diet. Regular check-ups still matter.');
+    tips.add('This tool estimates risk from the factors you entered. It cannot see everything about your health, so a low result does not guarantee you are risk-free.');
     return tips;
   }
 }

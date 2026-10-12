@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -167,10 +169,11 @@ class ToolSubBar extends StatelessWidget {
       ]);
 }
 
-/// An empty bottle outline that animates its fill level, for hydration
-/// progress. [value] is 0..1+ (values over 1 show the bottle full, with the
-/// overflow reflected only in the label the caller shows alongside it).
-class AnimatedWaterBottle extends StatelessWidget {
+/// A water bottle that fills to [value] (0..1+; anything over 1 shows it
+/// full). The surface keeps a gentle moving wave, and every time the level
+/// rises the bottle hops, squashes and fizzes with bubbles, so logging a
+/// glass feels like it landed somewhere.
+class AnimatedWaterBottle extends StatefulWidget {
   const AnimatedWaterBottle({super.key, required this.value, this.width = 64, this.height = 132, this.color});
   final double value;
   final double width;
@@ -178,33 +181,95 @@ class AnimatedWaterBottle extends StatelessWidget {
   final Color? color;
 
   @override
+  State<AnimatedWaterBottle> createState() => _AnimatedWaterBottleState();
+}
+
+class _AnimatedWaterBottleState extends State<AnimatedWaterBottle> with TickerProviderStateMixin {
+  late final _wave = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))..repeat();
+  late final _hop = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+  late final _fill = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+  double _from = 0;
+  late double _to = widget.value.clamp(0, 1).toDouble();
+
+  @override
+  void initState() {
+    super.initState();
+    _fill.forward(from: 0);
+  }
+
+  @override
+  void didUpdateWidget(covariant AnimatedWaterBottle old) {
+    super.didUpdateWidget(old);
+    final next = widget.value.clamp(0, 1).toDouble();
+    if (next != _to) {
+      _from = _level;
+      _to = next;
+      _fill.forward(from: 0);
+      if (widget.value > old.value) _hop.forward(from: 0);
+    }
+  }
+
+  double get _level => _from + (_to - _from) * Curves.easeOutCubic.transform(_fill.value);
+
+  @override
+  void dispose() {
+    _wave.dispose();
+    _hop.dispose();
+    _fill.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final c = color ?? AppColors.water;
+    final c = widget.color ?? AppColors.water;
     return SizedBox(
-      width: width,
-      height: height,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: value.clamp(0, 1)),
-        duration: const Duration(milliseconds: 700),
-        curve: Curves.easeOutCubic,
-        builder: (_, v, _) => CustomPaint(painter: _BottlePainter(v, c, AppColors.surfaceContainerHigh)),
+      width: widget.width,
+      height: widget.height + 14,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_wave, _hop, _fill]),
+        builder: (_, _) {
+          final h = _hop.value;
+          // Hop up, land with a squash, settle.
+          final lift = h < 0.45 ? math.sin(h / 0.45 * math.pi) * 12 : 0.0;
+          final squash = h >= 0.45 && h < 0.75 ? math.sin((h - 0.45) / 0.3 * math.pi) * 0.07 : 0.0;
+          // The surface sloshes harder right after a pour, then calms down.
+          final slosh = 1 + 3.5 * (1 - h) * (_hop.isAnimating ? 1 : 0);
+          return Transform.translate(
+            offset: Offset(0, 14 - lift),
+            child: Transform(
+              alignment: Alignment.bottomCenter,
+              transform: Matrix4.diagonal3Values(1 + squash, 1 - squash, 1),
+              child: CustomPaint(
+                size: Size(widget.width, widget.height),
+                painter: _BottlePainter(_level, c, AppColors.surfaceContainerHigh, AppColors.outlineVariant, _wave.value, slosh, _hop.isAnimating ? h : null),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
 class _BottlePainter extends CustomPainter {
-  _BottlePainter(this.fill, this.color, this.track);
+  _BottlePainter(this.fill, this.color, this.track, this.outline, this.phase, this.amp, this.burst);
   final double fill;
   final Color color;
   final Color track;
+  final Color outline;
+  final double phase;
+  final double amp;
+
+  /// 0..1 progress of the bubble burst after a pour, or null when idle.
+  final double? burst;
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    final neckW = w * 0.34, neckH = h * 0.12, bodyTop = neckH + h * 0.05, r = w * 0.16;
+    final neckW = w * 0.34, neckH = h * 0.12, bodyTop = neckH + h * 0.05, r = w * 0.18;
     final body = RRect.fromRectAndRadius(Rect.fromLTWH(0, bodyTop, w, h - bodyTop), Radius.circular(r));
     final neck = RRect.fromRectAndRadius(Rect.fromLTWH((w - neckW) / 2, 0, neckW, neckH + 4), Radius.circular(w * 0.06));
+    final cap = RRect.fromRectAndRadius(Rect.fromLTWH((w - neckW * 1.15) / 2, -h * 0.05, neckW * 1.15, h * 0.07), Radius.circular(w * 0.05));
 
     canvas.drawRRect(neck, Paint()..color = track);
     canvas.drawRRect(body, Paint()..color = track);
@@ -212,30 +277,65 @@ class _BottlePainter extends CustomPainter {
     canvas.save();
     canvas.clipRRect(body);
     final fillTop = (h - bodyTop) * (1 - fill) + bodyTop;
-    canvas.drawRect(Rect.fromLTWH(0, fillTop, w, h - fillTop), Paint()..color = color);
-    if (fill > 0.02) {
-      final wave = Path()
-        ..moveTo(0, fillTop + 2)
-        ..quadraticBezierTo(w * 0.25, fillTop - 3, w * 0.5, fillTop + 2)
-        ..quadraticBezierTo(w * 0.75, fillTop + 7, w, fillTop + 2)
-        ..lineTo(w, fillTop)
-        ..lineTo(0, fillTop)
-        ..close();
-      canvas.drawPath(wave, Paint()..color = color.withValues(alpha: 0.7));
+    if (fill > 0.005) {
+      Path wave(double shift, double a) {
+        final p = Path()..moveTo(0, h);
+        for (double x = 0; x <= w; x += 2) {
+          p.lineTo(x, fillTop + math.sin((x / w * 2 * math.pi) + shift) * a);
+        }
+        return p
+          ..lineTo(w, h)
+          ..close();
+      }
+
+      final t = phase * 2 * math.pi;
+      canvas.drawPath(wave(t + math.pi, 2.2 * amp), Paint()..color = color.withValues(alpha: 0.45));
+      canvas.drawPath(
+        wave(t, 1.8 * amp),
+        Paint()
+          ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color.lerp(color, Colors.white, 0.25)!, color])
+              .createShader(Rect.fromLTWH(0, fillTop, w, h - fillTop)),
+      );
+      // Rising bubbles after a pour.
+      final b = burst;
+      if (b != null) {
+        final bubble = Paint()..color = Colors.white.withValues(alpha: 0.55 * (1 - b));
+        for (int i = 0; i < 7; i++) {
+          final x = w * (0.18 + 0.64 * ((i * 37) % 100) / 100);
+          final y = h - (h - fillTop) * ((b * 1.3 + i * 0.13) % 1.0);
+          canvas.drawCircle(Offset(x + math.sin(b * 8 + i) * 3, y), 1.6 + (i % 3), bubble);
+        }
+      }
+      // Soft glass highlight.
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.12, bodyTop + h * 0.08, w * 0.09, h * 0.5), Radius.circular(w)),
+        Paint()..color = Colors.white.withValues(alpha: 0.22),
+      );
     }
     canvas.restore();
 
-    final outline = Paint()
+    final stroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
-      ..color = AppColors.outlineVariant;
-    canvas.drawRRect(body, outline);
-    canvas.drawRRect(neck, outline);
-    canvas.drawLine(Offset((w - neckW) / 2, neckH - 2), Offset((w + neckW) / 2, neckH - 2), Paint()..color = AppColors.outlineVariant..strokeWidth = 2.5);
+      ..color = outline;
+    canvas.drawRRect(body, stroke);
+    canvas.drawRRect(neck, stroke);
+    canvas.drawRRect(cap, Paint()..color = color.withValues(alpha: 0.85));
+    canvas.drawLine(Offset((w - neckW) / 2, neckH - 2), Offset((w + neckW) / 2, neckH - 2), Paint()
+      ..color = outline
+      ..strokeWidth = 2.5);
+    // Measuring ticks at 25 / 50 / 75 %.
+    for (final q in const [0.25, 0.5, 0.75]) {
+      final y = bodyTop + (h - bodyTop) * (1 - q);
+      canvas.drawLine(Offset(w - w * 0.2, y), Offset(w - w * 0.08, y), Paint()
+        ..color = outline
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _BottlePainter old) => old.fill != fill || old.color != color;
+  bool shouldRepaint(covariant _BottlePainter old) => true;
 }
 
 Future<void> showInfoSheet(BuildContext context, {required String title, required List<String> paragraphs, IconData icon = Symbols.info_rounded}) {

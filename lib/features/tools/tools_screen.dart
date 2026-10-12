@@ -35,7 +35,6 @@ class ToolsScreen extends StatelessWidget {
           ToolBlock(icon: Symbols.water_drop_rounded, color: AppColors.water, kind: 'Hydration', title: 'Water intake tracker', text: 'A weight-based daily target', action: 'Log', onTap: () => go('/tools/water')),
           ToolBlock(icon: Symbols.directions_walk_rounded, color: AppColors.activity, kind: 'Movement', title: 'Activity tracker', text: 'IPAQ-SF check-in and daily logging', action: 'Log', onTap: () => go('/tools/activity')),
           ToolBlock(icon: Symbols.bedtime_rounded, color: AppColors.sleep, kind: 'Rest', title: 'Sleep tracker', text: 'Bedtime, wake time and quality', action: 'Log', onTap: () => go('/tools/sleep')),
-          ToolBlock(icon: Symbols.hourglass_bottom_rounded, color: AppColors.mind, kind: 'Screens', title: 'Screen time tracker', text: 'Log daily screen time', action: 'Log', onTap: () => go('/tools/screen-time')),
           if (female) ToolBlock(icon: Symbols.menstrual_health_rounded, color: AppColors.cycle, kind: 'Cycle', title: 'Cycle tracker', text: 'Phases, symptoms and predictions', action: 'Track', onTap: () => go('/tools/cycle')),
         ]),
         ToolBlock(

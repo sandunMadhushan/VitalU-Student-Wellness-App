@@ -19,7 +19,7 @@ double _activityMultiplier(String level) => switch (level) {
       _ => 1.55, // Moderate Walking (Campus)
     };
 
-/// Mifflin-St Jeor resting estimate × the student's own activity level —
+/// Mifflin-St Jeor resting estimate × the student's own activity level,
 /// the maintenance calories needed to hold their current weight.
 int? maintenanceCalories() {
   final p = AppState.instance.profile;
@@ -42,7 +42,7 @@ class CalorieGuidance {
   final String activityNote;
 }
 
-const _activityNote = 'Staying active day to day — walking to lectures, taking the stairs, a short stretch between study sessions — supports your overall health alongside balanced eating. It is a general habit, not something to "earn" or offset against a particular meal.';
+const _activityNote = 'Staying active day to day, like walking to lectures, taking the stairs or a short stretch between study sessions, supports your overall health alongside balanced eating. It is a general habit, not something to "earn" or offset against a particular meal.';
 
 CalorieGuidance? calorieGuidance() {
   final p = AppState.instance.profile;
@@ -54,7 +54,7 @@ CalorieGuidance? calorieGuidance() {
   return switch (category) {
     'Underweight' => CalorieGuidance(category, maintenance + 350, 'Your BMI is in the underweight range. A modest surplus of about 350 kcal a day, from nutrient-dense foods, can support healthy weight gain.', _activityNote),
     'Overweight' => CalorieGuidance(category, (maintenance - 400).clamp(floor, 99999), 'Your BMI is in the overweight range. A gentle deficit of about 400 kcal a day supports gradual, sustainable weight loss.', _activityNote),
-    'Obesity' => CalorieGuidance(category, (maintenance - 500).clamp(floor, 99999), 'Your BMI is in the obesity range. A deficit of about 500 kcal a day is a safe pace for steady weight loss — consider talking to a campus doctor for extra support.', _activityNote),
+    'Obesity' => CalorieGuidance(category, (maintenance - 500).clamp(floor, 99999), 'Your BMI is in the obesity range. A deficit of about 500 kcal a day is a safe pace for steady weight loss. Consider talking to a campus doctor for extra support.', _activityNote),
     _ => CalorieGuidance(category, maintenance, 'Your BMI is in the healthy range. Eating around your maintenance calories keeps you there.', _activityNote),
   };
 }

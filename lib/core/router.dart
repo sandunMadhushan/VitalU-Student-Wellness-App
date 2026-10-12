@@ -32,13 +32,15 @@ import '../features/tools/activity_screen.dart';
 import '../features/tools/bmi_screen.dart';
 import '../features/tools/cycle_screen.dart';
 import '../features/tools/heart_risk_screen.dart';
-import '../features/tools/screen_time_screen.dart';
 import '../features/tools/sleep_screen.dart';
 import '../features/tools/stress_screen.dart';
 import '../features/tools/tools_screen.dart';
 import '../features/tools/water_screen.dart';
 import '../features/tools/whr_screen.dart';
 import 'app_state.dart';
+
+/// Root navigator, also used to show app-wide pop-ups (badge celebrations).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 const _public = {'/', '/onboarding', '/auth/create', '/auth/login'};
 
@@ -53,6 +55,7 @@ GoRoute _r(String path, Widget Function(GoRouterState s) b, {bool tab = false}) 
     GoRoute(path: path, pageBuilder: tab ? (c, s) => _fade(s, b(s)) : null, builder: tab ? null : (c, s) => b(s));
 
 final appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/',
   refreshListenable: AppState.instance,
   redirect: (context, state) {
@@ -86,7 +89,6 @@ final appRouter = GoRouter(
     _r('/tools/activity', (s) => const ActivityScreen()),
     _r('/tools/sleep', (s) => const SleepScreen()),
     _r('/tools/cycle', (s) => const CycleScreen()),
-    _r('/tools/screen-time', (s) => const ScreenTimeScreen()),
     _r('/diet', (s) => const DietHubScreen(), tab: true),
     _r('/diet/log', (s) => MealLogScreen(initialType: s.uri.queryParameters['type'])),
     _r('/diet/counter', (s) => const MealCounterScreen()),

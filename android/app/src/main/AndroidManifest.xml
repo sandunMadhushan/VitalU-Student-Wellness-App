@@ -4,11 +4,6 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    <!-- Lets a student optionally pull today's screen time from the OS usage
-         stats in the Screen Time tracker. Not a runtime-dialog permission —
-         Android requires granting it from Settings > Apps > Special access,
-         which the usage-stats plugin opens automatically when needed. -->
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
         android:label="VitalU"
@@ -54,14 +49,6 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
-        <!-- Lets the Screen Time tracker's usage-stats filter (MainActivity.kt)
-             recognise which packages are real, launchable apps versus
-             background system components, on Android 11+ package-visibility
-             rules. -->
-        <intent>
-            <action android:name="android.intent.action.MAIN"/>
-            <category android:name="android.intent.category.LAUNCHER"/>
-        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

@@ -12,7 +12,7 @@ import '../../ui/widgets.dart';
 import 'assessment_data.dart';
 
 // ---------------------------------------------------------------------------
-// Health Assessments — status & history
+// Health Assessments: status & history
 // ---------------------------------------------------------------------------
 
 class AssessmentsStatusScreen extends StatefulWidget {

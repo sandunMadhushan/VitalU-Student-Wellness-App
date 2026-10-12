@@ -90,7 +90,7 @@ Future<String?> pickOption(BuildContext context, String title, List<String> opti
 }
 
 // ---------------------------------------------------------------------------
-// Step 1 — basic info
+// Step 1: basic info
 // ---------------------------------------------------------------------------
 
 class RegistrationStep1 extends StatefulWidget {
@@ -325,7 +325,7 @@ class _MiniSpinner extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Step 2 — health background
+// Step 2: health background
 // ---------------------------------------------------------------------------
 
 class RegistrationStep2 extends StatefulWidget {
@@ -424,7 +424,7 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
 }
 
 // ---------------------------------------------------------------------------
-// Step 3 — body measurements
+// Step 3: body measurements
 // ---------------------------------------------------------------------------
 
 /// Numeric entry with a unit switch.
@@ -446,7 +446,7 @@ class MeasureField extends StatelessWidget {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
             style: T.bodyLg.tnum,
-            decoration: InputDecoration(isDense: true, hintText: hint ?? '—', contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+            decoration: InputDecoration(isDense: true, hintText: hint ?? '-', contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
           ),
         ),
         const SizedBox(width: 8),

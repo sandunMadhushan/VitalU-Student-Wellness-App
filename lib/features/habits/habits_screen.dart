@@ -25,44 +25,44 @@ class _Habit {
 
 final _habits = <_Habit>[
   _Habit('sweet_cravings', Symbols.icecream_rounded, () => AppColors.nutrition, 'Sweet cravings when stressed',
-      "Reaching for something sweet when you're tired or stressed is a normal response, not a lack of willpower — sugar gives a quick, short-lived lift.",
+      "Reaching for something sweet when you're tired or stressed is a normal response, not a lack of willpower. Sugar gives a quick, short-lived lift.",
       "Next time a craving hits, pause for one minute and name what you're actually feeling. A short walk, water or a chat with a friend can meet the same need.",
       'Check in with yourself', '/tools/stress'),
   _Habit('sitting', Symbols.weekend_rounded, () => AppColors.activity, 'Long stretches of sitting',
-      "Lecture halls, the library and screens make most of a student's day seated by default — it's the environment, not a character flaw.",
+      "Lecture halls, the library and screens make most of a student's day seated by default. It's the environment, not a character flaw.",
       'Stand and move for two to three minutes every hour. A reminder between lecture blocks makes it automatic rather than a decision.',
       'Log some movement', '/tools/activity'),
   _Habit('smoking', Symbols.smoke_free_rounded, () => AppColors.heart, 'Smoking or vaping',
-      'Nicotine is genuinely addictive — this is a habit loop, not a failure of character. Most people who quit succeed after more than one attempt.',
+      'Nicotine is genuinely addictive. This is a habit loop, not a failure of character. Most people who quit succeed after more than one attempt.',
       'Next time you reach for one, delay by ten minutes. Cravings usually peak and fade within that window.',
       'Get support to quit', '/professionals'),
   _Habit('screen_time', Symbols.hourglass_bottom_rounded, () => AppColors.mind, 'High screen time',
-      "Apps are built to keep you scrolling — the pull you feel is by design, not a discipline problem.",
+      "Apps are built to keep you scrolling, so the pull you feel is by design, not a discipline problem.",
       'Try the 20-20-20 rule, and keep your phone out of arm\'s reach during focused study blocks.',
-      'Track your screen time', '/tools/screen-time'),
+      'Take a calm screen break', '/tools/stress'),
   _Habit('low_fruit', Symbols.nutrition_rounded, () => AppColors.nutrition, 'Not enough fruit',
       'Fruit is easy to forget on a busy campus day, especially when canteen options lean toward rice and fried food.',
       'Keep a banana or an orange in your bag. The easiest habit changes need no decision in the moment.',
       'Check this week\'s variety', '/diet/diversity'),
   _Habit('skip_breakfast', Symbols.bakery_dining_rounded, () => AppColors.warning, 'Skipping breakfast',
-      'Rushed mornings make breakfast the easiest meal to drop — but skipping it often leads to overeating later in the day.',
+      'Rushed mornings make breakfast the easiest meal to drop, but skipping it often leads to overeating later in the day.',
       'Keep something that needs zero prep ready to grab: leftover roti and dhal, or a boiled egg from the night before.',
       'Log breakfast', '/diet/log?type=breakfast'),
   _Habit('sugary_drinks', Symbols.emoji_food_beverage_rounded, () => AppColors.warning, 'Sugar-sweetened drinks',
-      "Sweet drinks are everywhere on campus and easy to reach for without thinking — one bottle can hold a full day's added sugar.",
+      "Sweet drinks are everywhere on campus and easy to reach for without thinking. One bottle can hold a full day's added sugar.",
       'Swap one sweet drink a day for water or plain tea. Taste preferences shift within a couple of weeks.',
       'Log your water', '/tools/water'),
   _Habit('junk_food', Symbols.fastfood_rounded, () => AppColors.error, 'Frequent fried and packaged food',
-      'Convenience and cost often make fried and packaged food the default near campus — it is not a lack of willpower.',
+      'Convenience and cost often make fried and packaged food the default near campus. It is not a lack of willpower.',
       'Try the healthy plate guide for just one meal today: more vegetables, less fried food.',
       'Open the plate guide', '/diet/plate'),
 ];
 
 const _affirmations = [
   'Small, repeated choices shape health more than one big effort ever could.',
-  "A slip isn't a failure — it's information. Notice it, and start again today.",
+  "A slip isn't a failure. It's information. Notice it, and start again today.",
   'You are not your habits. You are the person choosing, one small moment at a time.',
-  'Progress here is quiet and gradual — it rarely feels dramatic while it is happening.',
+  'Progress here is quiet and gradual. It rarely feels dramatic while it is happening.',
 ];
 
 class HabitsScreen extends StatefulWidget {
@@ -119,7 +119,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           illustrationHeight: 96,
         ),
         Text(
-          "Small, steady swaps — not strict rules. Pick one that fits your week, pledge it, and build from there.",
+          "Small, steady swaps, not strict rules. Pick one that fits your week, pledge it, and build from there.",
           style: T.bodyMd.c(AppColors.onSurfaceVariant),
         ),
         if (_active.isNotEmpty)

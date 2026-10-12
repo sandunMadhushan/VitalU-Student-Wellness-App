@@ -9,9 +9,11 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_state.dart';
+import '../../core/badges.dart';
 import '../../core/step_sync.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
+import '../../ui/badge_ui.dart';
 import '../../ui/charts.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
@@ -37,6 +39,7 @@ class ActivityScreen extends StatefulWidget {
 }
 
 class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObserver {
+  int _streakVersion = 0;
   Rec _today = {'steps': 0, 'minutes': 0, 'kcal': 0, 'km': 0.0, 'logs': <Rec>[]};
   Map<String, int> _week = {};
   Map<String, int> _minutesWeek = {};
@@ -92,7 +95,7 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
       final ipaq = await Repo.toolResults('ipaq', limit: 1);
       _ipaq = ipaq.isEmpty ? null : ipaq.first;
     } catch (_) {}
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _streakVersion++);
   }
   Future<void> _runIpaq() async {
     int vigDays = 0, vigMin = 20, modDays = 0, modMin = 20, walkDays = 0, walkMin = 20, sitHours = 6;
@@ -310,6 +313,7 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
             ]),
           ]),
         ),
+        StreakBadgeCard(kind: StreakKind.move, version: _streakVersion),
         const SectionHeader('This week'),
         VCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -329,7 +333,7 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '$weekMinutes active minutes logged this week — ${minutesDiff >= 0 ? '${minutesDiff}m above' : '${-minutesDiff}m below'} the $_weeklyTargetMin min/week baseline.',
+                  '$weekMinutes active minutes logged this week, ${minutesDiff >= 0 ? '${minutesDiff}m above' : '${-minutesDiff}m below'} the $_weeklyTargetMin min/week baseline.',
                   style: T.bodySm.c(AppColors.onSurfaceVariant),
                 ),
               ),
@@ -385,7 +389,7 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
               Text(
                 _webUnsupported
                     ? "This browser doesn't expose a motion sensor VitalU can use (common on iPhone/Safari). Install the VitalU app for automatic tracking, or log activity manually below."
-                    : "Uses your phone's motion sensor while this tab is open and in front — works on Android Chrome. Your browser will ask permission the first time.",
+                    : "Uses your phone's motion sensor while this tab is open and in front. Works on Android Chrome. Your browser will ask permission the first time.",
                 style: T.bodyMd.c(AppColors.onSurfaceVariant),
               ),
               const SizedBox(height: Sp.sm),

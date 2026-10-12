@@ -94,7 +94,7 @@ class _MealCounterScreenState extends State<MealCounterScreen> {
       header: TitleHeader('Meal calorie counter', onLeading: () => goBack(context, '/diet')),
       bottom: _tray.isEmpty ? null : _totalBar(),
       children: [
-        Text('Build your meal from real portions — tablespoons, cups, pieces and more — and see the estimated calories as you go.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        Text('Build your meal from real portions (tablespoons, cups, pieces and more) and see the estimated calories as you go.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
         SizedBox(
           width: double.infinity,
           child: Segmented(small: false, options: [for (final t in mealTypes) t.$2], value: mealTypes.firstWhere((t) => t.$1 == _type).$2, onChanged: (v) => setState(() => _type = mealTypes.firstWhere((t) => t.$2 == v).$1)),

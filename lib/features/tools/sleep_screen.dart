@@ -138,7 +138,7 @@ class _SleepScreenState extends State<SleepScreen> {
               const SectionHeader('This week'),
               VCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  MetricValue(_week.isEmpty ? '—' : Fmt.hm(avg), unit: _week.isEmpty ? null : 'a night on average', size: 24),
+                  MetricValue(_week.isEmpty ? '-' : Fmt.hm(avg), unit: _week.isEmpty ? null : 'a night on average', size: 24),
                   const SizedBox(height: Sp.md),
                   BarChart(
                     values: [for (final d in days) (byDate[isoDate(d)] == null ? 0 : Repo.sleepMinutes(byDate[isoDate(d)]!)) / 60.0],

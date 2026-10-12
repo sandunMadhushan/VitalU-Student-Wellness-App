@@ -9,7 +9,7 @@ import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 import 'professionals_screen.dart';
 
-/// Fallback list in case the device is offline — Sri Lankan national lines.
+/// Fallback list in case the device is offline, Sri Lankan national lines.
 const _fallback = <Rec>[
   {'title': 'Emergency Ambulance', 'badge': 'Highest Priority', 'description': '1990 Suwa Seriya • Free national pre-hospital ambulance', 'phone': '1990', 'action_label': 'Tap to Call', 'icon': 'call', 'tone': 'error'},
   {'title': 'National Mental Health Helpline', 'badge': 'Toll-Free', 'description': 'Confidential emotional support 24/7 • NIMH Sri Lanka', 'phone': '1926', 'action_label': 'Call 1926', 'icon': 'volunteer_activism', 'tone': 'secondary'},

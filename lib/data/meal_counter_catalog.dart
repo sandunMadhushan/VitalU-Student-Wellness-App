@@ -1,7 +1,7 @@
 /// Initial food database for the Meal Calorie Counter, built mainly around
 /// foods commonly eaten by Sri Lankan university students (canteen, hostel
-/// and short-eat staples). Every value is an estimate — actual energy
-/// content varies with ingredients, recipe and preparation — and the list
+/// and short-eat staples). Every value is an estimate, actual energy
+/// content varies with ingredients, recipe and preparation, and the list
 /// is designed so more foods can be appended under an existing or new
 /// category without touching the counter screen itself.
 library;

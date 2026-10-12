@@ -88,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final bytes = await x.readAsBytes();
       final path = '$id/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
       // supabase_flutter's storage client kept returning a row-level-security 403
-      // for this exact upload even with a fresh, valid, matching-user session —
+      // for this exact upload even with a fresh, valid, matching-user session,
       // while the same request built and sent by hand succeeds. Bypass the
       // package for this call and post the multipart upload directly.
       final uri = Uri.parse('${Env.supabaseUrl}/storage/v1/object/avatars/$path');
@@ -182,7 +182,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: 'Sleep',
                 icon: Symbols.bedtime_rounded,
                 color: AppColors.sleep,
-                value: _sleepMinutes == null ? '—' : Fmt.hm(_sleepMinutes!).replaceAll(' 0', ' '),
+                value: _sleepMinutes == null ? '-' : Fmt.hm(_sleepMinutes!).replaceAll(' 0', ' '),
                 caption: _sleepMinutes == null ? 'Not logged' : 'Goal ${p.sleepGoalHours.toStringAsFixed(0)} h',
                 onTap: () => context.push('/tools/sleep'),
               ),

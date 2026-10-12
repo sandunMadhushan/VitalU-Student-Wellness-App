@@ -17,7 +17,7 @@ class LabValue {
   String get name => raw['name']?.toString() ?? 'Value';
   String get subtitle => raw['subtitle']?.toString() ?? '';
   num? get value => raw['value'] is num ? raw['value'] as num : num.tryParse('${raw['value']}');
-  String get valueText => raw['value_text']?.toString() ?? (value == null ? '—' : _fmt(value!));
+  String get valueText => raw['value_text']?.toString() ?? (value == null ? '-' : _fmt(value!));
   String get unit => raw['unit']?.toString() ?? '';
   num? get refLow => raw['ref_low'] is num ? raw['ref_low'] as num : null;
   num? get refHigh => raw['ref_high'] is num ? raw['ref_high'] as num : null;

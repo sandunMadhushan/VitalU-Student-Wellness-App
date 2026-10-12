@@ -4,9 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
+import '../../core/badges.dart';
+import '../../core/sfx.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../data/weather.dart';
+import '../../ui/badge_ui.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -48,6 +51,7 @@ class _WaterScreenState extends State<WaterScreen> {
   List<Rec> _logs = [];
   late bool _nudge = AppState.instance.profile?.waterNudge ?? true;
   double? _tempC;
+  int _streakVersion = 0;
 
   int get _goal => AppState.instance.profile?.waterGoalMl ?? 2500;
   int get _total => _logs.fold<int>(0, (a, r) => a + (r['amount_ml'] as int));
@@ -71,10 +75,22 @@ class _WaterScreenState extends State<WaterScreen> {
 
   Future<void> _log(int ml, {String? label, String? location}) async {
     HapticFeedback.lightImpact();
+    Sfx.pour();
     final now = DateTime.now();
+    final before = _total;
+    // Show the new level straight away so the bottle reacts to the tap.
+    setState(() => _logs = [..._logs, {'amount_ml': ml, 'logged_at': now.toUtc().toIso8601String(), 'label': label ?? sipLabel(now), 'location': location, 'id': null}]);
     try {
+      final earnedBefore = (await Repo.earnedBadges()).containsKey(StreakBadge.water.code);
       await Repo.addWater(ml, label: label ?? sipLabel(now), location: location);
       await _load();
+      if (mounted) setState(() => _streakVersion++);
+      if (before < _goal && _total >= _goal) {
+        final info = await Streaks.of(StreakKind.water);
+        // A third day in a row earns the badge: the app-wide badge pop-up
+        // celebrates that one, so only show the day pop-up otherwise.
+        if (mounted && (earnedBefore || info.streak < StreakBadge.length)) await showStreakDayPopup(context, StreakKind.water, info);
+      }
       if (_nudge && _total < _goal) {
         await Repo.schedule(
           title: 'Time for water',
@@ -88,6 +104,7 @@ class _WaterScreenState extends State<WaterScreen> {
       }
       if (mounted) toast(context, 'Added $ml ml');
     } catch (_) {
+      await _load();
       if (mounted) toast(context, 'Could not log water. Check your connection.', error: true);
     }
   }
@@ -122,7 +139,8 @@ class _WaterScreenState extends State<WaterScreen> {
     );
     if (ok == true) {
       await Repo.deleteWater(r['id']);
-      _load();
+      await _load();
+      if (mounted) setState(() => _streakVersion++);
     }
   }
 
@@ -141,15 +159,50 @@ class _WaterScreenState extends State<WaterScreen> {
     final pct = (_total / _goal).clamp(0.0, 9.99);
     final pace = _pace;
     final c = AppColors.water;
+    final weight = AppState.instance.profile?.weightKg;
 
     return VPage(
       header: TitleHeader('Water intake tracker', onLeading: () => goBack(context, '/tools')),
-      onRefresh: _load,
+      onRefresh: () async {
+        await _load();
+        setState(() => _streakVersion++);
+      },
       children: [
+        // 1. Your numbers and reminders.
+        ListGroup(children: [
+          ListRow(icon: Symbols.monitor_weight_rounded, color: c, title: 'Body weight', value: weight == null ? 'Add weight' : '${weight.round()} kg', onTap: _adjustGoal),
+          ListRow(icon: Symbols.flag_rounded, color: c, title: 'Daily goal', value: '${Fmt.litres(_goal)} L', onTap: _adjustGoal),
+          ListRow(
+            icon: Symbols.notifications_active_rounded,
+            color: AppColors.warning,
+            title: 'Reminders',
+            subtitle: 'A nudge two hours after each log',
+            trailing: Switch(
+              value: _nudge,
+              onChanged: (v) async {
+                setState(() => _nudge = v);
+                await AppState.instance.updateProfile({'water_nudge_enabled': v});
+              },
+            ),
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: Sfx.enabled,
+            builder: (_, on, _) => ListRow(
+              icon: Symbols.volume_up_rounded,
+              color: AppColors.mind,
+              title: 'Sound effects',
+              subtitle: 'Pouring sound and badge fanfare',
+              trailing: Switch(value: on, onChanged: Sfx.setEnabled),
+            ),
+          ),
+        ]),
+        // 2. How the goal is worked out.
+        _goalExplainer(weight),
+        // 3. The bottle.
         VCard(
           child: Row(children: [
             Column(children: [
-              AnimatedWaterBottle(value: pct, color: c),
+              AnimatedWaterBottle(value: pct, color: c, width: 86, height: 168),
               const SizedBox(height: 6),
               Text('${(pct * 100).round()}%', style: T.labelMd.tnum.c(AppColors.onSurfaceVariant)),
             ]),
@@ -158,9 +211,11 @@ class _WaterScreenState extends State<WaterScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 CategoryLabel('Today', icon: Symbols.water_drop_rounded, color: c),
                 const SizedBox(height: 6),
-                MetricValue(Fmt.litres(_total), unit: 'L', size: 32),
+                MetricValue(Fmt.litres(_total), unit: 'L', size: 34),
                 Text('of ${Fmt.litres(_goal)} L · ${(_total / 250).round()} glasses', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
+                Bar(value: pct, color: c),
+                const SizedBox(height: 10),
                 Row(children: [
                   Icon(pace.$2, size: 16, color: AppColors.onSurfaceVariant),
                   const SizedBox(width: 6),
@@ -186,45 +241,69 @@ class _WaterScreenState extends State<WaterScreen> {
               ),
             ]),
           ),
+        // 4. Add water.
         const SectionHeader('Add water'),
         TileGrid(children: [for (final p in _presets) _preset(p)]),
         SoftButton('Custom amount', icon: Symbols.add_rounded, onTap: _custom),
-        SectionHeader('Today', trailing: Text('${_logs.length} ${_logs.length == 1 ? 'entry' : 'entries'}', style: T.labelMd.c(AppColors.onSurfaceVariant))),
+        // 5. Badge streak.
+        StreakBadgeCard(kind: StreakKind.water, version: _streakVersion),
+        // 6. Today's logs, newest first.
+        SectionHeader('Water log', trailing: Text('${_logs.length} ${_logs.length == 1 ? 'entry' : 'entries'}', style: T.labelMd.c(AppColors.onSurfaceVariant))),
         if (_loading)
           const Loading()
         else if (_logs.isEmpty)
           Text('Nothing logged yet today.', style: T.bodyMd.c(AppColors.onSurfaceVariant))
         else
-          ListGroup(children: [for (final r in _logs) _entry(r)]),
-        ListGroup(
-          header: 'Settings',
-          footer: 'Target = body weight (kg) × 35 ml. Tap to update your weight or set a goal yourself.',
-          children: [
-            ListRow(
-              icon: Symbols.monitor_weight_rounded,
-              color: c,
-              title: 'Body weight',
-              value: AppState.instance.profile?.weightKg == null ? 'Add weight' : '${AppState.instance.profile!.weightKg!.round()} kg',
-              onTap: _adjustGoal,
-            ),
-            ListRow(icon: Symbols.flag_rounded, color: c, title: 'Daily goal', value: '${Fmt.litres(_goal)} L', onTap: _adjustGoal),
-            ListRow(
-              icon: Symbols.notifications_active_rounded,
-              color: AppColors.warning,
-              title: 'Reminders',
-              subtitle: 'A nudge two hours after each log',
-              trailing: Switch(
-                value: _nudge,
-                onChanged: (v) async {
-                  setState(() => _nudge = v);
-                  await AppState.instance.updateProfile({'water_nudge_enabled': v});
-                },
-              ),
-            ),
-          ],
-        ),
+          ListGroup(children: [for (final r in _logs.reversed) _entry(r)]),
         const PrivacyNote('A wellness tracker, not a diagnosis of any disease.'),
       ],
+    );
+  }
+
+  /// "60 kg × 35 ml = 2.1 L", spelled out, plus what changes the target.
+  Widget _goalExplainer(double? weight) {
+    final c = AppColors.water;
+    final fromWeight = weight == null ? null : Calc.waterTargetFor(weight);
+    final custom = fromWeight != null && fromWeight != _goal;
+    Widget term(String value, String label) => Expanded(
+          child: Column(children: [
+            Container(
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(Rad.base)),
+              child: Text(value, style: T.metric(18).c(c)),
+            ),
+            const SizedBox(height: 4),
+            Text(label, style: T.labelSm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+          ]),
+        );
+    Widget op(String o) => Padding(padding: const EdgeInsets.fromLTRB(6, 0, 6, 18), child: Text(o, style: T.headlineMd.c(AppColors.onSurfaceVariant)));
+    return VCard(
+      color: AppColors.tint(c),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Symbols.calculate_rounded, size: 20, color: c, fill: 1),
+          const SizedBox(width: 8),
+          Expanded(child: Text('How your goal is worked out', style: T.headlineSm)),
+        ]),
+        const SizedBox(height: Sp.md),
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          term(weight == null ? '? kg' : '${weight.round()} kg', 'Your weight'),
+          op('×'),
+          term('35 ml', 'Per kg'),
+          op('='),
+          term(fromWeight == null ? '?' : '${Fmt.litres(fromWeight)} L', 'Daily water'),
+        ]),
+        const SizedBox(height: Sp.md),
+        Text(
+          weight == null
+              ? 'Add your body weight above to get a personal target. Until then we use ${Fmt.litres(_goal)} L.'
+              : custom
+                  ? 'You set your own goal of ${Fmt.litres(_goal)} L, which is what the bottle below tracks.'
+                  : 'About ${(_goal / 250).round()} glasses spread through the day. Drink a little more on hot days or after sport.',
+          style: T.bodySm.c(AppColors.onSurfaceVariant),
+        ),
+      ]),
     );
   }
 
@@ -260,7 +339,7 @@ class _WaterScreenState extends State<WaterScreen> {
               Center(child: MetricValue(Fmt.litres(v), unit: 'L', size: 36)),
               VSlider(value: v, min: 1500, max: 4000, divisions: 25, color: AppColors.water, onChanged: (x) => set(() => v = x)),
             ],
-            Text('Drink more in hot weather or after sport — we add a suggestion automatically.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            Text('Drink more in hot weather or after sport. We add a suggestion automatically.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
             PrimaryButton('Save', onTap: () async {
               final goal = useWeight ? suggested : v.round();
@@ -296,7 +375,7 @@ class _WaterScreenState extends State<WaterScreen> {
       subtitle: '${DateFormat('h:mm a').format(t)}${r['location'] != null ? ' · ${r['location']}' : ''}',
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         Text('${r['amount_ml']} ml', style: T.bodyMd.tnum.c(AppColors.onSurfaceVariant)),
-        IconButton(tooltip: 'Remove', icon: Icon(Symbols.delete_rounded, size: 20, color: AppColors.outline), onPressed: () => _delete(r)),
+        IconButton(tooltip: 'Remove', icon: Icon(Symbols.delete_rounded, size: 20, color: AppColors.outline), onPressed: r['id'] == null ? null : () => _delete(r)),
       ]),
     );
   }

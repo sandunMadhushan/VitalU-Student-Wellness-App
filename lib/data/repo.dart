@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/app_state.dart';
+import '../core/badges.dart';
 
 typedef Rec = Map<String, dynamic>;
 
@@ -301,6 +302,18 @@ class Repo {
 
   static Future<void> endCycle(String id, DateTime end) => db.from('menstrual_cycles').update({'end_date': isoDate(end)}).eq('id', id);
 
+  /// Logs a whole period at once (for example, a past month), with its end
+  /// date when known.
+  static Future<void> addCycle(DateTime start, {DateTime? end}) async {
+    await db.from('menstrual_cycles').upsert({'user_id': _uid, 'start_date': isoDate(start), 'end_date': end == null ? null : isoDate(end)}, onConflict: 'user_id,start_date');
+    await refreshBadges();
+  }
+
+  static Future<void> deleteCycle(String id) => db.from('menstrual_cycles').delete().eq('id', id);
+
+  static Future<List<Rec>> dailyLogsBetween(DateTime from, DateTime to) async =>
+      List<Rec>.from(await db.from('menstrual_daily_logs').select().eq('user_id', _uid).gte('log_date', isoDate(from)).lte('log_date', isoDate(to)).order('log_date'));
+
   static Future<Rec?> dailyLog(DateTime day) async =>
       await db.from('menstrual_daily_logs').select().eq('user_id', _uid).eq('log_date', isoDate(day)).maybeSingle();
 
@@ -309,22 +322,6 @@ class Repo {
 
   static Future<List<Rec>> dailyLogsSince(DateTime from) async =>
       List<Rec>.from(await db.from('menstrual_daily_logs').select().eq('user_id', _uid).gte('log_date', isoDate(from)).order('log_date'));
-
-  // ---------------- Screen time ----------------
-  static Future<int> screenTimeOn(DateTime day) async {
-    final row = await db.from('screen_time_logs').select('minutes').eq('user_id', _uid).eq('log_date', isoDate(day)).maybeSingle();
-    return (row?['minutes'] as int?) ?? 0;
-  }
-
-  static Future<void> setScreenTime(DateTime day, int minutes) async {
-    await db.from('screen_time_logs').upsert({'user_id': _uid, 'log_date': isoDate(day), 'minutes': minutes, 'updated_at': utc(DateTime.now())}, onConflict: 'user_id,log_date');
-    await refreshBadges();
-  }
-
-  static Future<Map<String, int>> screenTimeByDay(DateTime from, DateTime to) async {
-    final rows = await db.from('screen_time_logs').select('log_date, minutes').eq('user_id', _uid).gte('log_date', isoDate(from)).lte('log_date', isoDate(to));
-    return {for (final r in rows) r['log_date'] as String: r['minutes'] as int};
-  }
 
   // ---------------- Habits ----------------
   static Future<List<Rec>> habitPledges() async => List<Rec>.from(await db.from('habit_pledges').select().eq('user_id', _uid).eq('active', true));
@@ -456,6 +453,20 @@ class Repo {
     await AppState.instance.refreshUnread();
   }
 
+  /// Removes upcoming, not-yet-shown notifications that open [route], so a
+  /// tracker can replace its own schedule without touching anything else.
+  static Future<void> clearScheduled(String route) => db
+      .from('notifications')
+      .delete()
+      .eq('user_id', _uid)
+      .eq('route', route)
+      .isFilter('read_at', null)
+      .gt('scheduled_for', utc(DateTime.now()));
+
+  static Future<void> scheduleMany(List<Rec> rows) async {
+    if (rows.isNotEmpty) await db.from('notifications').insert(rows);
+  }
+
   static Future<void> schedule({required String title, String? body, String category = 'reminder', String? label, String? icon, String? route, required DateTime at}) =>
       db.from('notifications').insert({
         'title': title,
@@ -478,7 +489,11 @@ class Repo {
   static Future<void> refreshBadges() async {
     try {
       final res = await db.rpc('refresh_badges');
-      if (res is List && res.isNotEmpty) await AppState.instance.refreshUnread();
+      if (res is List && res.isNotEmpty) {
+        // SETOF text comes back as bare strings (or one-key rows on older PostgREST).
+        BadgeCenter.announce([for (final c in res) (c is Map ? c.values.first : c).toString()]);
+        await AppState.instance.refreshUnread();
+      }
     } catch (_) {}
   }
 
