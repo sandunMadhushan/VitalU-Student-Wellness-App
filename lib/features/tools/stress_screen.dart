@@ -617,7 +617,9 @@ class CalmMusicCard extends StatelessWidget {
                   Text(compact ? 'Calm music while you answer' : 'Calm corner', style: T.headlineSm),
                   const SizedBox(height: 2),
                   Text(playing ? 'Peaceful spa bells, playing on a loop' : 'Soft, peaceful bells to help you relax', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                  if (playing) ...[const SizedBox(height: 6), _Equalizer(color: c)],
+                  // Space is kept for the bars even when paused, so play/pause doesn't shift the page.
+                  const SizedBox(height: 6),
+                  SizedBox(height: 14, child: playing ? _Equalizer(color: c) : null),
                 ]),
               ),
               const SizedBox(width: 8),
@@ -655,14 +657,18 @@ class _EqualizerState extends State<_Equalizer> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: _c,
-        builder: (_, _) => Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          for (int i = 0; i < 5; i++)
-            Container(
-              width: 4,
-              height: 4 + 10 * (0.5 + 0.5 * math.sin(_c.value * 2 * math.pi * (1 + i * 0.3) + i)),
-              margin: const EdgeInsets.only(right: 3),
-              decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(2)),
-            ),
-        ]),
+        // A fixed-height box, so the moving bars never resize the card.
+        builder: (_, _) => SizedBox(
+          height: 14,
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            for (int i = 0; i < 5; i++)
+              Container(
+                width: 4,
+                height: 4 + 10 * (0.5 + 0.5 * math.sin(_c.value * 2 * math.pi * (1 + i * 0.3) + i)),
+                margin: const EdgeInsets.only(right: 3),
+                decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(2)),
+              ),
+          ]),
+        ),
       );
 }
