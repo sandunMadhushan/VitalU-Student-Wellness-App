@@ -115,7 +115,7 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
     final p = AppState.instance.profile;
     _dob = p?.dob;
     _sex = p?.sex;
-    _faculty = p?.faculty;
+    _faculty = facultyForEmail(p?.email) ?? p?.faculty;
     _year = p?.academicYear;
     _regNo.text = p?.registrationNumber ?? '';
     _nameInit.text = p?.nameWithInitials ?? '';
@@ -259,10 +259,14 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
             title: 'Faculty',
             subtitle: _faculty,
             value: _faculty == null ? 'Select' : null,
-            onTap: () async {
-              final v = await pickOption(context, 'Select your faculty', faculties, _faculty);
-              if (v != null) setState(() => _faculty = v);
-            },
+            // A faculty email decides the faculty, so it is not editable then.
+            chevron: facultyForEmail(AppState.instance.profile?.email) == null,
+            onTap: facultyForEmail(AppState.instance.profile?.email) != null
+                ? null
+                : () async {
+                    final v = await pickOption(context, 'Select your faculty', faculties, _faculty);
+                    if (v != null) setState(() => _faculty = v);
+                  },
           ),
           ListRow(
             icon: Symbols.calendar_month_rounded,

@@ -37,25 +37,19 @@ class AppIconTile extends StatelessWidget {
       );
 }
 
-/// Circular avatar of the signed-in student (uploaded photo, or a gender
-/// placeholder icon when none has been uploaded yet).
+/// Circular avatar of the signed-in student: their uploaded photo, or a
+/// head-and-shoulders silhouette until one is uploaded.
 class Avatar extends StatelessWidget {
   const Avatar({super.key, this.size = 32, this.ring = true, this.onTap});
   final double size;
   final bool ring;
   final VoidCallback? onTap;
 
-  Widget _placeholder() {
-    final isFemale = AppState.instance.profile?.isFemale ?? false;
-    final c = isFemale ? AppColors.cycle : AppColors.water;
-    return Container(
-      width: size,
-      height: size,
-      color: AppColors.tint(c),
-      alignment: Alignment.center,
-      child: Icon(isFemale ? Symbols.woman_rounded : Symbols.man_rounded, size: size * 0.6, color: c, fill: 1),
-    );
-  }
+  Widget _placeholder() => SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(painter: _BustPainter(AppColors.isDark ? const Color(0xFF3A3944) : const Color(0xFFDCE0E6), AppColors.isDark ? const Color(0xFF8B8899) : const Color(0xFFA4ABB6))),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +67,25 @@ class Avatar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A plain head-and-shoulders silhouette on a soft disc.
+class _BustPainter extends CustomPainter {
+  _BustPainter(this.bg, this.fg);
+  final Color bg;
+  final Color fg;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    canvas.drawRect(Offset.zero & size, Paint()..color = bg);
+    final p = Paint()..color = fg;
+    canvas.drawCircle(Offset(w / 2, h * 0.39), w * 0.19, p);
+    canvas.drawOval(Rect.fromCenter(center: Offset(w / 2, h * 0.98), width: w * 0.78, height: h * 0.62), p);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BustPainter old) => old.bg != bg || old.fg != fg;
 }
 
 // ---------------------------------------------------------------------------
@@ -553,7 +566,7 @@ class VSlider extends StatelessWidget {
 // Page scaffold, app bars & bottom navigation
 // ---------------------------------------------------------------------------
 
-enum NavTab { home, tools, diet, habits, library, profile }
+enum NavTab { home, tools, diet, library, profile }
 
 /// Page shell: an app bar from [header], a padded list of [children], an
 /// optional sticky [bottom] action and the tab bar when [nav] is set.
@@ -830,7 +843,6 @@ class BottomNav extends StatelessWidget {
     (NavTab.home, Symbols.home_rounded, 'Home', '/home'),
     (NavTab.tools, Symbols.vital_signs_rounded, 'Tools', '/tools'),
     (NavTab.diet, Symbols.nutrition_rounded, 'Diet', '/diet'),
-    (NavTab.habits, Symbols.local_fire_department_rounded, 'Habits', '/habits'),
     (NavTab.library, Symbols.menu_book_rounded, 'Learn', '/library'),
     (NavTab.profile, Symbols.account_circle_rounded, 'Profile', '/profile'),
   ];

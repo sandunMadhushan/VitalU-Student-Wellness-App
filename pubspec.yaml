@@ -45,6 +45,8 @@ flutter:
     - assets/body_shapes/
     - assets/badges/
     - assets/icons3d/
+    - assets/food_groups/
+    - assets/plate/
     - assets/sounds/
   fonts:
     - family: Manrope

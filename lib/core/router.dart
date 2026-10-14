@@ -9,21 +9,22 @@ import '../features/blood/report_explained_screen.dart';
 import '../features/diet/budget_screen.dart';
 import '../features/diet/diet_hub_screen.dart';
 import '../features/diet/diversity_screen.dart';
-import '../features/diet/meal_counter_screen.dart';
 import '../features/diet/meal_log_screen.dart';
-import '../features/diet/meal_planner_screen.dart';
 import '../features/diet/nutrition_today_screen.dart';
 import '../features/diet/pdqs_screen.dart';
 import '../features/diet/plate_screen.dart';
-import '../features/habits/habits_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/library/article_screen.dart';
 import '../features/library/library_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/splash_screen.dart';
 import '../features/profile/about_screen.dart';
+import '../features/profile/account_screen.dart';
+import '../features/profile/contact_screen.dart';
 import '../features/profile/edit_profile_screen.dart';
 import '../features/profile/profile_screen.dart';
+import '../features/profile/settings_screen.dart';
+import '../features/profile/summary_screen.dart';
 import '../features/progress/milestones_screen.dart';
 import '../features/progress/notifications_screen.dart';
 import '../features/progress/progress_screen.dart';
@@ -93,23 +94,25 @@ final appRouter = GoRouter(
     _r('/tools/cycle', (s) => const CycleScreen()),
     _r('/diet', (s) => const DietHubScreen(), tab: true),
     _r('/diet/log', (s) => MealLogScreen(initialType: s.uri.queryParameters['type'])),
-    _r('/diet/counter', (s) => const MealCounterScreen()),
+    _r('/diet/diary', (s) => const MealDiaryScreen()),
     _r('/diet/diversity', (s) => const DiversityScreen()),
     _r('/diet/plate', (s) => const PlateScreen()),
-    _r('/diet/planner', (s) => const MealPlannerScreen()),
     _r('/diet/budget', (s) => const BudgetScreen()),
     _r('/diet/today', (s) => const NutritionTodayScreen()),
     _r('/diet/pdqs', (s) => const PdqsScreen()),
     _r('/progress', (s) => const ProgressScreen()),
     _r('/milestones', (s) => const MilestonesScreen()),
     _r('/notifications', (s) => const NotificationsScreen()),
-    _r('/habits', (s) => const HabitsScreen(), tab: true),
     _r('/library', (s) => const LibraryScreen(), tab: true),
     _r('/library/article/:slug', (s) => ArticleScreen(slug: s.pathParameters['slug']!)),
     _r('/blood-report', (s) => const BloodUploadScreen()),
     _r('/blood-report/:id', (s) => ReportExplainedScreen(id: s.pathParameters['id']!)),
     _r('/profile', (s) => const ProfileScreen(), tab: true),
     _r('/profile/edit', (s) => const EditProfileScreen()),
+    _r('/profile/account', (s) => const AccountScreen()),
+    _r('/profile/summary', (s) => const SummaryScreen()),
+    _r('/settings', (s) => const SettingsScreen()),
+    _r('/contact', (s) => const ContactScreen()),
     _r('/about', (s) => const AboutScreen()),
     _r('/professionals', (s) => const ProfessionalsScreen()),
     _r('/help', (s) => const HelpScreen()),

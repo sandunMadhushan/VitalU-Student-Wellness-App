@@ -57,6 +57,8 @@ class Profile {
   double? get waistCm => _d(raw['waist_cm']);
   double? get hipCm => _d(raw['hip_cm']);
   String? get bodyShape => raw['body_shape'] as String?;
+  String? get accommodation => raw['accommodation'] as String?;
+  DateTime? get createdAt => raw['created_at'] == null ? null : DateTime.tryParse(raw['created_at']);
   List<String> get conditions => _sl(raw['health_conditions']);
   List<String> get customConditions => _sl(raw['custom_conditions']);
   List<String> get allergies => _sl(raw['allergies']);

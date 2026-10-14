@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/app_state.dart';
+import '../../data/catalog.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -38,6 +39,9 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _error = null);
     if (!_login && _name.text.trim().isEmpty) return setState(() => _error = 'Please tell us what to call you.');
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) return setState(() => _error = 'Please enter a valid email address.');
+    if (!_login && facultyForEmail(email) == null) {
+      return setState(() => _error = 'Please use your University of Peradeniya faculty email, for example name@agri.pdn.ac.lk.');
+    }
     if (!_login && !_passwordOk) return setState(() => _error = 'Use at least 8 characters with letters and numbers.');
     if (_login && pass.isEmpty) return setState(() => _error = 'Please enter your password.');
 
@@ -60,7 +64,8 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       }
     } on AuthException catch (e) {
-      setState(() => _error = e.message);
+      // The server rejects addresses outside the university's faculty domains.
+      setState(() => _error = e.message.contains('Database error') ? 'Please use your University of Peradeniya faculty email address.' : e.message);
     } catch (e) {
       setState(() => _error = 'Something went wrong. Please check your connection and try again.');
     } finally {
@@ -104,7 +109,7 @@ class _AuthScreenState extends State<AuthScreen> {
           const SizedBox(height: Sp.md),
           Text(_login ? 'Welcome back' : 'Create your account', style: T.headlineXlMobile),
           const SizedBox(height: 4),
-          Text(_login ? 'Log in to continue.' : 'Use your university email. It takes a minute.', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+          Text(_login ? 'Log in to continue.' : 'Use your faculty email, for example name@agri.pdn.ac.lk.', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
         ]),
         const SizedBox(height: Sp.xs),
         if (!_login)

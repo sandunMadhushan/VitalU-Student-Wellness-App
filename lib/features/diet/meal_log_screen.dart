@@ -1,16 +1,19 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
 import '../../data/catalog.dart';
+import '../../data/food_db.dart';
+import '../../data/models.dart';
 import '../../data/repo.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
+import 'diet_science.dart' show mealItems;
 
 String defaultMealType() {
   final h = DateTime.now().hour;
@@ -20,13 +23,28 @@ String defaultMealType() {
   return 'dinner';
 }
 
-const _tabs = <(String, String, IconData)>[
+const mealTabs = <(String, String, IconData)>[
   ('breakfast', 'Breakfast', Symbols.wb_twilight_rounded),
   ('lunch', 'Lunch', Symbols.wb_sunny_rounded),
   ('dinner', 'Dinner', Symbols.dark_mode_rounded),
   ('snack', 'Snack', Symbols.cookie_rounded),
 ];
 
+/// Small coloured dots for a food's MDD-W groups.
+Widget groupDots(List<String> groups, {double size = 8}) => Row(mainAxisSize: MainAxisSize.min, children: [
+      for (final g in groups.take(4))
+        if (groupByKey(g) != null)
+          Container(
+            width: size,
+            height: size,
+            margin: const EdgeInsets.only(right: 3),
+            decoration: BoxDecoration(color: Color(groupByKey(g)!.color), shape: BoxShape.circle),
+          ),
+    ]);
+
+/// Log a meal from the shared food database: pick foods, set real portions,
+/// and log them together. A photo can also be analysed, and anything missing
+/// can be added as a custom food.
 class MealLogScreen extends StatefulWidget {
   const MealLogScreen({super.key, this.initialType});
   final String? initialType;
@@ -38,37 +56,79 @@ class _MealLogScreenState extends State<MealLogScreen> {
   late String _type = widget.initialType ?? defaultMealType();
   String _cat = 'All';
   String _q = '';
-  bool _loading = true;
   bool _saving = false;
-  List<Rec> _items = [];
-  final List<Rec> _tray = [];
-  Rec? _detected;
+  final List<LoggedItem> _tray = [];
+  List<String> _recent = [];
   Uint8List? _photo;
+  LoggedItem? _detected;
   bool _analyzing = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadRecent();
   }
 
-  Future<void> _load() async {
+  /// Foods logged most often over the last two weeks, for one-tap re-logging.
+  Future<void> _loadRecent() async {
     try {
-      _items = await Repo.foodItems();
+      final now = DateTime.now();
+      final meals = await Repo.mealsBetween(now.subtract(const Duration(days: 14)), now);
+      final count = <String, int>{};
+      for (final m in meals) {
+        for (final i in mealItems(m)) {
+          if (foodByName(i.name) != null) count[i.name] = (count[i.name] ?? 0) + 1;
+        }
+      }
+      final names = count.keys.toList()..sort((a, b) => count[b]!.compareTo(count[a]!));
+      if (mounted) setState(() => _recent = names.take(8).toList());
     } catch (_) {}
-    if (mounted) setState(() => _loading = false);
   }
 
-  bool _inTray(Rec item) => _tray.any((t) => t['id'] == item['id'] && item['id'] != null || identical(t, item));
+  int get _total => _tray.fold(0, (a, i) => a + i.kcal);
 
-  void _toggle(Rec item) => setState(() {
-        final i = _tray.indexWhere((t) => (item['id'] != null && t['id'] == item['id']) || identical(t, item));
-        if (i >= 0) {
-          _tray.removeAt(i);
-        } else {
-          _tray.add(item);
-        }
-      });
+  Future<void> _pickPortion(Food food) async {
+    PortionUnit unit = food.units.first;
+    double qty = unit.min;
+    await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+          final kcal = (unit.kcalPerUnit * qty).round();
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(food.name, style: T.headlineMd),
+            const SizedBox(height: 6),
+            if (food.groups.isNotEmpty)
+              Wrap(spacing: 6, runSpacing: 6, children: [
+                for (final g in food.groups)
+                  if (groupByKey(g) != null) TagPill(groupByKey(g)!.label, bg: Color(groupByKey(g)!.color).withValues(alpha: 0.14), fg: Color(groupByKey(g)!.color)),
+              ]),
+            const SizedBox(height: Sp.md),
+            Text('How much did you have?', style: T.labelLg),
+            const SizedBox(height: 8),
+            if (food.units.length > 1) ...[
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (final u in food.units)
+                  VChip(pluralUnit(u.label), selected: u.label == unit.label, selectedColor: AppColors.nutrition, onTap: () => set(() {
+                        unit = u;
+                        qty = u.min;
+                      })),
+              ]),
+              const SizedBox(height: Sp.md),
+            ],
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              IconButton.outlined(icon: const Icon(Symbols.remove_rounded), onPressed: qty <= unit.min ? null : () => set(() => qty = (qty - unit.step).clamp(unit.min, unit.max))),
+              SizedBox(width: 130, child: Center(child: Text(portionLabel(qty, unit.label), style: T.labelLg.semi, textAlign: TextAlign.center))),
+              IconButton.outlined(icon: const Icon(Symbols.add_rounded), onPressed: qty >= unit.max ? null : () => set(() => qty = (qty + unit.step).clamp(unit.min, unit.max))),
+            ]),
+            const SizedBox(height: Sp.md),
+            Center(child: MetricValue('$kcal', unit: 'kcal', size: 30)),
+            const SizedBox(height: Sp.md),
+            PrimaryButton('Add to meal', color: AppColors.nutrition, onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.pop(ctx);
+              setState(() => _tray.add(LoggedItem.of(food, unit, qty)));
+            }),
+          ]);
+        }));
+  }
 
   Future<void> _snap() async {
     final src = await showVSheet<ImageSource>(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -93,18 +153,8 @@ class _MealLogScreenState extends State<MealLogScreen> {
       final res = await db.functions.invoke('analyze-meal', body: {'image_base64': base64Encode(bytes), 'mime_type': 'image/jpeg'});
       final data = res.data;
       if (data is Map && data['name'] != null) {
-        setState(() => _detected = {
-              'id': null,
-              'name': data['name'],
-              'source': 'Snapped plate',
-              'kcal': (data['kcal'] as num?)?.round() ?? 0,
-              'carbs_g': (data['carbs_g'] as num?)?.round() ?? 0,
-              'protein_g': (data['protein_g'] as num?)?.round() ?? 0,
-              'fat_g': (data['fat_g'] as num?)?.round() ?? 0,
-              'food_groups': List<String>.from(data['food_groups'] ?? const []),
-              'tags': List<String>.from(data['tags'] ?? const []),
-              'icon': 'restaurant',
-            });
+        final groups = {for (final g in List<String>.from(data['food_groups'] ?? const [])) ?legacyGroupKey(g)}.toList();
+        setState(() => _detected = LoggedItem('${data['name']}', 1, 'serving', (data['kcal'] as num?)?.round() ?? 0, groups: groups));
       } else {
         throw Exception(data is Map ? data['error'] : 'No result');
       }
@@ -122,36 +172,42 @@ class _MealLogScreenState extends State<MealLogScreen> {
     await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('Custom food', style: T.headlineMd),
+            const SizedBox(height: 4),
+            Text('For something that is not in the list.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.md),
-            VTextField(controller: name, hint: 'e.g. Rice & curry with dhal', icon: Symbols.restaurant_rounded),
+            VTextField(controller: name, hint: 'For example, rice and curry with jackfruit', icon: Symbols.restaurant_rounded),
             const SizedBox(height: Sp.sm),
-            VTextField(controller: kcal, hint: 'Approx. calories (optional)', icon: Symbols.bolt_rounded, keyboard: TextInputType.number),
+            VTextField(controller: kcal, hint: 'About how many kcal? (optional)', icon: Symbols.bolt_rounded, keyboard: TextInputType.number),
             const SizedBox(height: Sp.md),
-            Text('Food groups in this meal', style: T.labelLg),
+            Text('Food groups in it', style: T.labelLg),
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final g in foodGroups) VChip(g.label, icon: g.icon, selected: groups.contains(g.key), selectedColor: AppColors.nutrition, onTap: () => set(() => groups.contains(g.key) ? groups.remove(g.key) : groups.add(g.key))),
+              for (final g in foodGroups)
+                VChip(g.label, selected: groups.contains(g.key), dense: true, selectedColor: Color(g.color), onTap: () => set(() => groups.contains(g.key) ? groups.remove(g.key) : groups.add(g.key))),
             ]),
             const SizedBox(height: Sp.md),
-            PrimaryButton('Add', onTap: () {
+            PrimaryButton('Add to meal', color: AppColors.nutrition, onTap: () {
               if (name.text.trim().isEmpty) return toast(ctx, 'Give your food a name', error: true);
-              _toggle({'id': null, 'name': name.text.trim(), 'source': 'Custom', 'kcal': int.tryParse(kcal.text) ?? 0, 'carbs_g': 0, 'protein_g': 0, 'fat_g': 0, 'food_groups': groups.toList(), 'icon': 'restaurant'});
+              setState(() => _tray.add(LoggedItem(name.text.trim(), 1, 'serving', int.tryParse(kcal.text) ?? 0, groups: groups.toList())));
               Navigator.pop(ctx);
             }),
           ]);
         }));
   }
 
-  Future<void> _logTray() async {
+  Future<void> _log() async {
     if (_tray.isEmpty) return;
     setState(() => _saving = true);
     try {
-      for (final item in _tray) {
-        await Repo.addMealFromItem(item, _type);
-      }
+      await Repo.logMeal(_type, List.of(_tray), source: _photo != null && _tray.contains(_detected) ? 'Snapped plate' : 'Meal log');
       if (mounted) {
-        toast(context, '${_tray.length} food${_tray.length == 1 ? '' : 's'} logged for ${_tabs.firstWhere((t) => t.$1 == _type).$2.toLowerCase()}');
-        setState(() => _tray.clear());
+        toast(context, 'Logged ${_tray.length} food${_tray.length == 1 ? '' : 's'} · $_total kcal');
+        setState(() {
+          _tray.clear();
+          _photo = null;
+          _detected = null;
+        });
+        _loadRecent();
       }
     } catch (_) {
       if (mounted) toast(context, 'Could not log your meal. Please try again.', error: true);
@@ -162,30 +218,35 @@ class _MealLogScreenState extends State<MealLogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _items.where((i) {
-      if (_cat != 'All' && i['category'] != _cat) return false;
-      if (_q.isNotEmpty && !(i['name'] as String).toLowerCase().contains(_q.toLowerCase())) return false;
-      if (_q.isEmpty && _cat == 'All' && !(List<String>.from(i['meal_types'] ?? const [])).contains(_type)) return false;
-      return true;
-    }).toList();
-
+    final label = mealTabs.firstWhere((t) => t.$1 == _type).$2;
     return VPage(
       header: TitleHeader('Log a meal', onLeading: () => goBack(context, '/diet')),
-      bottom: _tray.isEmpty ? null : _trayBar(),
+      bottom: _tray.isEmpty
+          ? null
+          : Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  Text('$_total kcal', style: T.labelLg.semi),
+                  Text('${_tray.length} food${_tray.length == 1 ? '' : 's'} · ${{for (final i in _tray) ...i.groups}.length} food groups', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                ]),
+              ),
+              PrimaryButton('Log ${label.toLowerCase()}', expand: false, color: AppColors.nutrition, loading: _saving, onTap: _log),
+            ]),
       children: [
         SizedBox(
           width: double.infinity,
-          child: Segmented(small: false, options: [for (final t in _tabs) t.$2], value: _tabs.firstWhere((t) => t.$1 == _type).$2, onChanged: (v) => setState(() => _type = _tabs.firstWhere((t) => t.$2 == v).$1)),
+          child: Segmented(small: false, options: [for (final t in mealTabs) t.$2], value: label, onChanged: (v) => setState(() => _type = mealTabs.firstWhere((t) => t.$2 == v).$1)),
         ),
+        if (_tray.isNotEmpty) ...[
+          SectionHeader('Your $label'.toLowerCase().replaceFirst('your', 'Your'), trailing: Text('$_total kcal', style: T.labelLg.semi.c(AppColors.nutrition))),
+          ListGroup(children: [for (int i = 0; i < _tray.length; i++) _trayRow(i)]),
+        ],
         Row(children: [
           Expanded(
             child: TextField(
               onChanged: (v) => setState(() => _q = v),
               style: T.bodyLg,
-              decoration: InputDecoration(
-                prefixIcon: Icon(Symbols.search_rounded, color: AppColors.onSurfaceVariant, size: 20),
-                hintText: 'Search foods',
-              ),
+              decoration: InputDecoration(prefixIcon: Icon(Symbols.search_rounded, color: AppColors.onSurfaceVariant, size: 20), hintText: 'Search foods'),
             ),
           ),
           const SizedBox(width: 8),
@@ -197,21 +258,74 @@ class _MealLogScreenState extends State<MealLogScreen> {
           ),
         ]),
         if (_photo != null || _analyzing) _snapCard(),
+        if (_q.isEmpty && _recent.isNotEmpty) ...[
+          const SectionHeader('Your usual foods'),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final n in _recent) VChip(n, icon: Symbols.history_rounded, dense: true, onTap: () => _pickPortion(foodByName(n)!)),
+          ]),
+        ],
         FullBleed(
           child: ChipRow(children: [
-            for (final c in const ['All', 'Dining Hall', 'Dorm Quick-Fix', 'Grab & Go'])
-              VChip(c == 'Dining Hall' ? 'Canteen' : (c == 'Dorm Quick-Fix' ? 'Hostel' : c), selected: _cat == c, onTap: () => setState(() => _cat = c)),
+            for (final c in ['All', for (final cat in foodDatabase) cat.name]) VChip(c, selected: _cat == c, selectedColor: AppColors.nutrition, onTap: () => setState(() => _cat = c)),
           ]),
         ),
-        if (_loading)
-          const Loading()
-        else if (filtered.isEmpty)
-          Text('No matches. Add it as a custom food.', style: T.bodyMd.c(AppColors.onSurfaceVariant))
-        else
-          ListGroup(children: [for (final i in filtered) _foodRow(i)]),
-        SoftButton('Custom food', icon: Symbols.add_rounded, onTap: _custom),
-        const PrivacyNote('Photos are analysed to estimate food groups and energy. Adjust if something looks off.'),
+        ..._foodList(),
+        SoftButton('Add a custom food', icon: Symbols.add_rounded, onTap: _custom),
+        const PrivacyNote('Calorie values are estimates based on common recipes and portions.'),
       ],
+    );
+  }
+
+  List<Widget> _foodList() {
+    if (_q.isEmpty && _cat == 'All') {
+      return [
+        for (final cat in foodDatabase) ...[
+          SectionHeader(cat.name),
+          ListGroup(children: [for (final f in cat.foods) _foodRow(f)]),
+        ],
+      ];
+    }
+    final results = [
+      for (final cat in foodDatabase)
+        if (_cat == 'All' || _cat == cat.name)
+          for (final f in cat.foods)
+            if (_q.isEmpty || f.name.toLowerCase().contains(_q.toLowerCase())) f,
+    ];
+    if (results.isEmpty) return [Text('No matches. Try another word, or add it as a custom food.', style: T.bodyMd.c(AppColors.onSurfaceVariant))];
+    return [ListGroup(children: [for (final f in results) _foodRow(f)])];
+  }
+
+  Widget _foodRow(Food f) => InkWell(
+        onTap: () => _pickPortion(f),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Sp.md, 12, 8, 12),
+          child: Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(f.name, style: T.bodyLg.w(FontWeight.w600)),
+                const SizedBox(height: 3),
+                Row(children: [
+                  groupDots(f.groups),
+                  if (f.groups.isNotEmpty) const SizedBox(width: 4),
+                  Text('${f.units.first.kcalPerUnit.round()} kcal per ${f.units.first.label}', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                ]),
+              ]),
+            ),
+            Icon(Symbols.add_circle_rounded, color: AppColors.nutrition, size: 26, fill: 1),
+          ]),
+        ),
+      );
+
+  Widget _trayRow(int i) {
+    final item = _tray[i];
+    return ListRow(
+      title: item.name,
+      subtitle: item.portion,
+      chevron: false,
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text('${item.kcal} kcal', style: T.labelLg.semi.tnum),
+        IconButton(tooltip: 'Remove', icon: const Icon(Symbols.close_rounded, size: 18), onPressed: () => setState(() => _tray.removeAt(i))),
+      ]),
     );
   }
 
@@ -239,54 +353,112 @@ class _MealLogScreenState extends State<MealLogScreen> {
         if (d != null)
           Padding(
             padding: const EdgeInsets.all(Sp.md),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Row(children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(d['name'], style: T.headlineSm),
-                  const SizedBox(height: 2),
-                  Text('About ${d['kcal']} kcal', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-                  const SizedBox(height: 8),
-                  Wrap(spacing: 6, runSpacing: 6, children: [
-                    for (final g in List<String>.from(d['food_groups'] ?? const []).take(4)) TagPill(groupByKey(g)?.label ?? g, bg: AppColors.tint(AppColors.nutrition), fg: AppColors.nutrition),
-                  ]),
+                  Text(d.name, style: T.headlineSm),
+                  Text('About ${d.kcal} kcal', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 6),
+                  groupDots(d.groups, size: 10),
                 ]),
               ),
-              _addButton(d),
+              SoftButton(_tray.contains(d) ? 'Added' : 'Add', expand: false, icon: _tray.contains(d) ? Symbols.check_rounded : Symbols.add_rounded, onTap: _tray.contains(d) ? null : () => setState(() => _tray.add(d))),
+            ]),
+          ),
+      ]),
+    );
+  }
+}
+
+/// Meal diary: the last two weeks of logged meals, day by day.
+class MealDiaryScreen extends StatefulWidget {
+  const MealDiaryScreen({super.key});
+  @override
+  State<MealDiaryScreen> createState() => _MealDiaryScreenState();
+}
+
+class _MealDiaryScreenState extends State<MealDiaryScreen> {
+  bool _loading = true;
+  List<Rec> _meals = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final now = DateTime.now();
+      _meals = (await Repo.mealsBetween(now.subtract(const Duration(days: 13)), now)).where((m) => m['status'] == 'logged').toList();
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final byDay = <String, List<Rec>>{};
+    for (final m in _meals) {
+      byDay.putIfAbsent(m['meal_date'] as String, () => []).add(m);
+    }
+    final days = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
+    final target = AppState.instance.profile?.calorieTarget ?? 2100;
+    return VPage(
+      header: TitleHeader('Meal diary', onLeading: () => goBack(context, '/diet')),
+      onRefresh: _load,
+      bottom: PrimaryButton('Log a meal', leadingIcon: Symbols.add_rounded, color: AppColors.nutrition, onTap: () async {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MealLogScreen()));
+        _load();
+      }),
+      children: _loading
+          ? [const Loading()]
+          : days.isEmpty
+              ? [const EmptyState(icon: Symbols.menu_book_rounded, title: 'Your diary is empty', text: 'Meals you log appear here, day by day.')]
+              : [
+                  Text('The last two weeks of meals you logged.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+                  for (final d in days) _day(d, byDay[d]!, target),
+                ],
+    );
+  }
+
+  Widget _day(String date, List<Rec> meals, int target) {
+    final day = DateTime.parse(date);
+    final kcal = meals.fold<int>(0, (a, m) => a + (m['kcal'] as num).toInt());
+    final groups = {for (final m in meals) for (final g in List<String>.from(m['food_groups'] ?? const [])) ?legacyGroupKey(g)};
+    final today = isoDate(DateTime.now()) == date;
+    return VCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Expanded(child: Text(today ? 'Today' : _fmtDay(day), style: T.headlineSm)),
+          TagPill('${groups.length}/10 groups', bg: AppColors.tint(groups.length >= 5 ? AppColors.tertiary : AppColors.warning), fg: groups.length >= 5 ? AppColors.tertiary : AppColors.warning),
+        ]),
+        const SizedBox(height: 6),
+        Row(children: [
+          Text('${Fmt.thousands(kcal)} kcal', style: T.labelLg.tnum),
+          const SizedBox(width: 10),
+          Expanded(child: Bar(value: kcal / target, height: 6, color: AppColors.nutrition)),
+        ]),
+        const SizedBox(height: 8),
+        for (final m in meals)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(
+                width: 76,
+                child: Text((m['meal_type'] as String)[0].toUpperCase() + (m['meal_type'] as String).substring(1), style: T.labelMd.c(AppColors.nutrition)),
+              ),
+              Expanded(child: Text('${m['name']}', style: T.bodySm)),
+              const SizedBox(width: 6),
+              Text('${m['kcal']} kcal', style: T.labelSm.tnum.c(AppColors.onSurfaceVariant)),
             ]),
           ),
       ]),
     );
   }
 
-  Widget _addButton(Rec item) {
-    final on = _inTray(item);
-    return IconButton(
-      tooltip: on ? 'Remove from tray' : 'Add to tray',
-      onPressed: () => _toggle(item),
-      icon: Icon(on ? Symbols.check_circle_rounded : Symbols.add_circle_rounded, size: 28, fill: on ? 1 : 0, color: on ? AppColors.primary : AppColors.onSurfaceVariant),
-    );
-  }
-
-  Widget _foodRow(Rec i) => ListRow(
-        icon: iconByName(i['icon']),
-        color: AppColors.nutrition,
-        title: i['name'],
-        subtitle: '${i['kcal']} kcal${i['source'] != null ? ' · ${i['source']}' : ''}',
-        trailing: _addButton(i),
-        onTap: () => _toggle(i),
-      );
-
-  Widget _trayBar() {
-    final kcal = _tray.fold<int>(0, (a, t) => a + ((t['kcal'] as num?)?.toInt() ?? 0));
-    final label = _tabs.firstWhere((t) => t.$1 == _type).$2;
-    return Row(children: [
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text('${_tray.length} ${_tray.length == 1 ? 'food' : 'foods'} selected', style: T.labelLg.semi),
-          Text('About $kcal kcal', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-        ]),
-      ),
-      PrimaryButton('Log ${label.toLowerCase()}', expand: false, loading: _saving, onTap: _logTray),
-    ]);
+  String _fmtDay(DateTime d) {
+    const names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${names[d.weekday - 1]}, ${d.day} ${months[d.month - 1]}';
   }
 }

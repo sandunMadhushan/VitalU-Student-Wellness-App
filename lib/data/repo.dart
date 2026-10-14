@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_state.dart';
 import '../core/badges.dart';
 import '../core/push.dart';
+import 'food_db.dart';
 import 'models.dart';
 
 typedef Rec = Map<String, dynamic>;
@@ -199,50 +200,46 @@ class Repo {
     required String mealType,
     required String name,
     String? source,
-    String? foodItemId,
     int kcal = 0,
-    int carbs = 0,
-    int protein = 0,
-    int fat = 0,
     List<String> groups = const [],
+    List<LoggedItem> items = const [],
     String status = 'logged',
     DateTime? date,
-    String? plannedTime,
   }) async {
     final d = date ?? DateTime.now();
-    await db.from('meals').insert({
+    final row = <String, dynamic>{
       'meal_type': mealType,
       'name': name,
       'source': source,
-      'food_item_id': foodItemId,
       'kcal': kcal,
-      'carbs_g': carbs,
-      'protein_g': protein,
-      'fat_g': fat,
       'food_groups': groups,
       'status': status,
       'meal_date': isoDate(d),
-      'planned_time': plannedTime,
-    });
+      if (items.isNotEmpty) 'items': [for (final i in items) i.toJson()],
+    };
+    try {
+      await db.from('meals').insert(row);
+    } on PostgrestException catch (e) {
+      // meals.items arrives with a database migration; log without it until then.
+      if (e.code != 'PGRST204' && e.code != '42703') rethrow;
+      await db.from('meals').insert({...row}..remove('items'));
+    }
     if (status == 'logged' && groups.isNotEmpty) {
-      await db.from('diversity_logs').insert([for (final g in groups) {'food_group': g, 'food_name': name, 'log_date': isoDate(d)}]);
+      String foodFor(String g) => items.where((i) => i.groups.contains(g)).map((i) => i.name).firstOrNull ?? name;
+      await db.from('diversity_logs').insert([for (final g in groups) {'food_group': g, 'food_name': foodFor(g), 'log_date': isoDate(d)}]);
     }
     await refreshBadges();
   }
 
-  static Future<void> addMealFromItem(Rec item, String mealType, {String status = 'logged', DateTime? date, String? plannedTime}) => addMeal(
+  /// Logs a meal built from foods in the shared food database.
+  static Future<void> logMeal(String mealType, List<LoggedItem> items, {String source = 'Meal log', DateTime? date}) => addMeal(
         mealType: mealType,
-        name: item['name'],
-        source: item['source'],
-        foodItemId: item['id'],
-        kcal: item['kcal'] ?? 0,
-        carbs: item['carbs_g'] ?? 0,
-        protein: item['protein_g'] ?? 0,
-        fat: item['fat_g'] ?? 0,
-        groups: List<String>.from(item['food_groups'] ?? const []),
-        status: status,
+        name: items.map((i) => '${i.name} (${i.portion})').join(', '),
+        source: source,
+        kcal: items.fold(0, (a, i) => a + i.kcal),
+        groups: {for (final i in items) ...i.groups}.toList(),
+        items: items,
         date: date,
-        plannedTime: plannedTime,
       );
 
   static Future<void> confirmMeal(Rec meal) async {
@@ -256,7 +253,6 @@ class Repo {
 
   static Future<void> deleteMeal(String id) => db.from('meals').delete().eq('id', id);
 
-  static Future<List<Rec>> foodItems() async => List<Rec>.from(await db.from('food_items').select().order('sort_order'));
 
   // ---------------- Diversity ----------------
   static Future<List<Rec>> diversityBetween(DateTime from, DateTime to) async => List<Rec>.from(
@@ -268,20 +264,6 @@ class Repo {
   }
 
   // ---------------- Budget planner ----------------
-  /// food_item_id -> servings per week
-  static Future<Map<String, int>> budgetItems(DateTime week) async {
-    final rows = await db.from('budget_plan_items').select('food_item_id, servings').eq('user_id', _uid).eq('week_start', isoDate(week));
-    return {for (final r in rows) r['food_item_id'] as String: (r['servings'] as num).toInt()};
-  }
-
-  static Future<void> setBudgetItem(DateTime week, String itemId, bool on, {int servings = 5}) async {
-    if (on) {
-      await db.from('budget_plan_items').upsert({'user_id': _uid, 'week_start': isoDate(week), 'food_item_id': itemId, 'servings': servings}, onConflict: 'user_id,week_start,food_item_id');
-    } else {
-      await db.from('budget_plan_items').delete().eq('user_id', _uid).eq('week_start', isoDate(week)).eq('food_item_id', itemId);
-    }
-  }
-
   static Future<void> saveGroceryList(DateTime week, double budget, double total, List<Rec> items) =>
       db.from('grocery_lists').insert({'week_start': isoDate(week), 'budget': budget, 'total': total, 'items': items});
 
@@ -353,6 +335,41 @@ class Repo {
     return LatestVitals(bp: bp, fastingGlucose: fbg, triglycerides: tg);
   }
 
+  // ---------------- Usage summary ----------------
+
+  static Future<int> mealsLoggedCount() async => (await db.from('meals').select('id').eq('user_id', _uid).eq('status', 'logged')).length;
+
+  /// How many times each health tool has been used, by tool key.
+  static Future<Map<String, int>> toolUseCounts() async {
+    final rows = await db.from('tool_results').select('tool').eq('user_id', _uid);
+    final m = <String, int>{};
+    for (final r in rows) {
+      m[r['tool'] as String] = (m[r['tool'] as String] ?? 0) + 1;
+    }
+    return m;
+  }
+
+  /// Distinct days in the last [days] on which anything was tracked (water,
+  /// meals, activity, sleep or mood).
+  static Future<Set<String>> activeDays(int days) async {
+    final id = _uid;
+    final from = dayStart(DateTime.now()).subtract(Duration(days: days - 1));
+    final r = await Future.wait([
+      db.from('water_logs').select('logged_at').eq('user_id', id).gte('logged_at', utc(from)),
+      db.from('meals').select('meal_date').eq('user_id', id).eq('status', 'logged').gte('meal_date', isoDate(from)),
+      db.from('activity_logs').select('activity_date').eq('user_id', id).gte('activity_date', isoDate(from)),
+      db.from('sleep_logs').select('sleep_date').eq('user_id', id).gte('sleep_date', isoDate(from)),
+      db.from('mood_logs').select('logged_at').eq('user_id', id).gte('logged_at', utc(from)),
+    ]);
+    return {
+      for (final x in r[0]) isoDate(DateTime.parse(x['logged_at']).toLocal()),
+      for (final x in r[1]) x['meal_date'] as String,
+      for (final x in r[2]) x['activity_date'] as String,
+      for (final x in r[3]) x['sleep_date'] as String,
+      for (final x in r[4]) isoDate(DateTime.parse(x['logged_at']).toLocal()),
+    };
+  }
+
   // ---------------- Anonymous consultation ----------------
 
   /// Sends a question to the health centre without any link to the account.
@@ -405,17 +422,6 @@ class Repo {
 
   static Future<List<Rec>> dailyLogsSince(DateTime from) async =>
       List<Rec>.from(await db.from('menstrual_daily_logs').select().eq('user_id', _uid).gte('log_date', isoDate(from)).order('log_date'));
-
-  // ---------------- Habits ----------------
-  static Future<List<Rec>> habitPledges() async => List<Rec>.from(await db.from('habit_pledges').select().eq('user_id', _uid).eq('active', true));
-
-  static Future<void> setHabitPledge(String key, bool active) async {
-    if (active) {
-      await db.from('habit_pledges').upsert({'user_id': _uid, 'habit_key': key, 'active': true, 'started_at': isoDate(DateTime.now())}, onConflict: 'user_id,habit_key');
-    } else {
-      await db.from('habit_pledges').update({'active': false}).eq('user_id', _uid).eq('habit_key', key);
-    }
-  }
 
   // ---------------- Assessments ----------------
   static Future<List<Rec>> windows() async => List<Rec>.from(await db.from('assessment_windows').select().order('opens_at'));

@@ -117,7 +117,7 @@ $('#logout').addEventListener('click', async () => {
 // Tabs
 // ---------------------------------------------------------------------------
 
-const renderers = { overview: renderOverview, analytics: renderAnalytics, schedule: renderSchedule, questions: renderQuestions, consults: renderConsults };
+const renderers = { overview: renderOverview, analytics: renderAnalytics, completion: renderCompletion, schedule: renderSchedule, questions: renderQuestions, consults: renderConsults };
 
 function openTab(name) {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
@@ -282,6 +282,74 @@ function downloadCsv(data) {
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = `vitalu-assessment-summary-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
+}
+
+// ---------------------------------------------------------------------------
+// Completion
+// ---------------------------------------------------------------------------
+
+// Who has completed each window, by registration number. This shows
+// participation only: never answers, scores or names.
+const completion = { window: '', reg: '', status: '' };
+const STATUS = { completed: ['Completed', 'good'], in_progress: ['In progress', 'info'], not_started: ['Not started', ''] };
+
+async function renderCompletion() {
+  const el = $('#tab-completion');
+  const windows = state.overview?.windows || [];
+  el.innerHTML = `
+    <div class="head"><div><h1>Completion</h1><p class="muted">Who has completed each assessment window, by registration number. Answers are never shown here.</p></div>
+      <button class="btn" id="c-csv">Download CSV</button></div>
+    <form class="card filters" id="c-form">
+      <label>Assessment window<select id="c-window"><option value="">All windows</option>
+        ${windows.map((w) => `<option value="${esc(w.id)}" ${completion.window === w.id ? 'selected' : ''}>${esc(w.term)} · ${esc(w.faculty || 'All faculties')}</option>`).join('')}</select></label>
+      <label>Status<select id="c-status"><option value="">Any status</option>
+        ${Object.entries(STATUS).map(([k, [l]]) => `<option value="${k}" ${completion.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label>Registration number<input id="c-reg" type="search" placeholder="e.g. AG/2021/045" value="${esc(completion.reg)}"></label>
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+    <div id="c-result"><p class="muted">Loading…</p></div>`;
+  $('#c-window').onchange = (e) => ((completion.window = e.target.value), renderCompletion());
+  $('#c-status').onchange = (e) => ((completion.status = e.target.value), renderCompletion());
+  $('#c-form').onsubmit = (e) => {
+    e.preventDefault();
+    completion.reg = $('#c-reg').value.trim();
+    renderCompletion();
+  };
+
+  const { data, error } = await sb.rpc('admin_assessment_completion', { p_window: completion.window || null, p_registration: completion.reg || null });
+  const box = $('#c-result');
+  if (error) return (box.innerHTML = `<div class="notice">Could not load completion: ${esc(error.message)}. Has the latest database migration been applied?</div>`);
+  const rows = (data || []).filter((r) => !completion.status || r.status === completion.status);
+  const done = rows.filter((r) => r.status === 'completed').length;
+  $('#c-csv').disabled = !rows.length;
+  $('#c-csv').onclick = () => {
+    const lines = [['registration_number', 'faculty', 'academic_year', 'window', 'status', 'completed_at'], ...rows.map((r) => [r.registration_number, r.faculty, r.academic_year, r.window_term, r.status, r.completed_at || ''])];
+    const csv = lines.map((l) => l.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `vitalu-assessment-completion-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
+  box.innerHTML = `
+    <div class="grid k4">
+      <div class="card kpi"><div class="label">Students listed</div><div class="value">${rows.length}</div></div>
+      <div class="card kpi"><div class="label">Completed</div><div class="value">${done}</div><div class="fine">${pct(done, rows.length)}% of those listed</div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Registration number</th><th>Faculty</th><th>Year</th><th>Window</th><th>Status</th><th>Completed on</th></tr></thead><tbody>
+    ${
+      rows.length
+        ? rows
+            .slice(0, 1000)
+            .map((r) => {
+              const [label, cls] = STATUS[r.status] || [r.status, ''];
+              return `<tr><td><strong>${esc(r.registration_number || '–')}</strong></td><td>${esc((r.faculty || '').replace('Faculty of ', ''))}</td>
+                <td>${esc(r.academic_year || '')}</td><td>${esc(r.window_term)}</td><td><span class="pill ${cls}">${label}</span></td>
+                <td>${r.completed_at ? fmtDate(r.completed_at) : ''}</td></tr>`;
+            })
+            .join('')
+        : '<tr><td colspan="6" class="muted">No students match.</td></tr>'
+    }
+    </tbody></table></div>${rows.length > 1000 ? '<p class="fine">Showing the first 1,000. Download the CSV for the full list.</p>' : ''}</div>`;
 }
 
 // ---------------------------------------------------------------------------

@@ -40,9 +40,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final List<String> _allergies = [...p.allergies];
   final _allergyCtrl = TextEditingController();
   late final List<Map<String, dynamic>> _family = [...p.familyHistory];
-  late double _water = p.waterGoalMl / 1000;
-  late double _sleep = p.sleepGoalHours;
   late String _activity = p.activityLevel;
+  late String? _accommodation = p.accommodation;
+  late String? _shape = p.bodyShape;
   bool _saving = false;
 
 
@@ -57,6 +57,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _year == null) {
       return toast(context, 'Name with initials, username, registration number, date of birth, sex, faculty and batch are required.', error: true);
     }
+    final h = _h.metric, w = _w.metric, wa = _waist.metric, hi = _hip.metric;
+    final bad = (h != null && (h < 100 || h > 230))
+        ? 'Height'
+        : (w != null && (w < 25 || w > 250))
+            ? 'Weight'
+            : (wa != null && (wa < 40 || wa > 200))
+                ? 'Waist'
+                : (hi != null && (hi < 50 || hi > 200))
+                    ? 'Hip'
+                    : null;
+    if (bad != null) return toast(context, '$bad looks unusual. Please check it.', error: true);
     setState(() {
       _saving = true;
       _usernameError = null;
@@ -67,7 +78,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return;
       }
       final measured = [_h.metric, _w.metric, _waist.metric, _hip.metric].any((v) => v != null);
-      await AppState.instance.updateProfile({
+      final values = <String, dynamic>{
         'full_name': _name.text.trim().isEmpty ? null : _name.text.trim(),
         'name_with_initials': _nameInit.text.trim(),
         'username': username,
@@ -86,10 +97,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'medications': _meds,
         'allergies': _allergies,
         'family_history': _family,
-        'water_goal_ml': (_water * 1000).round(),
-        'sleep_goal_hours': _sleep,
         'activity_level': _activity,
-      });
+        'accommodation': ?_accommodation,
+        'body_shape': ?_shape,
+      };
+      try {
+        await AppState.instance.updateProfile(values);
+      } on PostgrestException catch (e) {
+        // Accommodation and body shape arrive with a database migration.
+        if (e.code != 'PGRST204' && e.code != '42703') rethrow;
+        await AppState.instance.updateProfile({...values}..remove('accommodation')..remove('body_shape'));
+      }
       if (mounted) {
         toast(context, 'Profile updated');
         goBack(context, '/profile');
@@ -116,18 +134,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: T.bodyLg)),
           MeasureField(controller: m.controller, units: [m.metricUnit, m.altUnit], unit: m.unit, onUnit: (u) => setState(() => m.switchTo(u))),
-        ]),
-      );
-
-  Widget _stepRow(IconData icon, Color c, String label, String value, double v, double min, double max, double step, ValueChanged<double> onChanged) => Padding(
-        padding: const EdgeInsets.fromLTRB(Sp.md, 6, 8, 6),
-        child: Row(children: [
-          IconCircle(icon, size: 32, iconSize: 18, fg: c, radius: 8, fill: 1),
-          const SizedBox(width: 12),
-          Expanded(child: Text(label, style: T.bodyLg)),
-          IconButton(tooltip: 'Decrease', icon: const Icon(Symbols.remove_rounded), onPressed: v <= min ? null : () => onChanged((v - step).clamp(min, max))),
-          SizedBox(width: 64, child: Text(value, style: T.labelLg.semi.tnum, textAlign: TextAlign.center)),
-          IconButton(tooltip: 'Increase', icon: const Icon(Symbols.add_rounded), onPressed: v >= max ? null : () => onChanged((v + step).clamp(min, max))),
         ]),
       );
 
@@ -220,10 +226,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               title: 'Faculty',
               subtitle: _faculty,
               value: _faculty == null ? 'Select' : null,
-              onTap: () async {
-                final v = await pickOption(context, 'Faculty', faculties, _faculty);
-                if (v != null) setState(() => _faculty = v);
-              },
+              chevron: facultyForEmail(p.email) == null,
+              onTap: facultyForEmail(p.email) != null
+                  ? null
+                  : () async {
+                      final v = await pickOption(context, 'Faculty', faculties, _faculty);
+                      if (v != null) setState(() => _faculty = v);
+                    },
             ),
             ListRow(
               icon: Symbols.calendar_month_rounded,
@@ -233,6 +242,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onTap: () async {
                 final v = await pickOption(context, 'Select your batch', academicYears, _year);
                 if (v != null) setState(() => _year = v);
+              },
+            ),
+            ListRow(
+              icon: Symbols.home_rounded,
+              color: AppColors.mind,
+              title: 'Accommodation',
+              value: accommodationOptions[_accommodation] ?? 'Select',
+              onTap: () async {
+                final v = await pickOption(context, 'Where do you live during the semester?', accommodationOptions.values.toList(), accommodationOptions[_accommodation]);
+                if (v != null) setState(() => _accommodation = accommodationOptions.entries.firstWhere((e) => e.value == v).key);
               },
             ),
           ]),
@@ -245,6 +264,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _measureRow(Symbols.monitor_weight_rounded, AppColors.body, 'Weight', _w),
             _measureRow(Symbols.straighten_rounded, AppColors.body, 'Waist', _waist),
             _measureRow(Symbols.accessibility_new_rounded, AppColors.body, 'Hip', _hip),
+            ListRow(
+              icon: Symbols.accessibility_rounded,
+              color: AppColors.body,
+              title: 'Body shape',
+              value: bodyShapeByKey(_shape)?.label ?? 'Select',
+              onTap: () async {
+                final v = await pickOption(context, 'Which body shape is closest to yours?', [for (final b in bodyShapes) b.label], bodyShapeByKey(_shape)?.label);
+                if (v != null) setState(() => _shape = bodyShapes.firstWhere((b) => b.label == v).key);
+              },
+            ),
           ],
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -291,9 +320,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           for (final f in _family) _removable(Symbols.family_restroom_rounded, AppColors.heart, '${f['condition']}', subtitle: '${f['relation']}', () => setState(() => _family.remove(f))),
           ListRow(icon: Symbols.add_rounded, color: AppColors.primary, title: 'Add family record', chevron: false, onTap: _addFamilyRecord),
         ]),
-        ListGroup(header: 'Daily goals', children: [
-          _stepRow(Symbols.water_drop_rounded, AppColors.water, 'Water', '${_water.toStringAsFixed(2).replaceAll(RegExp(r'0$'), '')} L', _water, 1.0, 4.0, 0.25, (v) => setState(() => _water = v)),
-          _stepRow(Symbols.bedtime_rounded, AppColors.sleep, 'Sleep', '${_sleep.toStringAsFixed(1)} h', _sleep, 5.0, 10.0, 0.5, (v) => setState(() => _sleep = v)),
+        ListGroup(header: 'Lifestyle', footer: 'Your activity level is used to estimate your daily calorie needs.', children: [
           ListRow(
             icon: Symbols.directions_walk_rounded,
             color: AppColors.activity,

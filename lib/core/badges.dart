@@ -7,7 +7,7 @@ import 'app_state.dart';
 /// days in a row (three for water and food, seven for activity). The server
 /// (`refresh_badges`) awards it; the app tracks the streak locally so it can
 /// show stars and "days remaining" as you go.
-enum StreakKind { water, food, move }
+enum StreakKind { water, food, move, smart }
 
 class StreakBadge {
   const StreakBadge(this.kind, this.code, this.title, this.goal, this.dayDone, {this.length = 3});
@@ -27,11 +27,13 @@ class StreakBadge {
   static const water = StreakBadge(StreakKind.water, 'aqua_achiever', 'Aqua Achiever', 'Reach your daily water goal', 'Water goal reached');
   static const food = StreakBadge(StreakKind.food, 'rainbow_plate', 'Rainbow Plate', 'Eat from 5 or more food groups', 'Five food groups today');
   static const move = StreakBadge(StreakKind.move, 'active_aura', 'Active Aura', 'Reach your step goal or 30 active minutes', 'Movement goal reached', length: 7);
+  static const smart = StreakBadge(StreakKind.smart, 'smart_eater', 'Smart Eater', 'Log breakfast, lunch and dinner with 5 or more food groups', 'Three meals and five food groups logged', length: 7);
 
   static StreakBadge of(StreakKind k) => switch (k) {
         StreakKind.water => water,
         StreakKind.food => food,
         StreakKind.move => move,
+        StreakKind.smart => smart,
       };
 }
 
@@ -66,7 +68,7 @@ class Streaks {
         (await Repo.waterByDay(10)).forEach((d, ml) {
           if (ml >= goal) done.add(d);
         });
-      case StreakKind.food:
+      case StreakKind.food || StreakKind.smart:
         final groups = <String, Set<String>>{};
         for (final r in await Repo.diversityBetween(from, now)) {
           groups.putIfAbsent(r['log_date'] as String, () => {}).add(r['food_group'] as String);
@@ -74,6 +76,13 @@ class Streaks {
         groups.forEach((d, g) {
           if (g.length >= 5) done.add(d);
         });
+        if (kind == StreakKind.smart) {
+          final meals = <String, Set<String>>{};
+          for (final m in await Repo.mealsBetween(from, now)) {
+            if (m['status'] == 'logged') meals.putIfAbsent(m['meal_date'] as String, () => {}).add(m['meal_type'] as String);
+          }
+          done.removeWhere((d) => !(meals[d]?.containsAll(const ['breakfast', 'lunch', 'dinner']) ?? false));
+        }
       case StreakKind.move:
         final goal = p?.stepGoal ?? 8000;
         final steps = <String, int>{}, mins = <String, int>{};

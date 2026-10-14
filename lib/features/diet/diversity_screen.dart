@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../data/catalog.dart';
@@ -7,7 +9,11 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 import '../tools/tool_widgets.dart';
+import 'diet_science.dart' show diversityByDay;
 
+/// Dietary diversity guide, built on the FAO Minimum Dietary Diversity for
+/// Women (MDD-W): ten food groups, with 5 or more in a day counted as an
+/// adequately varied diet.
 class DiversityScreen extends StatefulWidget {
   const DiversityScreen({super.key});
   @override
@@ -16,8 +22,8 @@ class DiversityScreen extends StatefulWidget {
 
 class _DiversityScreenState extends State<DiversityScreen> {
   bool _loading = true;
-  List<Rec> _today = [];
-  List<Rec> _week = [];
+  List<Rec> _logs = [];
+  Map<String, Set<String>> _byDay = {};
 
   @override
   void initState() {
@@ -28,108 +34,223 @@ class _DiversityScreenState extends State<DiversityScreen> {
   Future<void> _load() async {
     try {
       final now = DateTime.now();
-      _week = await Repo.diversityBetween(weekStart(now), now);
-      _today = _week.where((r) => r['log_date'] == isoDate(now)).toList();
+      _logs = await Repo.diversityBetween(dayStart(now).subtract(const Duration(days: 6)), now);
+      _byDay = diversityByDay(_logs);
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _logGroup([FoodGroup? preset]) async {
-    FoodGroup? g = preset;
-    final food = TextEditingController(text: preset?.suggestion.split('/').first.trim());
-    await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
-          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Log a food group', style: T.headlineMd),
-            const SizedBox(height: Sp.md),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final x in foodGroups) VChip(x.label, icon: x.icon, selected: g?.key == x.key, selectedColor: AppColors.nutrition, onTap: () => set(() => g = x)),
-            ]),
-            const SizedBox(height: Sp.md),
-            VTextField(controller: food, hint: 'What did you eat? e.g. gotukola sambol', icon: Symbols.restaurant_rounded),
-            const SizedBox(height: Sp.md),
-            PrimaryButton('Add', onTap: () async {
-              if (g == null) return toast(ctx, 'Choose a food group', error: true);
-              await Repo.addDiversity(g!.key, food.text.trim().isEmpty ? g!.label : food.text.trim());
+  /// The food that first counted for [group] today, if any.
+  String? _foodFor(String group) {
+    final today = isoDate(DateTime.now());
+    for (final r in _logs) {
+      if (r['log_date'] == today && groupByKey(r['food_group'] as String)?.key == group) return r['food_name'] as String?;
+    }
+    return null;
+  }
+
+  Future<void> _open(FoodGroup g) async {
+    final eaten = _foodFor(g.key);
+    final c = Color(g.color);
+    await showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          ClipRRect(borderRadius: BorderRadius.circular(Rad.lg), child: AspectRatio(aspectRatio: 16 / 9, child: Image.asset(g.image, fit: BoxFit.cover))),
+          const SizedBox(height: Sp.md),
+          Text(g.label, style: T.headlineMd),
+          const SizedBox(height: 4),
+          Text(g.meaning, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+          const SizedBox(height: Sp.md),
+          Text('Counts when you eat', style: T.labelLg),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [for (final e in g.examples) TagPill(e, bg: c.withValues(alpha: 0.12), fg: AppColors.onSurface)]),
+          const SizedBox(height: 8),
+          Text('About a tablespoon (15 g) or more counts. A pinch in a curry does not.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+          const SizedBox(height: Sp.md),
+          if (eaten != null)
+            Row(children: [
+              Icon(Symbols.check_circle_rounded, color: AppColors.tertiary, fill: 1),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Counted today from $eaten', style: T.labelLg.c(AppColors.tertiary))),
+            ])
+          else
+            PrimaryButton('I ate this today', color: c, onTap: () async {
+              HapticFeedback.selectionClick();
+              try {
+                await Repo.addDiversity(g.key, g.label);
+              } catch (_) {}
               if (ctx.mounted) Navigator.pop(ctx);
               _load();
             }),
-          ]);
-        }));
+        ]));
   }
 
   @override
   Widget build(BuildContext context) {
-    final todayGroups = _today.map((r) => r['food_group'] as String).toSet();
-    final missing = foodGroups.where((g) => !todayGroups.contains(g.key)).toList();
-    final weekPoints = _week.map((r) => '${r['food_group']}|${(r['food_name'] as String?)?.toLowerCase().trim()}').toSet().length;
-    final firstPerGroup = <String, Rec>{};
-    for (final r in _today) {
-      firstPerGroup.putIfAbsent(r['food_group'], () => r);
-    }
-    final c = AppColors.nutrition;
+    final today = _byDay[isoDate(DateTime.now())] ?? {};
+    final n = today.length;
+    final adequate = n >= 5;
+    final missing = foodGroups.where((g) => !today.contains(g.key)).toList();
+    final c = adequate ? AppColors.tertiary : AppColors.nutrition;
 
     return VPage(
       header: TitleHeader('Dietary diversity', onLeading: () => goBack(context, '/diet')),
       onRefresh: _load,
+      bottom: PrimaryButton('Log a meal', leadingIcon: Symbols.add_rounded, color: AppColors.nutrition, onTap: () async {
+        await context.push('/diet/log');
+        _load();
+      }),
       children: [
         VCard(
           child: Row(children: [
             Ring(
-              value: todayGroups.length / 8,
+              value: n / 10,
               size: 104,
               stroke: 11,
               color: c,
-              child: Text('${todayGroups.length}/8', style: T.metric(22)),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text('$n', style: T.metric(28)),
+                Text('of 10', style: T.labelSm.c(AppColors.onSurfaceVariant)),
+              ]),
             ),
             const SizedBox(width: Sp.lg),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                CategoryLabel('Today', icon: Symbols.nutrition_rounded, color: c),
+                CategoryLabel("Today's score", icon: Symbols.nutrition_rounded, color: c),
                 const SizedBox(height: 6),
-                MetricValue('${todayGroups.length}', unit: 'of 8 food groups', size: 26),
+                Text(adequate ? 'A varied day' : (n == 0 ? 'Nothing logged yet' : '${5 - n} more to go'), style: T.headlineSm.c(adequate ? c : AppColors.onSurface)),
                 const SizedBox(height: 4),
                 Text(
-                  missing.isEmpty ? 'Every group covered today.' : 'Aim for 5 or more. Try ${missing.first.suggestion.split('/').first.trim().toLowerCase()} next.',
+                  adequate
+                      ? 'You ate from 5 or more food groups, the level linked with getting enough vitamins and minerals.'
+                      : missing.isEmpty
+                          ? ''
+                          : 'Aim for 5 or more groups. An easy one to add: ${missing.first.examples.first.toLowerCase()}.',
                   style: T.bodySm.c(AppColors.onSurfaceVariant),
                 ),
               ]),
             ),
           ]),
         ),
-        SectionHeader('Food groups', trailing: TextLinkButton('About', leading: Symbols.info_rounded, onTap: () => showInfoSheet(context, title: 'Dietary diversity', paragraphs: const [
-              'Eating from many food groups each day is linked to better micronutrient intake. VitalU tracks 8 groups: whole grains, fruits, leafy greens, healthy fats and seeds, probiotics (curd, yoghurt), nuts and beans, herbs and spices, and eggs, fish or meat.',
-              'Aim for at least 5 groups a day. Weekly variety counts the different foods you eat; variety feeds a healthier gut.',
-            ]))),
+        const SectionHeader('This week', subtitle: 'Food groups eaten each day'),
+        VCard(child: _WeekChart(byDay: _byDay)),
+        SectionHeader('The 10 food groups', trailing: TextLinkButton('About', leading: Symbols.info_rounded, onTap: _about)),
         if (_loading)
           const Loading()
         else
-          ListGroup(children: [
-            for (final g in foodGroups)
-              ListRow(
-                icon: g.icon,
-                color: Color(g.color),
-                title: g.label,
-                subtitle: firstPerGroup[g.key]?['food_name'] ?? 'Try ${g.suggestion.toLowerCase()}',
-                trailing: todayGroups.contains(g.key)
-                    ? Icon(Symbols.check_circle_rounded, color: AppColors.tertiary, fill: 1)
-                    : Icon(Symbols.add_circle_rounded, color: AppColors.onSurfaceVariant),
-                onTap: () => _logGroup(g),
-              ),
-          ]),
-        const SectionHeader('This week'),
-        VCard(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            MetricValue('$weekPoints', unit: 'of 30 different foods', size: 26),
-            const SizedBox(height: 10),
-            Bar(value: weekPoints / 30, color: c),
-            const SizedBox(height: 10),
-            Text('Eating 30 different plant foods a week (grains, fruit, vegetables, pulses, nuts, seeds, herbs and spices) supports gut health.',
-                style: T.bodySm.c(AppColors.onSurfaceVariant)),
-          ]),
-        ),
-        PrimaryButton('Log a food group', leadingIcon: Symbols.add_rounded, onTap: () => _logGroup()),
-        const PrivacyNote('Food logs are private to your account.'),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.82,
+            children: [for (final g in foodGroups) _groupTile(g, today.contains(g.key))],
+          ),
+        const PrivacyNote('Food groups are counted from the meals you log. Only you can see this.'),
       ],
     );
+  }
+
+  Widget _groupTile(FoodGroup g, bool done) {
+    final c = Color(g.color);
+    return Material(
+      color: AppColors.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(Rad.lg),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _open(g),
+        child: Container(
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Rad.lg), border: Border.all(color: done ? c : AppColors.outlineVariant, width: done ? 2 : 1)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Expanded(
+              child: Stack(fit: StackFit.expand, children: [
+                Image.asset(g.image, fit: BoxFit.cover),
+                if (done)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      child: Icon(Symbols.check_circle_rounded, color: AppColors.tertiary, fill: 1, size: 26),
+                    ),
+                  ),
+              ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(g.label, style: T.labelLg.w(FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(done ? 'Eaten today' : g.examples.take(2).join(', '), style: T.labelSm.c(done ? c : AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _about() => showInfoSheet(context, title: 'About dietary diversity', paragraphs: const [
+        'VitalU uses the Minimum Dietary Diversity for Women (MDD-W), a measure from the Food and Agriculture Organization (FAO). It counts how many of 10 food groups you ate in a day.',
+        'Eating from 5 or more groups is linked with a better chance of getting enough of eleven key vitamins and minerals. The score is the same for everyone; it is validated for women aged 15 to 49 and is a useful guide for anyone.',
+        'A group counts when you eat about a tablespoon (15 g) or more of it. The score shows variety, not quantity or overall diet quality: a day with 6 groups can still include a lot of fried food or sugar. For that, see the Diet quality score.',
+      ]);
+}
+
+/// Seven bars, one per day, with a guide line at 5 groups.
+class _WeekChart extends StatelessWidget {
+  const _WeekChart({required this.byDay});
+  final Map<String, Set<String>> byDay;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = dayStart(DateTime.now());
+    final days = [for (int i = 6; i >= 0; i--) now.subtract(Duration(days: i))];
+    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const h = 120.0;
+    final counts = [for (final d in days) byDay[isoDate(d)]?.length ?? 0];
+    final varied = counts.where((n) => n >= 5).length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      SizedBox(
+        height: h + 22,
+        child: Stack(children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: h - h * 5 / 10,
+            child: Row(children: [
+              Expanded(child: Container(height: 1.5, color: AppColors.tertiary.withValues(alpha: 0.5))),
+              const SizedBox(width: 4),
+              Text('5', style: T.labelSm.c(AppColors.tertiary)),
+            ]),
+          ),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            for (int i = 0; i < 7; i++)
+              Expanded(
+                child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  if (counts[i] > 0) Text('${counts[i]}', style: T.labelSm.tnum.c(AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 2),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: counts[i] / 10),
+                    duration: Duration(milliseconds: 500 + 60 * i),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, v, _) => Container(
+                      width: 22,
+                      height: (h - 18) * v + 4,
+                      decoration: BoxDecoration(
+                        color: counts[i] >= 5 ? AppColors.tertiary : AppColors.nutrition.withValues(alpha: counts[i] == 0 ? 0.2 : 0.7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(i == 6 ? 'Today' : labels[days[i].weekday - 1], style: T.labelSm.c(i == 6 ? AppColors.onSurface : AppColors.onSurfaceVariant)),
+                ]),
+              ),
+          ]),
+        ]),
+      ),
+      const SizedBox(height: 10),
+      Text(varied == 0 ? 'No varied days yet this week. Five groups in a day is the goal.' : '$varied of 7 days reached 5 or more food groups.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+    ]);
   }
 }

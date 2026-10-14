@@ -26,17 +26,18 @@ import 'package:vitalu/features/blood/blood_upload_screen.dart';
 import 'package:vitalu/features/diet/budget_screen.dart';
 import 'package:vitalu/features/diet/diet_hub_screen.dart';
 import 'package:vitalu/features/diet/diversity_screen.dart';
-import 'package:vitalu/features/diet/meal_counter_screen.dart';
 import 'package:vitalu/features/diet/meal_log_screen.dart';
-import 'package:vitalu/features/diet/meal_planner_screen.dart';
 import 'package:vitalu/features/diet/nutrition_today_screen.dart';
 import 'package:vitalu/features/diet/pdqs_screen.dart';
 import 'package:vitalu/features/diet/plate_screen.dart';
 import 'package:vitalu/features/home/home_screen.dart';
-import 'package:vitalu/features/habits/habits_screen.dart';
 import 'package:vitalu/features/library/library_screen.dart';
 import 'package:vitalu/features/onboarding/onboarding_screen.dart';
 import 'package:vitalu/features/profile/about_screen.dart';
+import 'package:vitalu/features/profile/account_screen.dart';
+import 'package:vitalu/features/profile/contact_screen.dart';
+import 'package:vitalu/features/profile/settings_screen.dart';
+import 'package:vitalu/features/profile/summary_screen.dart';
 import 'package:vitalu/features/profile/edit_profile_screen.dart';
 import 'package:vitalu/features/profile/profile_screen.dart';
 import 'package:vitalu/features/progress/milestones_screen.dart';
@@ -111,21 +112,23 @@ final _screens = <String, Widget Function()>{
   'cycle': () => const CycleScreen(),
   'diet': () => const DietHubScreen(),
   'meal_log': () => const MealLogScreen(),
-  'meal_counter': () => const MealCounterScreen(),
+  'meal_diary': () => const MealDiaryScreen(),
   'diversity': () => const DiversityScreen(),
   'plate': () => const PlateScreen(),
-  'planner': () => const MealPlannerScreen(),
   'budget': () => const BudgetScreen(),
   'nutrition_today': () => const NutritionTodayScreen(),
   'progress': () => const ProgressScreen(),
   'milestones': () => const MilestonesScreen(),
   'notifications': () => const NotificationsScreen(),
-  'habits': () => const HabitsScreen(),
   'library': () => const LibraryScreen(),
   'blood_upload': () => const BloodUploadScreen(),
   'profile': () => const ProfileScreen(),
   'edit_profile': () => const EditProfileScreen(),
   'about': () => const AboutScreen(),
+  'account': () => const AccountScreen(),
+  'summary': () => const SummaryScreen(),
+  'settings': () => const SettingsScreen(),
+  'contact': () => const ContactScreen(),
   'professionals': () => const ProfessionalsScreen(),
   'help': () => const HelpScreen(),
   'consult': () => const ConsultScreen(),

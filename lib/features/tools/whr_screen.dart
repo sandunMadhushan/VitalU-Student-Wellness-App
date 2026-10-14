@@ -226,9 +226,10 @@ class _WhrScreenState extends State<WhrScreen> {
   }
 }
 
-/// Two stylised body-shape silhouettes, "pear" (weight carried more at the
-/// hips) and "apple" (weight carried more at the waist), with the one
-/// closer to the student's own ratio highlighted. Illustrative only.
+/// The two body shapes the ratio points towards, "pear" (weight carried
+/// more at the hips) and "apple" (weight carried more at the waist), shown
+/// as figures of the student's own sex, with the one closer to their ratio
+/// highlighted. Illustrative only.
 class BodyShapeDiagram extends StatelessWidget {
   const BodyShapeDiagram({super.key, required this.leanToApple, required this.color});
 
@@ -239,51 +240,46 @@ class BodyShapeDiagram extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pearOn = leanToApple < 0.5;
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-      _shape(0.62, 'Pear shape', 'More weight at the hips', pearOn),
-      _shape(0.92, 'Apple shape', 'More weight at the waist', !pearOn),
+    final sex = AppState.instance.profile?.sex == 'male' ? 'male' : 'female';
+    return Row(children: [
+      Expanded(child: _shape('assets/body_shapes/${sex}_pear.jpg', 'Pear shape', 'More weight at the hips', pearOn)),
+      const SizedBox(width: 12),
+      Expanded(child: _shape('assets/body_shapes/${sex}_apple.jpg', 'Apple shape', 'More weight at the waist', !pearOn)),
     ]);
   }
 
-  Widget _shape(double waistFactor, String title, String sub, bool on) => Column(children: [
-        Opacity(
-          opacity: on ? 1 : 0.35,
-          child: SizedBox(width: 72, height: 96, child: CustomPaint(painter: _SilhouettePainter(waistFactor: waistFactor, color: on ? color : AppColors.outline))),
-        ),
-        const SizedBox(height: 6),
-        Text(title, style: T.labelMd.w(on ? FontWeight.w700 : FontWeight.w500).c(on ? AppColors.onSurface : AppColors.onSurfaceVariant)),
-        Text(sub, style: T.labelSm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
-      ]);
-}
+  static const _greyscale = ColorFilter.matrix([0.33, 0.59, 0.11, 0, 0, 0.33, 0.59, 0.11, 0, 0, 0.33, 0.59, 0.11, 0, 0, 0, 0, 0, 1, 0]);
 
-class _SilhouettePainter extends CustomPainter {
-  _SilhouettePainter({required this.waistFactor, required this.color});
-  final double waistFactor;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    final paint = Paint()..color = color;
-    canvas.drawCircle(Offset(w / 2, h * 0.12), w * 0.17, paint);
-
-    final shoulder = w * 0.40, waist = w * 0.40 * waistFactor, hip = w * 0.44;
-    final path = Path()
-      ..moveTo(w / 2 - shoulder, h * 0.26)
-      ..quadraticBezierTo(w / 2 - waist * 1.1, h * 0.52, w / 2 - waist, h * 0.58)
-      ..quadraticBezierTo(w / 2 - hip * 1.05, h * 0.68, w / 2 - hip, h * 0.82)
-      ..lineTo(w / 2 - hip * 0.7, h)
-      ..lineTo(w / 2 + hip * 0.7, h)
-      ..lineTo(w / 2 + hip, h * 0.82)
-      ..quadraticBezierTo(w / 2 + hip * 1.05, h * 0.68, w / 2 + waist, h * 0.58)
-      ..quadraticBezierTo(w / 2 + waist * 1.1, h * 0.52, w / 2 + shoulder, h * 0.26)
-      ..quadraticBezierTo(w / 2, h * 0.18, w / 2 - shoulder, h * 0.26)
-      ..close();
-    canvas.drawPath(path, paint);
+  Widget _shape(String asset, String title, String sub, bool on) {
+    Widget figure = ClipRRect(
+      borderRadius: BorderRadius.circular(Rad.base),
+      child: AspectRatio(aspectRatio: 0.62, child: Image.asset(asset, fit: BoxFit.cover, alignment: Alignment.topCenter)),
+    );
+    if (!on) figure = Opacity(opacity: 0.45, child: ColorFiltered(colorFilter: _greyscale, child: figure));
+    return Column(children: [
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(Rad.base + 3), border: Border.all(color: on ? color : Colors.transparent, width: 2.5)),
+        child: Stack(children: [
+          figure,
+          if (on)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: const Icon(Symbols.check_rounded, size: 14, color: Colors.white, weight: 700),
+              ),
+            ),
+        ]),
+      ),
+      const SizedBox(height: 6),
+      Text(title, style: T.labelMd.w(on ? FontWeight.w700 : FontWeight.w500).c(on ? AppColors.onSurface : AppColors.onSurfaceVariant)),
+      Text(on ? 'Closest to your ratio' : sub, style: T.labelSm.c(on ? color : AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+    ]);
   }
-
-  @override
-  bool shouldRepaint(covariant _SilhouettePainter old) => old.waistFactor != waistFactor || old.color != color;
 }
 
 /// The figure with both tape positions, and what each colour means.

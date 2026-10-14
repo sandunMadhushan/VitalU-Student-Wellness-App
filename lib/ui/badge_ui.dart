@@ -18,7 +18,7 @@ import 'widgets.dart';
 /// Streak badges are complete medal illustrations of their own
 /// (`assets/badges/<code>.webp`); [_bySex] ones are drawn for the student's
 /// sex (`assets/badges/<code>_<female|male>.webp`).
-const _illustrated = {'aqua_achiever', 'rainbow_plate', 'active_aura'};
+const _illustrated = {'aqua_achiever', 'rainbow_plate', 'active_aura', 'smart_eater'};
 const _bySex = {'active_aura'};
 
 String _illustratedAsset(String code) =>
@@ -28,7 +28,7 @@ String _illustratedAsset(String code) =>
 /// the rest follow their milestone category.
 Color badgeColor(String code, [String? category]) => switch (code) {
       'aqua_achiever' || 'hydration_habit' => AppColors.water,
-      'rainbow_plate' || 'plate_harmony' || 'nourish_bowl' => AppColors.nutrition,
+      'rainbow_plate' || 'plate_harmony' || 'nourish_bowl' || 'smart_eater' => AppColors.nutrition,
       'active_aura' => AppColors.nutrition,
       'gentle_steps' || 'campus_stroll' => AppColors.activity,
       'restful_sleep' => AppColors.sleep,

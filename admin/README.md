@@ -11,6 +11,9 @@ locally (for example `npx serve admin`).
 - **Analytics**: pooled results of the periodic assessment, by window and
   faculty, with a CSV download. Results for groups of fewer than five
   students are never shown.
+- **Completion**: which registration numbers have completed each window
+  (search by registration number, CSV). Shows participation only, never
+  answers or names.
 - **Schedule**: open the six-monthly assessment for some or all faculties on
   their own dates (open for 7 days by default). Students get a "coming up"
   and a "now open" notification.
@@ -22,7 +25,7 @@ locally (for example `npx serve admin`).
 
 Admins never read the `assessments` or `profiles` tables. The dashboard only
 calls security-definer functions (`admin_assessment_overview`,
-`admin_assessment_report`) that check `public.is_admin()` and return
+`admin_assessment_report`, `admin_assessment_completion`) that check `public.is_admin()` and return
 aggregates. Anonymous consultations are stored with no user id.
 
 ## Setup
@@ -39,3 +42,6 @@ aggregates. Anonymous consultations are stored with no user id.
    ```
 
 To remove access, delete the row from `public.admin_users`.
+
+See `docs/periodic-assessment.md` for how the questionnaire, scoring and
+scheduling work.

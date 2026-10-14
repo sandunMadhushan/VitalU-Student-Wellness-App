@@ -108,36 +108,100 @@ const faculties = <String>[
   'Faculty of Veterinary Medicine and Animal Science',
 ];
 
+/// University of Peradeniya faculty email domains. Only these can create an
+/// account, and the domain sets the student's faculty.
+const facultyEmailDomains = <String, String>{
+  'agri.pdn.ac.lk': 'Faculty of Agriculture',
+  'arts.pdn.ac.lk': 'Faculty of Arts',
+  'eng.pdn.ac.lk': 'Faculty of Engineering',
+  'mgt.pdn.ac.lk': 'Faculty of Management',
+  'sci.pdn.ac.lk': 'Faculty of Science',
+  'ahs.pdn.ac.lk': 'Faculty of Allied Health Sciences',
+  'med.pdn.ac.lk': 'Faculty of Medicine',
+  'dental.pdn.ac.lk': 'Faculty of Dental Sciences',
+  'vet.pdn.ac.lk': 'Faculty of Veterinary Medicine and Animal Science',
+};
+
+/// The faculty an email address belongs to, or null for other addresses.
+String? facultyForEmail(String? email) {
+  if (email == null || !email.contains('@')) return null;
+  return facultyEmailDomains[email.split('@').last.trim().toLowerCase()];
+}
+
+/// Where a student lives during the semester.
+const accommodationOptions = <String, String>{
+  'hostel': 'University hostel',
+  'boarding': 'Boarding or rented room',
+  'home': 'At home with family',
+  'other': 'Somewhere else',
+};
+
 const academicYears = <String>['21/22 Batch', '22/23 Batch', '23/24 Batch', '24/25 Batch', '25/26 Batch'];
 
-/// The eight food groups used by the dietary diversity tracker.
+/// A food group of the Minimum Dietary Diversity for Women (MDD-W) indicator
+/// (FAO 2021), used here for all students: ten groups, one point each for
+/// any group eaten in a day, and 5 or more groups counts as adequate variety.
 class FoodGroup {
-  const FoodGroup(this.key, this.label, this.icon, this.color, this.suggestion, this.where);
+  const FoodGroup(this.key, this.label, this.icon, this.color, this.meaning, this.examples);
   final String key;
   final String label;
   final IconData icon;
   final int color;
-  final String suggestion;
-  final String where;
+
+  /// What the group is, in one plain sentence.
+  final String meaning;
+
+  /// Familiar Sri Lankan foods in the group.
+  final List<String> examples;
+
+  /// Realistic food photo in assets/food_groups.
+  String get image => 'assets/food_groups/$key.webp';
 }
 
 const foodGroups = <FoodGroup>[
-  FoodGroup('grains', 'Whole Grains', Symbols.grain_rounded, 0xFFD4A017, 'Red rice / Oats', 'Canteen rice counter'),
-  FoodGroup('fruits', 'Fruits & Berries', Symbols.nutrition_rounded, 0xFFE0567F, 'Papaya / Guava / Banana', 'Campus fruit stall'),
-  FoodGroup('greens', 'Leafy Greens', Symbols.nest_eco_leaf_rounded, 0xFF3F9A5B, 'Gotukola / Mukunuwenna', 'Canteen mallum'),
-  FoodGroup('fats_seeds', 'Healthy Fats & Seeds', Symbols.palette_rounded, 0xFF8B6B2E, 'Avocado / Sesame', 'Cafe & salad bar'),
-  FoodGroup('probiotics', 'Probiotics', Symbols.bubble_chart_rounded, 0xFF7459F7, 'Curd / Yoghurt', 'Campus Cafe'),
-  FoodGroup('legumes_nuts', 'Nuts & Beans', Symbols.spa_rounded, 0xFF984062, 'Dhal / Chickpeas / Nuts', 'Library Grab & Go'),
-  FoodGroup('herbs_spices', 'Herbs & Spices', Symbols.eco_rounded, 0xFF006A45, 'Turmeric / Curry leaves', 'Canteen curries'),
-  FoodGroup('protein', 'Eggs, Fish & Meat', Symbols.egg_alt_rounded, 0xFF4BA3E3, 'Egg / Fish / Chicken', 'Canteen main line'),
+  FoodGroup('grains', 'Grains, roots and tubers', Symbols.rice_bowl_rounded, 0xFFD4A017, 'Starchy staples that give you energy.',
+      ['Red or white rice', 'String hoppers', 'Roti and bread', 'Pittu', 'Kurakkan', 'Potatoes', 'Manioc (cassava)', 'Noodles']),
+  FoodGroup('pulses', 'Pulses', Symbols.grain_rounded, 0xFF984062, 'Beans, peas and lentils: plant protein and fibre.',
+      ['Dhal (parippu)', 'Chickpeas (kadala)', 'Green gram (mung)', 'Cowpea', 'Soya meat', 'Vadai']),
+  FoodGroup('nuts_seeds', 'Nuts and seeds', Symbols.psychiatry_rounded, 0xFF8B6B2E, 'Small foods rich in healthy fats, protein and minerals.',
+      ['Peanuts', 'Cashew nuts', 'Sesame (thala)', 'Pumpkin seeds', 'Almonds', 'Peanut butter']),
+  FoodGroup('dairy', 'Dairy', Symbols.water_full_rounded, 0xFF4BA3E3, 'Milk and foods made from it: calcium and protein.',
+      ['Milk', 'Curd (meekiri)', 'Yoghurt', 'Cheese', 'Milk tea or Milo made with milk']),
+  FoodGroup('meat_fish', 'Meat, poultry and fish', Symbols.set_meal_rounded, 0xFFD1344E, 'Animal protein with iron, zinc and vitamin B12.',
+      ['Fish curry', 'Chicken', 'Sprats (halmasso)', 'Dried fish', 'Tinned fish', 'Beef or pork']),
+  FoodGroup('eggs', 'Eggs', Symbols.egg_rounded, 0xFFE8A33D, 'A cheap, complete protein that is quick to cook.',
+      ['Boiled egg', 'Egg curry', 'Omelette', 'Egg hoppers', 'Egg roti']),
+  FoodGroup('dark_leafy', 'Dark green leafy vegetables', Symbols.eco_rounded, 0xFF2E8F42, 'Leafy greens rich in iron, folate and vitamin A.',
+      ['Gotukola', 'Mukunuwenna', 'Kankun', 'Spinach', 'Drumstick leaves (murunga)', 'Thampala']),
+  FoodGroup('vita_veg_fruit', 'Vitamin A-rich vegetables and fruits', Symbols.nutrition_rounded, 0xFFE0590F, 'Deep orange and yellow foods that protect eyes and immunity.',
+      ['Carrot', 'Pumpkin', 'Ripe papaya', 'Ripe mango', 'Orange sweet potato']),
+  FoodGroup('other_veg', 'Other vegetables', Symbols.grass_rounded, 0xFF3F9A5B, 'Everyday vegetables for fibre and vitamins.',
+      ['Beans', 'Brinjal', 'Cabbage', 'Okra (bandakka)', 'Cucumber', 'Tomato', 'Beetroot', 'Leeks']),
+  FoodGroup('other_fruit', 'Other fruits', Symbols.spa_rounded, 0xFFE0567F, 'Fresh fruit for vitamin C, fibre and natural sweetness.',
+      ['Banana', 'Guava', 'Pineapple', 'Orange', 'Watermelon', 'Rambutan', 'Apple', 'Avocado']),
 ];
 
 FoodGroup? groupByKey(String k) {
+  final key = legacyGroupKey(k) ?? k;
   for (final g in foodGroups) {
-    if (g.key == k) return g;
+    if (g.key == key) return g;
   }
   return null;
 }
+
+/// The MDD-W group for keys from the earlier 8-group tracker (and from meal
+/// photo analysis), so older logs still count. Herbs and spices are not an
+/// MDD-W group, so they map to nothing.
+String? legacyGroupKey(String k) => switch (k) {
+      'fruits' => 'other_fruit',
+      'greens' => 'dark_leafy',
+      'fats_seeds' => 'nuts_seeds',
+      'probiotics' => 'dairy',
+      'legumes_nuts' => 'pulses',
+      'protein' => 'meat_fish',
+      'herbs_spices' => null,
+      _ => foodGroups.any((g) => g.key == k) ? k : null,
+    };
 
 /// Maps icon names stored in the database to Material Symbols.
 IconData iconByName(String? name) {

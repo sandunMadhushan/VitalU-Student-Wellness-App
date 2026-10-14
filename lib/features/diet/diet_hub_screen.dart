@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../core/app_state.dart';
 import '../../core/badges.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
@@ -10,13 +9,8 @@ import '../../ui/badge_ui.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
-
-const mealTypes = <(String, String, IconData)>[
-  ('breakfast', 'Breakfast', Symbols.bakery_dining_rounded),
-  ('lunch', 'Lunch', Symbols.rice_bowl_rounded),
-  ('dinner', 'Dinner', Symbols.skillet_rounded),
-  ('snack', 'Snacks', Symbols.nutrition_rounded),
-];
+import 'diet_science.dart';
+import 'pdqs_screen.dart' show pdqsBand;
 
 class DietHubScreen extends StatefulWidget {
   const DietHubScreen({super.key});
@@ -25,8 +19,11 @@ class DietHubScreen extends StatefulWidget {
 }
 
 class _DietHubScreenState extends State<DietHubScreen> {
-  bool _loading = true;
-  List<Rec> _meals = [];
+  int _kcal = 0;
+  int _target = 2100;
+  int _mealsToday = 0;
+  LoggedDietQuality? _quality;
+  Rec? _pdqs;
   int _streakVersion = 0;
 
   @override
@@ -37,14 +34,19 @@ class _DietHubScreenState extends State<DietHubScreen> {
 
   Future<void> _load() async {
     try {
-      _meals = await Repo.mealsOn(DateTime.now());
+      _target = await effectiveCalorieTarget();
+      final now = DateTime.now();
+      final week = await Repo.mealsBetween(dayStart(now).subtract(const Duration(days: 6)), now);
+      final today = isoDate(now);
+      final logged = week.where((m) => m['status'] == 'logged' && m['meal_date'] == today).toList();
+      _kcal = logged.fold<int>(0, (a, m) => a + (m['kcal'] as num).toInt());
+      _mealsToday = logged.length;
+      _quality = loggedDietQuality(week);
     } catch (_) {}
-    if (mounted) {
-      setState(() {
-        _loading = false;
-        _streakVersion++;
-      });
-    }
+    try {
+      _pdqs = await Repo.latestToolResult('pdqs');
+    } catch (_) {}
+    if (mounted) setState(() => _streakVersion++);
   }
 
   Future<void> _go(String path) async {
@@ -54,11 +56,6 @@ class _DietHubScreenState extends State<DietHubScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final logged = _meals.where((m) => m['status'] == 'logged').toList();
-    final kcal = logged.fold<int>(0, (a, m) => a + (m['kcal'] as int));
-    final target = AppState.instance.profile?.calorieTarget ?? 2100;
-    final over = kcal > target * 1.1;
-
     return VPage(
       header: const MainHeader('Diet'),
       nav: NavTab.diet,
@@ -71,80 +68,166 @@ class _DietHubScreenState extends State<DietHubScreen> {
           accent: AppColors.nutrition,
           illustration: 'hero_diet',
         ),
-        VCard(
+        DietFeatureCard(
+          image: 'calorie_counter',
+          color: AppColors.nutrition,
+          kind: 'Energy',
+          title: 'Calorie counter',
+          text: _mealsToday == 0 ? 'Your personal daily target, worked out from your profile' : '${Fmt.thousands(_kcal)} of ${Fmt.thousands(_target)} kcal today · $_mealsToday ${_mealsToday == 1 ? 'meal' : 'meals'}',
+          action: 'Open',
+          wide: true,
+          progress: _target == 0 ? null : _kcal / _target,
           onTap: () => _go('/diet/today'),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Ring(
-                value: kcal / target,
-                size: 76,
-                stroke: 8,
-                color: AppColors.nutrition,
-                child: Icon(Symbols.local_fire_department_rounded, size: 24, color: AppColors.nutrition, fill: 1),
-              ),
-              const SizedBox(width: Sp.md),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  CategoryLabel('Energy today', icon: Symbols.restaurant_rounded, color: AppColors.nutrition),
-                  const SizedBox(height: 6),
-                  MetricValue(Fmt.thousands(kcal), unit: 'of ${Fmt.thousands(target)} kcal', size: 26),
-                  const SizedBox(height: 2),
-                  Text(over ? 'Above your usual target' : '${logged.length} ${logged.length == 1 ? 'meal' : 'meals'} logged', style: T.bodySm.c(over ? AppColors.warning : AppColors.onSurfaceVariant)),
-                ]),
-              ),
-              Icon(Symbols.chevron_right_rounded, color: AppColors.outline),
-            ]),
-            const SizedBox(height: Sp.md),
-            PrimaryButton('Log a meal', leadingIcon: Symbols.photo_camera_rounded, onTap: () => _go('/diet/log')),
-          ]),
         ),
-        const SectionHeader("Today's meals"),
-        if (_loading)
-          const Loading()
-        else
-          ListGroup(children: [for (final t in mealTypes) _mealRow(t)]),
-        StreakBadgeCard(kind: StreakKind.food, version: _streakVersion),
-        const SectionHeader('Plan and learn'),
-        ListGroup(children: [
-          ListRow(icon: Symbols.verified_rounded, color: AppColors.nutrition, title: 'Diet quality score', subtitle: 'A weekly PDQS check-in, scored out of 42', onTap: () => _go('/diet/pdqs')),
-          ListRow(icon: Symbols.calculate_rounded, color: AppColors.nutrition, title: 'Meal calorie counter', subtitle: 'Build a meal by portion and see the kcal', onTap: () => _go('/diet/counter')),
-          ListRow(icon: Symbols.nutrition_rounded, color: AppColors.nutrition, title: 'Dietary diversity', subtitle: 'Eight food groups this week', onTap: () => _go('/diet/diversity')),
-          ListRow(icon: Symbols.pie_chart_rounded, color: AppColors.water, title: 'Healthy plate guide', subtitle: 'Portions without a food scale', onTap: () => _go('/diet/plate')),
-          ListRow(icon: Symbols.calendar_month_rounded, color: AppColors.primary, title: 'Meal planner', subtitle: 'Plan the week around lectures', onTap: () => _go('/diet/planner')),
-          ListRow(icon: Symbols.savings_rounded, color: AppColors.warning, title: 'Budget planner', subtitle: 'Groceries within your weekly budget', onTap: () => _go('/diet/budget')),
+        TileGrid(children: [
+          DietFeatureCard(image: 'meal_diary', color: AppColors.mind, kind: 'Logging', title: 'Meal diary', text: 'Log meals by portion or with a photo', action: 'Log', onTap: () => _go('/diet/diary')),
+          DietFeatureCard(image: 'plate_guide', color: AppColors.water, kind: 'Portions', title: 'Healthy plate', text: 'Portions with your own hand', action: 'Learn', onTap: () => _go('/diet/plate')),
+          DietFeatureCard(image: 'diversity', color: AppColors.tertiary, kind: 'Variety', title: 'Dietary diversity', text: 'Ten food groups, scored daily', action: 'Check', onTap: () => _go('/diet/diversity')),
+          DietFeatureCard(image: 'budget', color: AppColors.warning, kind: 'Budget', title: 'Budget planner', text: 'Balanced meals within your budget', action: 'Plan', onTap: () => _go('/diet/budget')),
         ]),
-        VCard(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Symbols.lightbulb_rounded, size: 22, color: AppColors.warning, fill: 1),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Canteen tip', style: T.headlineSm),
-                const SizedBox(height: 4),
-                Text('Add a leafy mallum (gotukola or mukunuwenna) and a spoon of dhal to your rice for more fibre, iron and steadier afternoon focus.',
-                    style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-              ]),
-            ),
-          ]),
-        ),
+        _qualityCard(),
+        StreakBadgeCard(kind: StreakKind.smart, version: _streakVersion),
         const PrivacyNote('Meal logs are private to your account.'),
       ],
     );
   }
 
-  Widget _mealRow((String, String, IconData) t) {
-    final list = _meals.where((m) => m['meal_type'] == t.$1).toList();
-    final m = list.isEmpty ? null : (list.lastWhere((x) => x['status'] == 'logged', orElse: () => list.last));
-    final logged = m?['status'] == 'logged';
-    return ListRow(
-      icon: t.$3,
-      color: AppColors.nutrition,
-      title: t.$2,
-      subtitle: m == null ? 'Not logged' : '${m['name']}${list.length > 1 ? ' +${list.length - 1}' : ''}',
-      trailing: m == null
-          ? Icon(Symbols.add_circle_rounded, color: AppColors.primary, size: 24)
-          : TagPill(logged ? 'Logged' : 'Planned', bg: logged ? AppColors.tertiaryContainer : AppColors.surfaceContainer, fg: logged ? AppColors.onTertiaryContainer : AppColors.onSurfaceVariant),
-      onTap: () => _go(m == null ? '/diet/log?type=${t.$1}' : '/diet/today'),
+  /// Diet quality from the last 7 days of meal logs, with the latest PDQS
+  /// self-check alongside.
+  Widget _qualityCard() {
+    final q = _quality;
+    final last = _pdqs;
+    final score = q != null && q.daysLogged > 0 ? q.score : (last?['score'] as num?)?.round();
+    final (band, color) = score == null ? ('Not checked yet', AppColors.onSurfaceVariant) : pdqsBand(score);
+    final String note;
+    if (q != null && q.daysLogged > 0) {
+      note = q.reliable ? 'Estimated from your meal logs over the last 7 days.' : 'From ${q.daysLogged} logged ${q.daysLogged == 1 ? 'day' : 'days'} this week. Log at least 4 days for a fair estimate.';
+    } else if (last != null) {
+      note = 'From your last weekly check-in.';
+    } else {
+      note = 'Log your meals, or take the 2 minute check-in, to see your score.';
+    }
+    return VCard(
+      onTap: () => _go('/diet/pdqs'),
+      child: Row(children: [
+        Ring(
+          value: (score ?? 0) / 42,
+          size: 72,
+          stroke: 7,
+          color: color,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(score == null ? '–' : '$score', style: T.metric(22)),
+            Text('/ 42', style: T.labelSm.c(AppColors.onSurfaceVariant)),
+          ]),
+        ),
+        const SizedBox(width: Sp.md),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CategoryLabel('Diet quality', icon: Symbols.verified_rounded, color: AppColors.nutrition),
+            const SizedBox(height: 4),
+            Text(band, style: T.headlineSm.c(score == null ? AppColors.onSurface : color)),
+            const SizedBox(height: 2),
+            Text(note, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+          ]),
+        ),
+        Icon(Symbols.chevron_right_rounded, color: AppColors.outline),
+      ]),
+    );
+  }
+}
+
+/// Diet tool card in the style of the Health tools cards, with a 3D image
+/// (`assets/icons3d/<image>.jpg`) in place of the icon badge.
+class DietFeatureCard extends StatelessWidget {
+  const DietFeatureCard({
+    super.key,
+    required this.image,
+    required this.color,
+    required this.kind,
+    required this.title,
+    required this.text,
+    required this.action,
+    required this.onTap,
+    this.wide = false,
+    this.progress,
+  });
+  final String image;
+  final Color color;
+  final String kind;
+  final String title;
+  final String text;
+  final String action;
+  final VoidCallback onTap;
+  final bool wide;
+  final double? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = AppColors.isDark;
+    final bg = Color.alphaBlend(color.withValues(alpha: dark ? 0.16 : 0.10), AppColors.surfaceContainerLowest);
+    final raised = dark ? Colors.white.withValues(alpha: 0.07) : Colors.white;
+    final art = ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.asset('assets/icons3d/$image.jpg', width: wide ? 76 : 64, height: wide ? 76 : 64, fit: BoxFit.cover),
+    );
+    final pill = Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(color: raised, borderRadius: BorderRadius.circular(19)),
+      child: Row(mainAxisSize: wide ? MainAxisSize.min : MainAxisSize.max, children: [
+        Text(action, style: T.labelMd.c(AppColors.onSurface).w(FontWeight.w700)),
+        if (wide) const SizedBox(width: 8) else const Spacer(),
+        Icon(Symbols.arrow_forward_rounded, size: 18, color: AppColors.onSurface),
+      ]),
+    );
+    final label = Text(kind, style: T.labelSm.c(color).w(FontWeight.w700).tracking(0.2));
+    final heading = Text(title, style: T.headlineSm.s(17), maxLines: 1, overflow: TextOverflow.ellipsis);
+    final desc = Text(text, style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis);
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(Rad.xl),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: wide
+              ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Row(children: [
+                    art,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        label,
+                        const SizedBox(height: 2),
+                        heading,
+                        const SizedBox(height: 2),
+                        desc,
+                      ]),
+                    ),
+                  ]),
+                  if (progress != null) ...[
+                    const SizedBox(height: 12),
+                    Bar(value: progress!.clamp(0, 1).toDouble(), height: 8, color: color),
+                  ],
+                  const SizedBox(height: 12),
+                  Align(alignment: Alignment.centerRight, child: pill),
+                ])
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  art,
+                  const SizedBox(height: 12),
+                  label,
+                  const SizedBox(height: 2),
+                  heading,
+                  const SizedBox(height: 4),
+                  desc,
+                  const Spacer(),
+                  const SizedBox(height: 14),
+                  pill,
+                ]),
+        ),
+      ),
     );
   }
 }

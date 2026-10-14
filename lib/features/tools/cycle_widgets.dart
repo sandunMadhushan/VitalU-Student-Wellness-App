@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -122,14 +123,16 @@ class _CycleExplainerState extends State<CycleExplainer> {
   }
 }
 
-/// The uterus, tubes and ovaries in each phase: the lining shedding, then
-/// rebuilding, an egg being released, and the lining at its thickest. The
-/// pictures cross-fade with a gentle zoom as the phase changes.
-class UterusDiagram extends StatelessWidget {
+/// The uterus, tubes and ovaries in each phase, brought to life with a live
+/// layer on top of the illustration: during a period droplets fall from the
+/// cervix, in the follicular phase the leading follicle grows, at ovulation
+/// the egg travels down the tube, and in the luteal phase the corpus luteum
+/// glows while the thick lining gently pulses. Phases cross-fade.
+class UterusDiagram extends StatefulWidget {
   const UterusDiagram({super.key, required this.phase});
   final CyclePhase phase;
 
-  static String _asset(CyclePhase p) => switch (diagramPhase(p)) {
+  static String _asset(CyclePhase p) => switch (p) {
         CyclePhase.menstrual => 'uterus_menstrual',
         CyclePhase.follicular => 'uterus_follicular',
         CyclePhase.ovulation => 'uterus_ovulation',
@@ -137,8 +140,22 @@ class UterusDiagram extends StatelessWidget {
       };
 
   @override
+  State<UterusDiagram> createState() => _UterusDiagramState();
+}
+
+class _UterusDiagramState extends State<UterusDiagram> with SingleTickerProviderStateMixin {
+  late final _loop = AnimationController(vsync: this, duration: const Duration(milliseconds: 4200))..repeat();
+
+  @override
+  void dispose() {
+    _loop.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final name = _asset(phase);
+    final p = diagramPhase(widget.phase);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(Rad.base),
       child: AnimatedSwitcher(
@@ -148,10 +165,144 @@ class UterusDiagram extends StatelessWidget {
           opacity: a,
           child: ScaleTransition(scale: Tween(begin: 1.04, end: 1.0).animate(a), child: child),
         ),
-        child: Image.asset('assets/art/$name.jpg', key: ValueKey(name), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+        child: AnimatedBuilder(
+          key: ValueKey(p),
+          animation: _loop,
+          builder: (_, child) {
+            final t = reduceMotion ? 0.35 : _loop.value;
+            // A slow "breath" so the whole picture feels alive.
+            final breathe = 1.014 + 0.012 * math.sin(t * 2 * math.pi); // never below 1, so no edge shows
+            return Stack(fit: StackFit.expand, children: [
+              Transform.scale(scale: breathe, child: child),
+              CustomPaint(painter: _PhasePainter(phase: p, t: t, breathe: breathe)),
+            ]);
+          },
+          child: Image.asset('assets/art/${UterusDiagram._asset(p)}.jpg', fit: BoxFit.cover),
+        ),
       ),
     );
   }
+}
+
+/// Live effects drawn over the phase illustration, positioned in fractions
+/// of the picture (all four pictures share the same 3:2 layout).
+class _PhasePainter extends CustomPainter {
+  _PhasePainter({required this.phase, required this.t, required this.breathe});
+  final CyclePhase phase;
+  final double t;
+  final double breathe;
+
+  Offset _at(Size s, double x, double y) {
+    // Follow the breathing scale around the centre so effects stay attached.
+    final c = s.center(Offset.zero);
+    return c + (Offset(x * s.width, y * s.height) - c) * breathe;
+  }
+
+  void _glow(Canvas canvas, Offset c, double r, Color color, double strength) {
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()..shader = RadialGradient(colors: [color.withValues(alpha: strength.clamp(0.0, 1.0)), color.withValues(alpha: 0)]).createShader(Rect.fromCircle(center: c, radius: r)),
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    switch (phase) {
+      case CyclePhase.menstrual:
+        _menstrual(canvas, s);
+      case CyclePhase.follicular:
+        _follicular(canvas, s);
+      case CyclePhase.ovulation:
+        _ovulation(canvas, s);
+      default:
+        _luteal(canvas, s);
+    }
+  }
+
+  // Droplets form at the cervix and fall, while the shedding lining shimmers.
+  void _menstrual(Canvas canvas, Size s) {
+    final w = s.width;
+    for (int i = 0; i < 3; i++) {
+      final p = (t + i / 3) % 1.0;
+      final y = 0.58 + p * 0.40;
+      final size = w * (0.010 + 0.006 * math.sin(p * math.pi));
+      final o = _at(s, 0.489, y);
+      final alpha = p < 0.85 ? 1.0 : (1 - p) / 0.15;
+      final drop = Path()
+        ..moveTo(o.dx, o.dy - size * 1.8)
+        ..quadraticBezierTo(o.dx + size, o.dy - size * 0.2, o.dx + size, o.dy + size * 0.2)
+        ..arcToPoint(Offset(o.dx - size, o.dy + size * 0.2), radius: Radius.circular(size))
+        ..quadraticBezierTo(o.dx - size, o.dy - size * 0.2, o.dx, o.dy - size * 1.8)
+        ..close();
+      canvas.drawPath(drop, Paint()..color = const Color(0xFFB3122A).withValues(alpha: 0.9 * alpha));
+      canvas.drawCircle(o + Offset(-size * 0.35, -size * 0.1), size * 0.28, Paint()..color = Colors.white.withValues(alpha: 0.55 * alpha));
+    }
+    final pulse = 0.5 + 0.5 * math.sin(t * 4 * math.pi);
+    _glow(canvas, _at(s, 0.49, 0.33), w * 0.09, const Color(0xFFD7263D), 0.12 + 0.12 * pulse);
+  }
+
+  // The leading follicle swells and glows; light rises in the rebuilding lining.
+  void _follicular(Canvas canvas, Size s) {
+    final w = s.width;
+    final grow = 0.5 + 0.5 * math.sin(t * 2 * math.pi);
+    final f = _at(s, 0.835, 0.335);
+    _glow(canvas, f, w * (0.05 + 0.025 * grow), const Color(0xFFFFE3EC), 0.55);
+    canvas.drawCircle(
+      f,
+      w * (0.035 + 0.012 * grow),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.004
+        ..color = Colors.white.withValues(alpha: 0.55 + 0.3 * grow),
+    );
+    final rnd = math.Random(7);
+    for (int i = 0; i < 9; i++) {
+      final x = 0.43 + rnd.nextDouble() * 0.14;
+      final phase = (t * 0.8 + rnd.nextDouble()) % 1.0;
+      final y = 0.55 - phase * 0.36;
+      final a = math.sin(phase * math.pi);
+      canvas.drawCircle(_at(s, x, y), w * (0.004 + rnd.nextDouble() * 0.004), Paint()..color = Colors.white.withValues(alpha: 0.7 * a));
+    }
+  }
+
+  // The follicle flashes, then the egg drifts into the tube and down to the womb.
+  void _ovulation(Canvas canvas, Size s) {
+    final w = s.width;
+    // Measured along the centre of the tube in the illustration.
+    const path = [(0.825, 0.30), (0.89, 0.235), (0.93, 0.18), (0.915, 0.12), (0.86, 0.107), (0.82, 0.12), (0.78, 0.145), (0.74, 0.17), (0.70, 0.19), (0.64, 0.205)];
+    final flash = t < 0.18 ? math.sin(t / 0.18 * math.pi) : 0.0;
+    _glow(canvas, _at(s, 0.825, 0.30), w * 0.09, const Color(0xFFFFD27A), 0.25 + 0.55 * flash);
+    final p = ((t - 0.1) / 0.85).clamp(0.0, 1.0);
+    final seg = p * (path.length - 1);
+    final i = seg.floor().clamp(0, path.length - 2);
+    final k = Curves.easeInOut.transform((seg - i).clamp(0.0, 1.0));
+    final x = path[i].$1 + (path[i + 1].$1 - path[i].$1) * k;
+    final y = path[i].$2 + (path[i + 1].$2 - path[i].$2) * k;
+    final egg = _at(s, x, y);
+    final fade = p <= 0 ? 0.0 : (p > 0.9 ? (1 - p) / 0.1 : 1.0);
+    _glow(canvas, egg, w * 0.035, const Color(0xFFFFF4D6), 0.9 * fade);
+    canvas.drawCircle(egg, w * 0.011, Paint()..color = const Color(0xFFFFFBF0).withValues(alpha: fade));
+    canvas.drawCircle(
+      egg,
+      w * 0.011,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.003
+        ..color = const Color(0xFFF2B54A).withValues(alpha: fade),
+    );
+  }
+
+  // The corpus luteum glows gold and the thick, rich lining breathes.
+  void _luteal(Canvas canvas, Size s) {
+    final w = s.width;
+    final pulse = 0.5 + 0.5 * math.sin(t * 2 * math.pi);
+    _glow(canvas, _at(s, 0.865, 0.37), w * (0.06 + 0.02 * pulse), const Color(0xFFFFC233), 0.35 + 0.3 * pulse);
+    _glow(canvas, _at(s, 0.5, 0.33), w * (0.13 + 0.02 * pulse), const Color(0xFFE8475F), 0.10 + 0.10 * pulse);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PhasePainter old) => old.t != t || old.phase != phase;
 }
 
 // -----------------------------------------------------------------------------

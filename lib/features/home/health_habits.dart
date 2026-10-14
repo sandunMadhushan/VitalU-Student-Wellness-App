@@ -59,7 +59,7 @@ List<HabitInsight> healthHabits(HabitSignals s) {
   int? pdqsFreq(String k) => (pdqs[k] as num?)?.toInt();
 
   // Fruit.
-  final fruitDays = s.diversity.where((r) => r['food_group'] == 'fruits').map((r) => r['log_date']).toSet().length;
+  final fruitDays = s.diversity.where((r) => const {'fruits', 'other_fruit', 'vita_veg_fruit'}.contains(r['food_group'])).map((r) => r['log_date']).toSet().length;
   final loggedDays = s.diversity.map((r) => r['log_date']).toSet().length;
   final fruitPdqs = [pdqsFreq('citrus'), pdqsFreq('other_fruit')].whereType<int>().toList();
   if (fruitPdqs.length == 2 && fruitPdqs.every((f) => f == 0)) {

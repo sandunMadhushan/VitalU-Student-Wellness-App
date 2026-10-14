@@ -7,6 +7,7 @@ import '../../data/repo.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
+import 'diet_science.dart' show LoggedDietQuality, loggedDietQuality;
 
 /// One PDQS food group. Healthy groups score more the more often they are
 /// eaten; the others score more the less often they are eaten.
@@ -66,6 +67,7 @@ class PdqsScreen extends StatefulWidget {
 class _PdqsScreenState extends State<PdqsScreen> {
   final _answers = <String, int>{};
   Rec? _last;
+  LoggedDietQuality? _logged;
   bool _showResult = false;
   bool _saving = false;
 
@@ -74,6 +76,10 @@ class _PdqsScreenState extends State<PdqsScreen> {
     super.initState();
     Repo.latestToolResult('pdqs').then((r) {
       if (mounted && r != null) setState(() => _last = r);
+    }).catchError((_) {});
+    final now = DateTime.now();
+    Repo.mealsBetween(dayStart(now).subtract(const Duration(days: 6)), now).then((m) {
+      if (mounted) setState(() => _logged = loggedDietQuality(m));
     }).catchError((_) {});
   }
 
@@ -128,12 +134,41 @@ class _PdqsScreenState extends State<PdqsScreen> {
             ),
           ]),
         ),
+        if (_logged != null && _logged!.daysLogged > 0) _loggedCard(_logged!),
         const SectionHeader('Foods to enjoy often', subtitle: 'More servings score higher'),
         for (final g in pdqsGroups.where((g) => g.healthy)) _row(g),
         const SectionHeader('Foods to keep occasional', subtitle: 'Fewer servings score higher'),
         for (final g in pdqsGroups.where((g) => !g.healthy)) _row(g),
         const PrivacyNote('A self-check of eating patterns, not a diagnosis. Only you can see this.'),
       ];
+
+  /// The same score estimated from the last 7 days of meal logs.
+  Widget _loggedCard(LoggedDietQuality q) {
+    final (band, color) = pdqsBand(q.score);
+    final missing = [for (final g in pdqsGroups) if (g.healthy && (q.servings[g.key] ?? 0) == 0) g.label.toLowerCase()];
+    return VCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Ring(value: q.score / 42, size: 64, stroke: 6, color: color, child: Text('${q.score}', style: T.metric(20))),
+          const SizedBox(width: Sp.md),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              CategoryLabel('From your meal logs', icon: Symbols.menu_book_rounded, color: AppColors.nutrition),
+              const SizedBox(height: 4),
+              Text(band, style: T.headlineSm.c(color)),
+              Text('${q.daysLogged} of 7 days logged${q.reliable ? '' : '. Log at least 4 days for a fair estimate'}.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
+        ]),
+        if (missing.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text('Not in your logs this week: ${missing.take(4).join(', ')}.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+        ],
+        const SizedBox(height: 6),
+        Text('Each logged food counts as one serving, so this is an estimate. The check-in below asks you directly.', style: T.labelSm.c(AppColors.onSurfaceVariant)),
+      ]),
+    );
+  }
 
   Widget _row(PdqsGroup g) {
     final c = g.healthy ? AppColors.nutrition : AppColors.warning;
