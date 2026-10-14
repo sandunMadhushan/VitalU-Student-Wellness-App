@@ -4,10 +4,10 @@ import 'dart:math' as math;
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../core/app_state.dart';
 import '../core/badges.dart';
 import '../core/sfx.dart';
 import '../data/catalog.dart';
@@ -15,15 +15,22 @@ import 'text.dart';
 import 'tokens.dart';
 import 'widgets.dart';
 
-/// Badges with their own illustrated mascot (assets/badges/<code>.svg).
-const _mascots = {'aqua_achiever', 'rainbow_plate', 'move_maker'};
+/// Streak badges are complete medal illustrations of their own
+/// (`assets/badges/<code>.webp`); [_bySex] ones are drawn for the student's
+/// sex (`assets/badges/<code>_<female|male>.webp`).
+const _illustrated = {'aqua_achiever', 'rainbow_plate', 'active_aura'};
+const _bySex = {'active_aura'};
+
+String _illustratedAsset(String code) =>
+    _bySex.contains(code) ? 'assets/badges/${code}_${AppState.instance.profile?.sex == 'male' ? 'male' : 'female'}.webp' : 'assets/badges/$code.webp';
 
 /// The badge's signature colour: streak badges use their tracker's colour,
 /// the rest follow their milestone category.
 Color badgeColor(String code, [String? category]) => switch (code) {
       'aqua_achiever' || 'hydration_habit' => AppColors.water,
       'rainbow_plate' || 'plate_harmony' || 'nourish_bowl' => AppColors.nutrition,
-      'move_maker' || 'gentle_steps' || 'campus_stroll' => AppColors.activity,
+      'active_aura' => AppColors.nutrition,
+      'gentle_steps' || 'campus_stroll' => AppColors.activity,
       'restful_sleep' => AppColors.sleep,
       'mindful_breath' || 'exam_refuge' => AppColors.mind,
       'heart_minded' => AppColors.heart,
@@ -50,8 +57,13 @@ class BadgeArt extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = badgeColor(code, category);
     final light = Color.lerp(c, Colors.white, 0.45)!;
-    final mascot = _mascots.contains(code);
-    Widget medal = SizedBox(
+    Widget medal = _illustrated.contains(code)
+        ? SizedBox(
+            width: size,
+            height: size * (ribbon ? 1.18 : 1),
+            child: Image.asset(_illustratedAsset(code), fit: BoxFit.contain, alignment: Alignment.topCenter),
+          )
+        : SizedBox(
       width: size,
       height: size * (ribbon ? 1.18 : 1),
       child: Stack(alignment: Alignment.topCenter, clipBehavior: Clip.none, children: [
@@ -71,10 +83,8 @@ class BadgeArt extends StatelessWidget {
               color: Color.alphaBlend(c.withValues(alpha: 0.12), Colors.white),
               border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: size * 0.025),
             ),
-            padding: EdgeInsets.all(mascot ? size * 0.04 : size * 0.18),
-            child: mascot
-                ? SvgPicture.asset('assets/badges/$code.svg', fit: BoxFit.contain)
-                : FittedBox(child: Icon(iconByName(icon), color: c, fill: 1)),
+            padding: EdgeInsets.all(size * 0.18),
+            child: FittedBox(child: Icon(iconByName(icon), color: c, fill: 1)),
           ),
         ),
       ]),
@@ -116,8 +126,9 @@ class _RibbonPainter extends CustomPainter {
 
 /// Three stars, lit up to [filled], optionally animating in one by one.
 class StreakStars extends StatelessWidget {
-  const StreakStars({super.key, required this.filled, this.size = 26, this.labels = true, this.animate = false});
+  const StreakStars({super.key, required this.filled, this.count = 3, this.size = 26, this.labels = true, this.animate = false});
   final int filled;
+  final int count;
   final double size;
   final bool labels;
   final bool animate;
@@ -126,13 +137,13 @@ class StreakStars extends StatelessWidget {
   Widget build(BuildContext context) {
     final gold = const Color(0xFFF5B321);
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      for (int i = 0; i < StreakBadge.length; i++) ...[
-        if (i > 0) SizedBox(width: size * 0.4),
+      for (int i = 0; i < count; i++) ...[
+        if (i > 0) SizedBox(width: count > 3 ? size * 0.12 : size * 0.4),
         Column(mainAxisSize: MainAxisSize.min, children: [
           TweenAnimationBuilder<double>(
             tween: Tween(begin: animate ? 0 : 1, end: 1),
             duration: Duration(milliseconds: 420 + 260 * i),
-            curve: Interval(i * 0.3, 1, curve: Curves.elasticOut),
+            curve: Interval((i * 0.9 / count).clamp(0.0, 0.9), 1, curve: Curves.elasticOut),
             builder: (_, v, _) {
               final on = i < filled;
               return Transform.scale(
@@ -141,7 +152,7 @@ class StreakStars extends StatelessWidget {
               );
             },
           ),
-          if (labels) Text('Day ${i + 1}', style: T.labelSm.c(i < filled ? AppColors.onSurface : AppColors.onSurfaceVariant)),
+          if (labels) Text(count > 3 ? '${i + 1}' : 'Day ${i + 1}', style: T.labelSm.c(i < filled ? AppColors.onSurface : AppColors.onSurfaceVariant)),
         ]),
       ],
     ]);
@@ -202,11 +213,11 @@ class _StreakBadgeCardState extends State<StreakBadgeCard> {
       line = info.streak > 0 ? 'Current streak: ${info.streak} ${info.streak == 1 ? 'day' : 'days'}. Keep it going.' : 'Start a new streak today. ${b.goal.toLowerCase()}.';
     } else if (stars == 0) {
       headline = 'Earn ${b.title}';
-      line = '${b.goal} 3 days in a row to unlock this badge.';
+      line = '${b.goal} ${b.length} days in a row to unlock this badge.';
     } else {
       final left = info.remaining;
       headline = "You're on your way!";
-      line = '$stars of 3 days done. $left more ${left == 1 ? 'day' : 'days'} to earn ${b.title}.';
+      line = '$stars of ${b.length} days done. $left more ${left == 1 ? 'day' : 'days'} to earn ${b.title}.';
     }
     final dark = AppColors.isDark;
     return Material(
@@ -222,20 +233,20 @@ class _StreakBadgeCardState extends State<StreakBadgeCard> {
               width: 92,
               height: 92,
               child: Stack(alignment: Alignment.center, children: [
-                Ring(value: earned ? 1 : stars / 3, size: 92, stroke: 5, color: c),
+                Ring(value: earned ? 1 : stars / b.length, size: 92, stroke: 5, color: c),
                 BadgeArt(code: b.code, size: 72, ribbon: false),
               ]),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(earned ? 'Badge earned' : '3-day badge streak', style: T.labelSm.c(c).w(FontWeight.w700).tracking(0.2)),
+                Text(earned ? 'Badge earned' : '${b.length}-day badge streak', style: T.labelSm.c(c).w(FontWeight.w700).tracking(0.2)),
                 const SizedBox(height: 2),
                 Text(headline, style: T.headlineSm),
                 const SizedBox(height: 2),
                 Text(line, style: T.bodySm.c(AppColors.onSurfaceVariant)),
                 const SizedBox(height: 8),
-                StreakStars(filled: earned ? 3 : stars, size: 22),
+                StreakStars(filled: earned ? b.length : stars, count: b.length, size: b.length > 3 ? 17 : 22),
               ]),
             ),
           ]),
@@ -382,7 +393,7 @@ Future<void> showStreakDayPopup(BuildContext context, StreakKind kind, StreakInf
   final c = badgeColor(b.code);
   HapticFeedback.mediumImpact();
   final left = info.remaining;
-  final title = info.earned ? '${info.streak}-day streak!' : 'Day ${info.stars} of 3 complete!';
+  final title = info.earned ? '${info.streak}-day streak!' : 'Day ${info.stars} of ${b.length} complete!';
   final text = info.earned
       ? 'You already hold ${b.title}, and you are still going strong.'
       : '${b.dayDone}. $left more ${left == 1 ? 'day' : 'days'} in a row to earn ${b.title}.';
@@ -402,13 +413,13 @@ Future<void> showStreakDayPopup(BuildContext context, StreakKind kind, StreakInf
               width: 120,
               height: 120,
               child: Stack(alignment: Alignment.center, children: [
-                Ring(value: info.earned ? 1 : info.stars / 3, size: 120, stroke: 7, color: c),
+                Ring(value: info.earned ? 1 : info.stars / b.length, size: 120, stroke: 7, color: c),
                 BadgeArt(code: b.code, size: 94, ribbon: false),
               ]),
             ),
           ),
           const SizedBox(height: Sp.md),
-          StreakStars(filled: info.earned ? 3 : info.stars, size: 32, animate: true),
+          StreakStars(filled: info.earned ? b.length : info.stars, count: b.length, size: b.length > 3 ? 24 : 32, animate: true),
           const SizedBox(height: Sp.md),
           Text(title, style: T.headlineMd, textAlign: TextAlign.center),
           const SizedBox(height: 6),

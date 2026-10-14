@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VitalU Admin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <!-- Sign in -->
+  <main id="login" class="login" hidden>
+    <form id="login-form" class="login-card" autocomplete="on">
+      <div class="brand"><span class="brand-mark">V</span> VitalU <span class="brand-tag">Admin</span></div>
+      <h1>Campus health dashboard</h1>
+      <p class="muted">Pooled, anonymous results from the six-monthly student health assessment.</p>
+      <label>Email<input id="login-email" type="email" required autocomplete="username"></label>
+      <label>Password<input id="login-password" type="password" required autocomplete="current-password"></label>
+      <p id="login-error" class="error" role="alert" hidden></p>
+      <button class="btn primary" type="submit" id="login-btn">Sign in</button>
+      <p class="fine">Only accounts registered as administrators can sign in here. Students use the VitalU app.</p>
+    </form>
+  </main>
+
+  <!-- App -->
+  <div id="app" class="shell" hidden>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">V</span> VitalU <span class="brand-tag">Admin</span></div>
+      <nav class="tabs" role="tablist">
+        <button role="tab" data-tab="overview" class="tab active">Overview</button>
+        <button role="tab" data-tab="analytics" class="tab">Analytics</button>
+        <button role="tab" data-tab="schedule" class="tab">Schedule</button>
+        <button role="tab" data-tab="questions" class="tab">Questionnaire</button>
+        <button role="tab" data-tab="consults" class="tab">Consultations <span id="open-count" class="pill" hidden></span></button>
+      </nav>
+      <div class="who"><span id="who-email" class="muted"></span><button class="btn ghost" id="logout">Sign out</button></div>
+    </header>
+
+    <main class="content">
+      <section id="tab-overview" class="tab-panel"></section>
+      <section id="tab-analytics" class="tab-panel" hidden></section>
+      <section id="tab-schedule" class="tab-panel" hidden></section>
+      <section id="tab-questions" class="tab-panel" hidden></section>
+      <section id="tab-consults" class="tab-panel" hidden></section>
+    </main>
+  </div>
+
+  <dialog id="modal"><form method="dialog" id="modal-body"></form></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

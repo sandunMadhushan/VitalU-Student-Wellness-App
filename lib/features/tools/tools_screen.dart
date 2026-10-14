@@ -24,7 +24,7 @@ class ToolsScreen extends StatelessWidget {
           title: 'Quick checks,\nclear answers',
           subtitle: 'Results stay private to you.',
           accent: AppColors.mind,
-          illustration: 'doctors_hwty',
+          illustration: 'hero_tools',
         ),
         TileGrid(children: [
           // Check-ups first, then the daily trackers.
@@ -47,6 +47,8 @@ class ToolsScreen extends StatelessWidget {
           wide: true,
           onTap: () => go('/professionals'),
         ),
+        // Last on purpose: the reader sits at the very end of the tools list.
+        ToolBlock(icon: Symbols.lab_profile_rounded, color: AppColors.heart, kind: 'Lab results', title: 'Blood report reader', text: 'Understand your lab results', action: 'Read', wide: true, onTap: () => go('/blood-report')),
         const PrivacyNote('These tools are for self-awareness, not diagnosis.'),
       ],
     );

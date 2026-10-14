@@ -40,7 +40,7 @@ class _MilestonesScreenState extends State<MilestonesScreen> {
 
   void _explain() => showInfoSheet(context, title: 'How milestones work', icon: Symbols.military_tech_rounded, paragraphs: const [
         'Milestones unlock automatically as you use VitalU: drinking water, sleeping well, moving, logging meals, reading articles and checking in on your mood.',
-        'Some badges, like Aqua Achiever, Rainbow Plate and Move Maker, need a goal met three days in a row. Miss a day and the streak simply starts again.',
+        'Streak badges need a goal met on days in a row: three days for Aqua Achiever and Rainbow Plate, seven for Active Aura. Miss a day and the streak simply starts again.',
         'Badges are private and never compared with anyone else.',
       ]);
 

@@ -1,213 +1,229 @@
 import 'package:flutter/widgets.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
+import '../../data/catalog.dart';
 import '../../data/models.dart';
 
+/// One answer choice. A higher [score] is a healthier answer; null means the
+/// question is descriptive and not scored.
 class AOption {
-  const AOption(this.value, this.title, [this.subtitle, this.score = 0]);
+  const AOption(this.value, this.label, {this.hint, this.score});
   final String value;
-  final String title;
-  final String? subtitle;
-  final num score;
+  final String label;
+  final String? hint;
+  final num? score;
+
+  factory AOption.fromJson(Map<String, dynamic> j) => AOption('${j['value']}', '${j['label']}', hint: j['hint'] as String?, score: j['score'] as num?);
 }
 
-enum AType { choice, number }
+enum AKind { single, multi, scale, number, text }
 
 class AQuestion {
   const AQuestion({
     required this.id,
-    required this.section,
-    required this.category,
-    required this.categoryIcon,
+    required this.domain,
+    required this.kind,
     required this.text,
-    this.help = 'Reflect on your typical week during this semester so far. There are no right or wrong answers.',
-    this.type = AType.choice,
+    this.help,
     this.options = const [],
     this.unit,
     this.min,
     this.max,
+    this.maxChoices,
+    this.prefill,
     this.optional = false,
   });
+
   final String id;
-  final int section;
-  final String category;
-  final IconData categoryIcon;
+  final int domain;
+  final AKind kind;
   final String text;
-  final String help;
-  final AType type;
+  final String? help;
   final List<AOption> options;
   final String? unit;
   final double? min;
   final double? max;
+  final int? maxChoices;
+
+  /// Profile field used to pre-fill a number, e.g. height_cm.
+  final String? prefill;
   final bool optional;
+
+  bool get scored => options.any((o) => o.score != null);
+
+  factory AQuestion.fromJson(Map<String, dynamic> j) => AQuestion(
+        id: j['id'] as String,
+        domain: (j['domain_id'] as num).toInt(),
+        kind: AKind.values.firstWhere((k) => k.name == j['kind'], orElse: () => AKind.single),
+        text: j['text'] as String,
+        help: j['help'] as String?,
+        options: [for (final o in (j['options'] as List? ?? const [])) AOption.fromJson(Map<String, dynamic>.from(o as Map))],
+        unit: j['unit'] as String?,
+        min: (j['min_value'] as num?)?.toDouble(),
+        max: (j['max_value'] as num?)?.toDouble(),
+        maxChoices: (j['max_choices'] as num?)?.toInt(),
+        prefill: j['prefill'] as String?,
+        optional: j['optional'] as bool? ?? false,
+      );
 }
 
-class ASection {
-  const ASection(this.title, this.image, this.icon);
+class ADomain {
+  const ADomain(this.id, this.title, this.blurb, this.icon);
+  final int id;
   final String title;
-  final String image;
-  final IconData icon;
+  final String blurb;
+  final String icon;
+
+  IconData get iconData => iconByName(icon);
+
+  factory ADomain.fromJson(Map<String, dynamic> j) => ADomain((j['id'] as num).toInt(), j['title'] as String, (j['blurb'] as String?) ?? '', (j['icon'] as String?) ?? 'assignment');
 }
 
-const assessmentSections = <ASection>[
-  ASection('Body Measurements', 'heart_desk', Symbols.straighten_rounded),
-  ASection('Nutrition & Eating', 'nourishment_bowl', Symbols.restaurant_rounded),
-  ASection('Lifestyle & Daily Rhythm', 'study_desk_tea', Symbols.spa_rounded),
-  ASection('Physical Activity', 'sneakers', Symbols.directions_walk_rounded),
-  ASection('Sleep & Rest', 'moon_cloud', Symbols.bedtime_rounded),
-  ASection('Stress & Wellbeing', 'meditating_student', Symbols.self_improvement_rounded),
+/// The ten areas the campus administration asked to cover.
+const defaultDomains = <ADomain>[
+  ADomain(1, 'Physical and cardiometabolic health', 'Your body measurements and general health.', 'monitor_heart'),
+  ADomain(2, 'Dietary behaviours and food security', 'What and how regularly you eat.', 'restaurant'),
+  ADomain(3, 'Academic workload and time pressure', 'How study fits around the rest of life.', 'school'),
+  ADomain(4, 'Emotional well-being and stress', 'How you have been feeling lately.', 'psychology'),
+  ADomain(5, 'Sleep and daily routines', 'Rest and the rhythm of your days.', 'bedtime'),
+  ADomain(6, 'Physical activity and sedentary behaviour', 'Moving and sitting through the week.', 'directions_walk'),
+  ADomain(7, 'Financial and living conditions', 'Where you stay and how money affects health.', 'savings'),
+  ADomain(8, 'Social environment and personal support', 'The people around you.', 'diversity_3'),
+  ADomain(9, 'Campus environment and access to services', 'Food, spaces and health services on campus.', 'local_hospital'),
+  ADomain(10, 'Student voice and institutional priorities', 'What the university should do next.', 'campaign'),
 ];
 
-const _freq = [
-  AOption('0', 'Never', 'Not at all in the last month', 0),
-  AOption('1', 'Almost never', null, 1),
-  AOption('2', 'Sometimes', null, 2),
-  AOption('3', 'Fairly often', null, 3),
-  AOption('4', 'Very often', null, 4),
+/// Short names for charts and summaries.
+const domainShortNames = {
+  1: 'Physical health',
+  2: 'Diet and food security',
+  3: 'Academic pressure',
+  4: 'Emotional well-being',
+  5: 'Sleep and routine',
+  6: 'Physical activity',
+  7: 'Money and living',
+  8: 'Social support',
+  9: 'Campus and services',
+  10: 'Student voice',
+};
+
+List<AOption> _o(List<(String, String, num?)> l) => [for (final x in l) AOption(x.$1, x.$2, score: x.$3)];
+final _never4 = _o([('0', 'Never', 4), ('1', 'Almost never', 3), ('2', 'Sometimes', 2), ('3', 'Fairly often', 1), ('4', 'Very often', 0)]);
+final _never4Rev = _o([('0', 'Never', 0), ('1', 'Almost never', 1), ('2', 'Sometimes', 2), ('3', 'Fairly often', 3), ('4', 'Very often', 4)]);
+
+/// The built-in questionnaire, the same as the database seed. Used only when
+/// the questions cannot be loaded (for example, offline on first open).
+final defaultQuestions = <AQuestion>[
+  const AQuestion(id: 'p_height', domain: 1, kind: AKind.number, text: 'What is your height?', help: 'We filled this in from your profile. Change it if it is out of date.', unit: 'cm', min: 100, max: 230, prefill: 'height_cm', optional: true),
+  const AQuestion(id: 'p_weight', domain: 1, kind: AKind.number, text: 'What is your weight?', help: 'A recent reading is perfect.', unit: 'kg', min: 25, max: 250, prefill: 'weight_kg', optional: true),
+  const AQuestion(id: 'p_waist', domain: 1, kind: AKind.number, text: 'What is your waist measurement?', help: 'Measure midway between your lowest rib and hip bone, after breathing out.', unit: 'cm', min: 40, max: 200, prefill: 'waist_cm', optional: true),
+  const AQuestion(id: 'p_hip', domain: 1, kind: AKind.number, text: 'What is your hip measurement?', help: 'Measure around the widest part of your hips.', unit: 'cm', min: 50, max: 200, prefill: 'hip_cm', optional: true),
+  AQuestion(id: 'p_general', domain: 1, kind: AKind.scale, text: 'How would you rate your overall physical health right now?', options: _o([('1', 'Poor', 0), ('2', 'Fair', 1), ('3', 'Good', 2), ('4', 'Very good', 3), ('5', 'Excellent', 4)])),
+  AQuestion(id: 'p_conditions', domain: 1, kind: AKind.multi, text: 'Has a doctor ever told you that you have any of these?', help: 'Select all that apply.', options: _o([
+    ('high_bp', 'High blood pressure', null),
+    ('diabetes', 'Diabetes or prediabetes', null),
+    ('cholesterol', 'High cholesterol', null),
+    ('asthma', 'Asthma', null),
+    ('anaemia', 'Anaemia', null),
+    ('thyroid', 'Thyroid condition', null),
+    ('pcos', 'PCOS', null),
+    ('none', 'None of these', null),
+  ])),
+  AQuestion(id: 'p_checkup', domain: 1, kind: AKind.single, text: 'When did you last have your blood pressure or blood sugar checked?', options: _o([('6m', 'Within the last 6 months', 3), ('12m', '6 to 12 months ago', 2), ('older', 'More than a year ago', 1), ('never', 'Never, or not sure', 0)])),
+  AQuestion(id: 'd_breakfast', domain: 2, kind: AKind.single, text: 'How many days a week do you eat breakfast?', options: _o([('0-1', '0 to 1 days', 0), ('2-4', '2 to 4 days', 1), ('5-7', '5 to 7 days', 2)])),
+  AQuestion(id: 'd_fruitveg', domain: 2, kind: AKind.single, text: 'On a typical day, how many servings of fruit and vegetables do you eat?', help: 'One serving is about a handful, or a small bowl of mallum.', options: _o([('0-1', '0 to 1 servings', 0), ('2-3', '2 to 3 servings', 1), ('4', '4 servings', 2), ('5+', '5 or more servings', 3)])),
+  AQuestion(id: 'd_sugary', domain: 2, kind: AKind.single, text: 'How many sugary drinks do you have a day?', help: 'Soft drinks, sweet milk tea or coffee, packet juice.', options: _o([('0', 'None', 2), ('1', '1 a day', 1), ('2+', '2 or more a day', 0)])),
+  AQuestion(id: 'd_fried', domain: 2, kind: AKind.single, text: 'How often do you eat fried or fast food?', help: 'Short eats, kottu, fried rice, instant noodles, burgers.', options: _o([('rare', 'Rarely', 3), ('1-2', '1 to 2 times a week', 2), ('3-5', '3 to 5 times a week', 1), ('daily', 'Almost every day', 0)])),
+  AQuestion(id: 'd_skip_money', domain: 2, kind: AKind.single, text: 'In the past month, did you skip meals or eat less because money was short?', options: _o([('never', 'Never', 3), ('once', 'Once or twice', 2), ('sometimes', 'Sometimes', 1), ('often', 'Often', 0)])),
+  AQuestion(id: 'a_load', domain: 3, kind: AKind.scale, text: 'How manageable is your academic workload right now?', options: _o([('1', 'Very hard', 0), ('2', 'Hard', 1), ('3', 'Okay', 2), ('4', 'Manageable', 3), ('5', 'Very manageable', 4)])),
+  AQuestion(id: 'a_tradeoff', domain: 3, kind: AKind.single, text: 'How often do deadlines make you skip meals, sleep or exercise?', options: _o([('never', 'Never', 3), ('sometimes', 'Sometimes', 2), ('often', 'Often', 1), ('always', 'Almost always', 0)])),
+  AQuestion(id: 'a_breaks', domain: 3, kind: AKind.single, text: 'Do you take short breaks while studying?', options: _o([('regularly', 'Regularly', 2), ('sometimes', 'Sometimes', 1), ('rarely', 'Rarely', 0)])),
+  AQuestion(id: 'e_mood', domain: 4, kind: AKind.scale, text: 'Overall, how has your mood been over the past two weeks?', options: _o([('1', 'Very low', 0), ('2', 'Low', 1), ('3', 'Okay', 2), ('4', 'Good', 3), ('5', 'Great', 4)])),
+  AQuestion(id: 'e_pss1', domain: 4, kind: AKind.single, text: 'In the last month, how often have you felt unable to control the important things in your life?', options: _never4),
+  AQuestion(id: 'e_pss2', domain: 4, kind: AKind.single, text: 'In the last month, how often have you felt confident about handling your personal problems?', options: _never4Rev),
+  AQuestion(id: 'e_pss3', domain: 4, kind: AKind.single, text: 'In the last month, how often have you felt that things were going your way?', options: _never4Rev),
+  AQuestion(id: 'e_pss4', domain: 4, kind: AKind.single, text: 'In the last month, how often have difficulties piled up so high that you could not overcome them?', options: _never4),
+  AQuestion(id: 's_hours', domain: 5, kind: AKind.single, text: 'On average, how many hours do you sleep a night?', options: _o([('<5', 'Less than 5 hours', 0), ('5-6', '5 to 6 hours', 1), ('7-8', '7 to 8 hours', 3), ('9+', '9 hours or more', 2)])),
+  AQuestion(id: 's_quality', domain: 5, kind: AKind.single, text: 'How would you rate your sleep quality this month?', options: _o([('very_good', 'Very good', 3), ('fairly_good', 'Fairly good', 2), ('fairly_bad', 'Fairly bad', 1), ('very_bad', 'Very bad', 0)])),
+  AQuestion(id: 's_regular', domain: 5, kind: AKind.single, text: 'Do you go to bed and wake up at about the same times most days?', options: _o([('mostly', 'Mostly, yes', 2), ('sometimes', 'Sometimes', 1), ('rarely', 'Rarely', 0)])),
+  AQuestion(id: 'm_active_days', domain: 6, kind: AKind.single, text: 'In the last 7 days, on how many days were you active for at least 30 minutes?', help: 'Brisk walking, sport, gym, cycling or dancing all count.', options: _o([('0', '0 days', 0), ('1-2', '1 to 2 days', 1), ('3-4', '3 to 4 days', 2), ('5-7', '5 to 7 days', 3)])),
+  AQuestion(id: 'm_getting_around', domain: 6, kind: AKind.single, text: 'How do you usually get around campus?', options: _o([('walk', 'Mostly walk or cycle', 2), ('mix', 'A mix of walking and transport', 1), ('vehicle', 'Mostly bus, three-wheeler or vehicle', 0)])),
+  AQuestion(id: 'm_sitting', domain: 6, kind: AKind.single, text: 'On a typical weekday, how many hours do you spend sitting?', help: 'Lectures, studying, travel and screen time together.', options: _o([('<6', 'Less than 6 hours', 2), ('6-9', '6 to 9 hours', 1), ('10+', '10 hours or more', 0)])),
+  AQuestion(id: 'f_living', domain: 7, kind: AKind.single, text: 'Where do you live during the semester?', options: _o([('hostel', 'University hostel', null), ('boarding', 'Boarding or rented room', null), ('home', 'At home with family', null), ('other', 'Somewhere else', null)])),
+  AQuestion(id: 'f_money', domain: 7, kind: AKind.single, text: 'How often do money worries affect your food, transport or health choices?', options: _o([('never', 'Never', 3), ('sometimes', 'Sometimes', 2), ('often', 'Often', 1), ('always', 'Almost always', 0)])),
+  AQuestion(id: 'f_water', domain: 7, kind: AKind.single, text: 'Can you easily get safe drinking water where you stay?', options: _o([('always', 'Always', 2), ('mostly', 'Mostly', 1), ('rarely', 'Rarely', 0)])),
+  AQuestion(id: 'o_talk', domain: 8, kind: AKind.single, text: 'Do you have someone you can talk to when things get hard?', options: _o([('always', 'Yes, always', 2), ('sometimes', 'Sometimes', 1), ('no', 'Not really', 0)])),
+  AQuestion(id: 'o_lonely', domain: 8, kind: AKind.single, text: 'How often do you feel lonely on campus?', options: _o([('never', 'Never', 3), ('rarely', 'Rarely', 2), ('sometimes', 'Sometimes', 1), ('often', 'Often', 0)])),
+  AQuestion(id: 'o_groups', domain: 8, kind: AKind.single, text: 'Do you take part in clubs, sports, societies or cultural groups?', options: _o([('regularly', 'Regularly', 2), ('occasionally', 'Occasionally', 1), ('no', 'Not at all', 0)])),
+  AQuestion(id: 'c_food', domain: 9, kind: AKind.scale, text: 'How easy is it to find healthy, affordable food on campus?', options: _o([('1', 'Very hard', 0), ('2', 'Hard', 1), ('3', 'Okay', 2), ('4', 'Easy', 3), ('5', 'Very easy', 4)])),
+  AQuestion(id: 'c_spaces', domain: 9, kind: AKind.scale, text: 'How suitable are campus spaces for walking or exercise?', options: _o([('1', 'Very poor', 0), ('2', 'Poor', 1), ('3', 'Okay', 2), ('4', 'Good', 3), ('5', 'Very good', 4)])),
+  AQuestion(id: 'c_health_centre', domain: 9, kind: AKind.single, text: 'Have you used the university health centre this academic year?', options: _o([('yes', 'Yes', null), ('no_need', 'No, I did not need to', null), ('no_barrier', 'No, I needed to but did not go', null)])),
+  AQuestion(id: 'c_barriers', domain: 9, kind: AKind.multi, text: 'What makes it hard to use campus health services?', help: 'Select all that apply.', options: _o([
+    ('unaware', 'Not sure what is offered', null),
+    ('hours', 'Opening hours', null),
+    ('waiting', 'Waiting time', null),
+    ('privacy', 'Privacy worries', null),
+    ('distance', 'Distance or transport', null),
+    ('uncomfortable', 'Feeling uncomfortable asking', null),
+    ('none', 'Nothing, it is easy', null),
+  ])),
+  AQuestion(id: 'v_priorities', domain: 10, kind: AKind.multi, text: 'Pick up to three things the university should prioritise for student health.', maxChoices: 3, options: _o([
+    ('canteen', 'Healthier canteen food', null),
+    ('affordable', 'Affordable meals', null),
+    ('mental', 'Mental health and counselling', null),
+    ('fitness', 'Sports and fitness facilities', null),
+    ('water', 'Drinking water stations', null),
+    ('schedule', 'Better exam and study scheduling', null),
+    ('screening', 'Regular health screenings', null),
+    ('hostels', 'Safer, cleaner hostels', null),
+    ('education', 'Health workshops and education', null),
+  ])),
+  const AQuestion(id: 'v_idea', domain: 10, kind: AKind.text, text: 'One change that would make student life healthier (optional)', help: 'Please do not include names or anything that could identify you.', optional: true),
 ];
 
-const _freqRev = [
-  AOption('0', 'Never', 'Not at all in the last month', 4),
-  AOption('1', 'Almost never', null, 3),
-  AOption('2', 'Sometimes', null, 2),
-  AOption('3', 'Fairly often', null, 1),
-  AOption('4', 'Very often', null, 0),
-];
+/// PSS-4 items (Perceived Stress Scale), summed 0 to 16, higher is more stress.
+const _pss = ['e_pss1', 'e_pss2', 'e_pss3', 'e_pss4'];
 
-const _days = [
-  AOption('0', '0 days', 'Not this week', 0),
-  AOption('1-2', '1–2 days', null, 1.5),
-  AOption('3-4', '3–4 days', null, 3.5),
-  AOption('5-7', '5–7 days', null, 6),
-];
+/// Scores a completed questionnaire: a 0 to 100 well-being score for each
+/// domain (higher is healthier), an overall average, BMI and waist-to-hip
+/// ratio when measured, and the PSS-4 stress sum.
+(Map<String, dynamic>, String) scoreAssessment(List<AQuestion> questions, Map<String, dynamic> answers) {
+  final perDomain = <int, List<double>>{};
+  for (final q in questions) {
+    if (!q.scored || q.kind == AKind.multi) continue;
+    final v = answers[q.id];
+    if (v == null) continue;
+    final opt = q.options.where((o) => o.value == '$v').firstOrNull;
+    if (opt?.score == null) continue;
+    final max = q.options.map((o) => o.score ?? 0).fold<num>(0, (a, b) => b > a ? b : a);
+    if (max <= 0) continue;
+    perDomain.putIfAbsent(q.domain, () => []).add(opt!.score! / max);
+  }
+  final domains = {for (final e in perDomain.entries) '${e.key}': (e.value.reduce((a, b) => a + b) / e.value.length * 100).round()};
+  final overall = domains.isEmpty ? null : (domains.values.reduce((a, b) => a + b) / domains.length).round();
 
-/// Periodic university health assessment (≈5 minutes, six sections).
-/// Activity items follow the IPAQ-SF structure; stress items use the PSS-4.
-const assessmentQuestions = <AQuestion>[
-  // 1: Body measurements
-  AQuestion(id: 'height_cm', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.height_rounded, text: 'What is your height?', help: 'Use your most recent measurement. You can skip if unsure.', type: AType.number, unit: 'cm', min: 100, max: 230, optional: true),
-  AQuestion(id: 'weight_kg', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.monitor_weight_rounded, text: 'What is your weight?', help: 'A recent reading is perfect. No judgment, ever.', type: AType.number, unit: 'kg', min: 25, max: 250, optional: true),
-  AQuestion(id: 'waist_cm', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.straighten_rounded, text: 'What is your waist circumference?', help: 'Measure at the narrowest point above the navel after a relaxed breath out.', type: AType.number, unit: 'cm', min: 40, max: 200, optional: true),
-  AQuestion(id: 'hip_cm', section: 0, category: 'Anthropometrics', categoryIcon: Symbols.accessibility_new_rounded, text: 'What is your hip circumference?', help: 'Measure around the widest part of your hips.', type: AType.number, unit: 'cm', min: 50, max: 200, optional: true),
-  AQuestion(id: 'sbp', section: 0, category: 'Clinical', categoryIcon: Symbols.monitor_heart_rounded, text: 'Do you know your recent blood pressure (upper/systolic number)?', help: 'Only if measured in the last 6 months. Skip if you don\'t know.', type: AType.number, unit: 'mmHg', min: 70, max: 220, optional: true),
+  double? n(String k) => answers[k] == null ? null : double.tryParse('${answers[k]}');
+  final bmi = Calc.bmi(n('p_height'), n('p_weight'));
+  final whr = Calc.whr(n('p_waist'), n('p_hip'));
+  // PSS-4: option values are the raw frequency (0 never to 4 very often);
+  // items 2 and 3 are positively worded, so they are reversed.
+  final pss = _pss.every((k) => answers[k] != null)
+      ? [for (final k in _pss) (k == 'e_pss2' || k == 'e_pss3') ? 4 - (int.tryParse('${answers[k]}') ?? 0) : (int.tryParse('${answers[k]}') ?? 0)].fold<int>(0, (a, b) => a + b)
+      : null;
 
-  // 2: Nutrition
-  AQuestion(id: 'fruit_veg', section: 1, category: 'Fruit & Vegetables', categoryIcon: Symbols.nutrition_rounded, text: 'On a typical day, how many servings of fruit and vegetables do you eat?', options: [
-    AOption('0-1', '0–1 servings', 'Rarely have fruit or veg', 0),
-    AOption('2-3', '2–3 servings', 'Some with most meals', 1),
-    AOption('4', '4 servings', 'Almost there', 2),
-    AOption('5+', '5 or more servings', 'Colourful plates most days', 3),
-  ]),
-  AQuestion(id: 'breakfast', section: 1, category: 'Meal Rhythm', categoryIcon: Symbols.bakery_dining_rounded, text: 'How many days a week do you eat breakfast?', options: [
-    AOption('0-1', '0–1 days', 'Usually skip it', 0),
-    AOption('2-4', '2–4 days', 'Depends on lectures', 1),
-    AOption('5-7', '5–7 days', 'Most mornings', 2),
-  ]),
-  AQuestion(id: 'fried', section: 1, category: 'Food Choices', categoryIcon: Symbols.fastfood_rounded, text: 'How often do you eat fried, fast or ultra-processed foods (short eats, instant noodles, burgers)?', options: [
-    AOption('rare', 'Rarely', 'Less than once a week', 3),
-    AOption('1-2', '1–2 times a week', null, 2),
-    AOption('3-5', '3–5 times a week', null, 1),
-    AOption('daily', 'Daily', 'Almost every day', 0),
-  ]),
-  AQuestion(id: 'sugary', section: 1, category: 'Drinks', categoryIcon: Symbols.local_cafe_rounded, text: 'How many sugary drinks (soft drinks, sweetened tea/coffee, juices) do you have per day?', options: [
-    AOption('0', 'None', null, 2),
-    AOption('1', '1 per day', null, 1),
-    AOption('2+', '2 or more per day', null, 0),
-  ]),
-
-  // 3: Lifestyle
-  AQuestion(id: 'balance', section: 2, category: 'Daily Balance & Energy', categoryIcon: Symbols.balance_rounded, text: 'How easily are you able to balance academic coursework with daily downtime and meals?', options: [
-    AOption('smooth', 'Smoothly balanced', 'I regularly take breaks and eat on schedule.', 3),
-    AOption('manageable', 'Manageable, with occasional rushes', 'Busier around assignment deadlines, but generally okay.', 2),
-    AOption('compromised', 'Often compromised', 'I frequently skip meals or study through resting hours.', 1),
-    AOption('overwhelmed', 'Constantly overwhelmed', 'Struggling to find time for basic self-care.', 0),
-  ]),
-  AQuestion(id: 'tobacco', section: 2, category: 'Tobacco & Vaping', categoryIcon: Symbols.smoke_free_rounded, text: 'Do you currently smoke or vape?', help: 'Confidential. This helps estimate heart-health risk at a population level.', options: [
-    AOption('never', 'Never', null, 2),
-    AOption('former', 'I used to, but quit', null, 1),
-    AOption('sometimes', 'Occasionally', null, 0),
-    AOption('daily', 'Daily', null, 0),
-  ]),
-  AQuestion(id: 'alcohol', section: 2, category: 'Alcohol', categoryIcon: Symbols.local_bar_rounded, text: 'How often do you drink alcohol?', options: [
-    AOption('never', 'Never', null, 2),
-    AOption('monthly', 'Monthly or less', null, 2),
-    AOption('weekly', '2–4 times a month', null, 1),
-    AOption('frequent', '2 or more times a week', null, 0),
-  ]),
-  AQuestion(id: 'screen', section: 2, category: 'Screen Time', categoryIcon: Symbols.smartphone_rounded, text: 'Outside of study, how many hours a day do you spend on screens?', options: [
-    AOption('<2', 'Less than 2 hours', null, 2),
-    AOption('2-4', '2–4 hours', null, 1),
-    AOption('4+', 'More than 4 hours', null, 0),
-  ]),
-
-  // 4: Physical activity (IPAQ-SF structure)
-  AQuestion(id: 'vigorous_days', section: 3, category: 'Vigorous Activity', categoryIcon: Symbols.sprint_rounded, text: 'During the last 7 days, on how many days did you do vigorous activity (running, fast cycling, sports) for at least 10 minutes?', options: _days),
-  AQuestion(id: 'moderate_days', section: 3, category: 'Moderate Activity', categoryIcon: Symbols.pedal_bike_rounded, text: 'On how many days did you do moderate activity (carrying loads, easy cycling, dancing) for at least 10 minutes?', options: _days),
-  AQuestion(id: 'walk_days', section: 3, category: 'Walking', categoryIcon: Symbols.directions_walk_rounded, text: 'On how many days did you walk for at least 10 minutes at a time?', options: _days),
-  AQuestion(id: 'sitting', section: 3, category: 'Sitting Time', categoryIcon: Symbols.chair_rounded, text: 'On a typical weekday, how much time do you spend sitting?', options: [
-    AOption('<6', 'Less than 6 hours', null, 2),
-    AOption('6-9', '6–9 hours', null, 1),
-    AOption('10+', '10 hours or more', null, 0),
-  ]),
-
-  // 5: Sleep
-  AQuestion(id: 'sleep_hours', section: 4, category: 'Sleep Duration', categoryIcon: Symbols.bedtime_rounded, text: 'On average, how many hours do you sleep per night?', options: [
-    AOption('<5', 'Less than 5 hours', null, 4.5),
-    AOption('5-6', '5–6 hours', null, 5.5),
-    AOption('7-8', '7–8 hours', null, 7.5),
-    AOption('9+', '9 hours or more', null, 9),
-  ]),
-  AQuestion(id: 'sleep_quality', section: 4, category: 'Sleep Quality', categoryIcon: Symbols.nights_stay_rounded, text: 'How would you rate your overall sleep quality this month?', options: [
-    AOption('very_good', 'Very good', null, 3),
-    AOption('fairly_good', 'Fairly good', null, 2),
-    AOption('fairly_bad', 'Fairly bad', null, 1),
-    AOption('very_bad', 'Very bad', null, 0),
-  ]),
-
-  // 6: Stress (PSS-4)
-  AQuestion(id: 'pss1', section: 5, category: 'Perceived Stress', categoryIcon: Symbols.psychology_rounded, text: 'In the last month, how often have you felt that you were unable to control the important things in your life?', help: 'Take a slow breath. There are no right or wrong answers.', options: _freq),
-  AQuestion(id: 'pss2', section: 5, category: 'Perceived Stress', categoryIcon: Symbols.psychology_rounded, text: 'In the last month, how often have you felt confident about your ability to handle your personal problems?', help: 'Take a slow breath. There are no right or wrong answers.', options: _freqRev),
-  AQuestion(id: 'pss3', section: 5, category: 'Perceived Stress', categoryIcon: Symbols.psychology_rounded, text: 'In the last month, how often have you felt that things were going your way?', help: 'Take a slow breath. There are no right or wrong answers.', options: _freqRev),
-  AQuestion(id: 'pss4', section: 5, category: 'Perceived Stress', categoryIcon: Symbols.psychology_rounded, text: 'In the last month, how often have you felt difficulties were piling up so high that you could not overcome them?', help: 'Take a slow breath. There are no right or wrong answers.', options: _freq),
-];
-
-num _score(String id, Map<String, dynamic> a) {
-  final q = assessmentQuestions.firstWhere((e) => e.id == id);
-  final v = a[id];
-  if (v == null) return 0;
-  return q.options.firstWhere((o) => o.value == v, orElse: () => const AOption('', '')).score;
-}
-
-/// Computes aggregate scores stored with a completed assessment.
-(Map<String, dynamic>, String) scoreAssessment(Map<String, dynamic> a) {
-  double? n(String k) => a[k] == null ? null : double.tryParse(a[k].toString());
-  final bmi = Calc.bmi(n('height_cm'), n('weight_kg'));
-  final whr = Calc.whr(n('waist_cm'), n('hip_cm'));
-  final diet = _score('fruit_veg', a) + _score('breakfast', a) + _score('fried', a) + _score('sugary', a); // 0..10
-  final lifestyle = _score('balance', a) + _score('tobacco', a) + _score('alcohol', a) + _score('screen', a); // 0..9
-  final activeDays = _score('vigorous_days', a) + _score('moderate_days', a) + _score('walk_days', a);
-  final stress = _score('pss1', a) + _score('pss2', a) + _score('pss3', a) + _score('pss4', a); // 0..16
-  final sleepH = _score('sleep_hours', a);
-  final sleepQ = _score('sleep_quality', a);
-
-  int points = 0;
-  if (diet >= 7) points += 2; else if (diet >= 4) points += 1;
-  if (lifestyle >= 7) points += 2; else if (lifestyle >= 4) points += 1;
-  if (activeDays >= 7) points += 2; else if (activeDays >= 3) points += 1;
-  if (stress <= 6) points += 2; else if (stress <= 10) points += 1;
-  if (sleepH >= 7 && sleepH < 9 && sleepQ >= 2) points += 2; else if (sleepH >= 5.5) points += 1;
-
-  final label = points >= 9 ? 'Healthy habits' : points >= 6 ? 'Mostly on track' : points >= 3 ? 'Room to improve' : 'Needs attention';
+  final label = overall == null
+      ? 'Completed'
+      : overall >= 75
+          ? 'Healthy habits'
+          : overall >= 55
+              ? 'Mostly on track'
+              : overall >= 35
+                  ? 'Room to improve'
+                  : 'Needs attention';
   return ({
+    'domains': domains,
+    'overall': ?overall,
     if (bmi != null) 'bmi': double.parse(bmi.toStringAsFixed(1)),
     if (whr != null) 'whr': double.parse(whr.toStringAsFixed(2)),
-    if (n('sbp') != null) 'sbp': n('sbp'),
-    'diet_score': diet,
-    'lifestyle_score': lifestyle,
-    'activity_days': activeDays,
-    'stress': stress,
-    'sleep_hours': sleepH,
-    'sleep_quality': sleepQ,
-    'points': points,
+    'stress': ?pss,
   }, label);
 }

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_state.dart';
 import '../core/badges.dart';
 import '../core/push.dart';
+import 'models.dart';
 
 typedef Rec = Map<String, dynamic>;
 
@@ -292,6 +293,87 @@ class Repo {
 
   static Future<List<Rec>> toolResults(String tool, {int limit = 20}) async =>
       List<Rec>.from(await db.from('tool_results').select().eq('user_id', _uid).eq('tool', tool).order('created_at', ascending: false).limit(limit));
+
+  static Future<Rec?> latestToolResult(String tool) async {
+    final rows = await toolResults(tool, limit: 1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  /// Logs blood pressure, fasting blood glucose and/or triglycerides, as
+  /// measured at a clinic or from a lab report.
+  static Future<void> saveVitals({int? systolic, int? diastolic, double? fastingGlucose, double? triglycerides, required DateTime measuredOn}) =>
+      saveToolResult('vitals', data: {
+        'systolic': ?systolic,
+        'diastolic': ?diastolic,
+        'fasting_glucose': ?fastingGlucose,
+        'triglycerides': ?triglycerides,
+        'measured_on': isoDate(measuredOn),
+      });
+
+  /// The most recent reading of each lab-type vital, from the student's own
+  /// logs, the CVD checker or an analysed blood report.
+  static Future<LatestVitals> latestVitals() async {
+    // Read the id first: failing part-way through building the list below
+    // would leave the queries already started with unhandled errors.
+    final id = _uid;
+    final results = await Future.wait([
+      toolResults('vitals', limit: 30),
+      toolResults('cvd', limit: 10),
+      db.from('blood_reports').select('results, created_at').eq('user_id', id).eq('status', 'done').order('created_at', ascending: false).limit(10),
+    ]);
+    VitalReading? bp, fbg, tg;
+    void offer(VitalReading? cur, VitalReading next, void Function(VitalReading) set) {
+      if (cur == null || next.at.isAfter(cur.at)) set(next);
+    }
+
+    for (final r in results[0]) {
+      final d = Map<String, dynamic>.from(r['data'] ?? {});
+      final at = DateTime.tryParse('${d['measured_on']}') ?? DateTime.parse(r['created_at']).toLocal();
+      if (d['systolic'] != null && d['diastolic'] != null) offer(bp, VitalReading((d['systolic'] as num).toDouble(), at, extra: (d['diastolic'] as num).toDouble()), (v) => bp = v);
+      if (d['fasting_glucose'] != null) offer(fbg, VitalReading((d['fasting_glucose'] as num).toDouble(), at), (v) => fbg = v);
+      if (d['triglycerides'] != null) offer(tg, VitalReading((d['triglycerides'] as num).toDouble(), at), (v) => tg = v);
+    }
+    for (final r in results[1]) {
+      final d = Map<String, dynamic>.from(r['data'] ?? {});
+      final at = DateTime.parse(r['created_at']).toLocal();
+      if (d['systolic'] != null && d['diastolic'] != null) offer(bp, VitalReading((d['systolic'] as num).toDouble(), at, extra: (d['diastolic'] as num).toDouble(), source: 'CVD check'), (v) => bp = v);
+      if (d['glucose'] != null) offer(fbg, VitalReading((d['glucose'] as num).toDouble(), at, source: 'CVD check'), (v) => fbg = v);
+    }
+    for (final r in results[2]) {
+      final at = DateTime.parse(r['created_at']).toLocal();
+      for (final v in (r['results'] as List? ?? const [])) {
+        if (v is! Map) continue;
+        final name = '${v['name']}'.toLowerCase();
+        final value = v['value'] is num ? (v['value'] as num).toDouble() : double.tryParse('${v['value']}');
+        if (value == null) continue;
+        if (name.contains('triglycer')) offer(tg, VitalReading(value, at, source: 'Blood report'), (x) => tg = x);
+        if (name.contains('glucose') && (name.contains('fasting') || name.contains('fbs') || name.contains('fbg'))) offer(fbg, VitalReading(value, at, source: 'Blood report'), (x) => fbg = x);
+      }
+    }
+    return LatestVitals(bp: bp, fastingGlucose: fbg, triglycerides: tg);
+  }
+
+  // ---------------- Anonymous consultation ----------------
+
+  /// Sends a question to the health centre without any link to the account.
+  /// Returns the ticket code the student uses to read the reply.
+  static Future<String> submitAnonConsultation({required String topic, required String message, required String urgency}) async {
+    final code = await db.rpc('submit_anon_consultation', params: {'p_topic': topic, 'p_message': message, 'p_urgency': urgency});
+    return code as String;
+  }
+
+  static Future<List<Rec>> anonConsultations(List<String> codes) async {
+    if (codes.isEmpty) return [];
+    final rows = await db.rpc('anon_consultations_by_codes', params: {'p_codes': codes});
+    return List<Rec>.from(rows as List);
+  }
+
+  // ---------------- Periodic assessment questionnaire ----------------
+
+  static Future<List<Rec>> assessmentDomains() async => List<Rec>.from(await db.from('assessment_domains').select().order('position'));
+
+  static Future<List<Rec>> assessmentQuestions() async =>
+      List<Rec>.from(await db.from('assessment_questions').select().eq('active', true).order('domain_id').order('position'));
 
   // ---------------- Menstrual ----------------
   static Future<List<Rec>> cycles() async => List<Rec>.from(await db.from('menstrual_cycles').select().eq('user_id', _uid).order('start_date', ascending: false));

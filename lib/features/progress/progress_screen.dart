@@ -12,7 +12,20 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 import '../assessments/assessment_screens.dart';
+import '../diet/pdqs_screen.dart' show pdqsBand;
+import '../home/vitals_sheet.dart';
 
+Future<R> _safe<R>(Future<R> f, R fallback) async {
+  try {
+    return await f;
+  } catch (e) {
+    debugPrint('progress: $e');
+    return fallback;
+  }
+}
+
+/// Health progress over time: daily habits, health measures and the
+/// periodic assessments.
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
   @override
@@ -20,13 +33,21 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  bool _habits = true;
+  String _tab = 'Habits';
+  bool _month = false;
   bool _loading = true;
   Map<String, int> _water = {};
+  Map<String, int> _steps = {};
   Map<String, int> _minutes = {};
   List<Rec> _sleep = [];
   List<Rec> _moods = [];
+  List<Rec> _diversity = [];
   List<Rec> _assessments = [];
+  List<Rec> _stress = [];
+  List<Rec> _pdqs = [];
+  List<Rec> _bmi = [];
+  List<Rec> _whr = [];
+  LatestVitals _vitals = const LatestVitals();
   Map<String, DateTime> _earned = {};
   List<Rec> _badges = [];
 
@@ -37,28 +58,38 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Future<void> _load() async {
-    try {
-      final now = DateTime.now();
-      final from = dayStart(now).subtract(const Duration(days: 27));
-      final r = await Future.wait([
-        Repo.waterByDay(28),
-        Repo.minutesByDay(from, now),
-        Repo.sleepBetween(from, now),
-        Repo.moodsSince(from),
-        Repo.assessments(),
-        Repo.earnedBadges(),
-        Repo.badges(),
-      ]);
-      _water = r[0] as Map<String, int>;
-      _minutes = r[1] as Map<String, int>;
-      _sleep = r[2] as List<Rec>;
-      _moods = r[3] as List<Rec>;
-      _assessments = (r[4] as List<Rec>).where((a) => a['status'] == 'completed').toList();
-      _earned = r[5] as Map<String, DateTime>;
-      _badges = r[6] as List<Rec>;
-    } catch (e) {
-      debugPrint('progress: $e');
-    }
+    final now = DateTime.now();
+    final from = dayStart(now).subtract(const Duration(days: 27));
+    final r = await Future.wait<Object?>([
+      _safe(Repo.waterByDay(28), <String, int>{}),
+      _safe(Repo.stepsByDay(from, now), <String, int>{}),
+      _safe(Repo.minutesByDay(from, now), <String, int>{}),
+      _safe(Repo.sleepBetween(from, now), <Rec>[]),
+      _safe(Repo.moodsSince(from), <Rec>[]),
+      _safe(Repo.diversityBetween(from, now), <Rec>[]),
+      _safe(Repo.assessments(), <Rec>[]),
+      _safe(Repo.toolResults('stress', limit: 8), <Rec>[]),
+      _safe(Repo.toolResults('pdqs', limit: 8), <Rec>[]),
+      _safe(Repo.toolResults('bmi', limit: 8), <Rec>[]),
+      _safe(Repo.toolResults('whr', limit: 8), <Rec>[]),
+      _safe(Repo.latestVitals(), const LatestVitals()),
+      _safe(Repo.earnedBadges(), <String, DateTime>{}),
+      _safe(Repo.badges(), <Rec>[]),
+    ]);
+    _water = r[0] as Map<String, int>;
+    _steps = r[1] as Map<String, int>;
+    _minutes = r[2] as Map<String, int>;
+    _sleep = r[3] as List<Rec>;
+    _moods = r[4] as List<Rec>;
+    _diversity = r[5] as List<Rec>;
+    _assessments = (r[6] as List<Rec>).where((a) => a['status'] == 'completed').toList();
+    _stress = r[7] as List<Rec>;
+    _pdqs = r[8] as List<Rec>;
+    _bmi = r[9] as List<Rec>;
+    _whr = r[10] as List<Rec>;
+    _vitals = r[11] as LatestVitals;
+    _earned = r[12] as Map<String, DateTime>;
+    _badges = r[13] as List<Rec>;
     if (mounted) setState(() => _loading = false);
   }
 
@@ -67,17 +98,32 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return [for (int i = n - 1 + offset; i >= offset; i--) today.subtract(Duration(days: i))];
   }
 
-  double _avg(List<double> v) => v.isEmpty ? 0 : v.reduce((a, b) => a + b) / v.length;
+  double _avg(Iterable<double> v) => v.isEmpty ? 0 : v.reduce((a, b) => a + b) / v.length;
 
-  List<double> _waterSeries(List<DateTime> days) => [for (final d in days) (_water[isoDate(d)] ?? 0) / 1000.0];
-  List<double> _minSeries(List<DateTime> days) => [for (final d in days) (_minutes[isoDate(d)] ?? 0).toDouble()];
-  List<double> _sleepSeries(List<DateTime> days) {
-    final m = {for (final s in _sleep) s['sleep_date'] as String: Repo.sleepMinutes(s) / 60.0};
-    return [for (final d in days) m[isoDate(d)] ?? 0];
+  Map<String, double> get _sleepByDay => {for (final s in _sleep) s['sleep_date'] as String: Repo.sleepMinutes(s) / 60.0};
+
+  static const _moodScore = {'Joyful': 5.0, 'Centered': 4.5, 'Calm': 4.0, 'Tired': 2.5, 'Stressed': 2.0, 'Anxious': 1.5};
+
+  /// Daily values for the last 7 days, or weekly averages for the last 4
+  /// weeks, with matching labels. Days with no entry count as zero unless
+  /// [skipEmpty] is set (for sleep and mood, where a gap means "not logged").
+  (List<double>, List<String>) _series(double Function(DateTime d) valueOf, {bool skipEmpty = false}) {
+    if (!_month) {
+      final days = _days(7);
+      return ([for (final d in days) valueOf(d)], [for (final d in days) DateFormat('E').format(d).substring(0, 1)]);
+    }
+    final weeks = [for (int i = 3; i >= 0; i--) _days(7, offset: i * 7)];
+    return (
+      [
+        for (final wk in weeks) _avg(skipEmpty ? wk.map(valueOf).where((v) => v > 0) : wk.map(valueOf)),
+      ],
+      [for (final wk in weeks) DateFormat('d MMM').format(wk.first)],
+    );
   }
 
-  String? _trend(List<double> cur, List<double> prev) {
-    final a = _avg(cur.where((x) => x > 0).toList()), b = _avg(prev.where((x) => x > 0).toList());
+  String? _trend(double Function(DateTime d) valueOf) {
+    final cur = _days(7).map(valueOf).where((v) => v > 0), prev = _days(7, offset: 7).map(valueOf).where((v) => v > 0);
+    final a = _avg(cur), b = _avg(prev);
     if (a == 0 || b == 0) return null;
     final p = ((a - b) / b * 100).round();
     if (p.abs() < 3) return 'Steady';
@@ -90,7 +136,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     try {
       await sharePdf(
         title: 'Wellness Summary',
-        subtitle: '${p?.fullName ?? ''} • ${pdfDate(last7.first)} – ${pdfDate(last7.last)}',
+        subtitle: '${p?.fullName ?? ''} • ${pdfDate(last7.first)} to ${pdfDate(last7.last)}',
         filename: 'VitalU_Wellness_Summary_${isoDate(DateTime.now())}.pdf',
         sections: {
           'Body measurements': [
@@ -100,10 +146,18 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ['Waist-to-hip ratio', p?.whr == null ? 'Not set' : p!.whr!.toStringAsFixed(2)],
           ],
           'Last 7 days': [
-            ['Average water', '${_avg(_waterSeries(last7)).toStringAsFixed(1)} L/day'],
-            ['Average active minutes', '${_avg(_minSeries(last7)).round()} min/day'],
-            ['Average sleep (logged nights)', '${_avg(_sleepSeries(last7).where((x) => x > 0).toList()).toStringAsFixed(1)} h'],
-            ['Mood check-ins', '${_moods.where((m) => DateTime.parse(m['logged_at']).isAfter(last7.first)).length}'],
+            ['Average water', '${(_avg(last7.map((d) => (_water[isoDate(d)] ?? 0) / 1000.0))).toStringAsFixed(1)} L/day'],
+            ['Average steps', '${_avg(last7.map((d) => (_steps[isoDate(d)] ?? 0).toDouble())).round()} a day'],
+            ['Average active minutes', '${_avg(last7.map((d) => (_minutes[isoDate(d)] ?? 0).toDouble())).round()} min/day'],
+            ['Average sleep (logged nights)', '${_avg(last7.map((d) => _sleepByDay[isoDate(d)] ?? 0).where((x) => x > 0)).toStringAsFixed(1)} h'],
+          ],
+          'Health checks': [
+            if (_stress.isNotEmpty) ['Stress (DASS-21)', '${(_stress.first['score'] as num).round()} / 42, ${_stress.first['category']}'],
+            if (_pdqs.isNotEmpty) ['Diet quality (PDQS)', '${(_pdqs.first['score'] as num).round()} / 42'],
+            if (_vitals.bp != null) ['Blood pressure', '${_vitals.bp!.value.round()}/${_vitals.bp!.extra!.round()} mmHg (${pdfDate(_vitals.bp!.at)})'],
+            if (_vitals.fastingGlucose != null) ['Fasting glucose', '${_vitals.fastingGlucose!.value.round()} mg/dL (${pdfDate(_vitals.fastingGlucose!.at)})'],
+            if (_vitals.triglycerides != null) ['Triglycerides', '${_vitals.triglycerides!.value.round()} mg/dL (${pdfDate(_vitals.triglycerides!.at)})'],
+            if (_stress.isEmpty && _pdqs.isEmpty && _vitals.bp == null) ['No checks recorded yet', ''],
           ],
           'Periodic assessments': [
             for (final a in _assessments) [a['title'] ?? 'Assessment', '${a['result_label'] ?? ''} (${pdfDate(DateTime.parse(a['completed_at']).toLocal())})'],
@@ -148,103 +202,170 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   Widget build(BuildContext context) {
     return VPage(
-      header: TitleHeader('Progress', onLeading: () => goBack(context, '/profile')),
+      header: TitleHeader('My progress', onLeading: () => goBack(context, '/home')),
       onRefresh: _load,
       topPadding: 0,
       children: [
         SizedBox(
           width: double.infinity,
-          child: Segmented(
-            small: false,
-            options: const ['Trends', 'Assessments'],
-            value: _habits ? 'Trends' : 'Assessments',
-            onChanged: (v) => setState(() => _habits = v == 'Trends'),
-          ),
+          child: Segmented(small: false, options: const ['Habits', 'Health', 'Assessments'], value: _tab, onChanged: (v) => setState(() => _tab = v)),
         ),
-        if (_loading) const Loading() else ...(_habits ? _habitsView() : _assessmentView()),
+        if (_loading)
+          const Loading()
+        else
+          ...switch (_tab) {
+            'Habits' => _habitsView(),
+            'Health' => _healthView(),
+            _ => _assessmentView(),
+          },
+        ListGroup(children: [
+          ListRow(
+            icon: Symbols.emoji_events_rounded,
+            color: AppColors.warning,
+            title: 'Badges',
+            subtitle: _earned.isEmpty ? 'Log a few days to unlock the first one' : 'Earned ${_earned.length} so far',
+            value: '${_earned.length}/${_badges.length}',
+            onTap: () => context.push('/milestones'),
+          ),
+          ListRow(icon: Symbols.tune_rounded, color: AppColors.primary, title: 'Adjust targets', subtitle: 'Water, sleep and steps', onTap: _targets),
+          ListRow(icon: Symbols.download_rounded, color: AppColors.water, title: 'Export summary (PDF)', subtitle: 'Last 7 days, health checks and assessments', onTap: _export),
+        ]),
       ],
     );
   }
 
-  static const _moodScore = {'Joyful': 5.0, 'Centered': 4.5, 'Calm': 4.0, 'Tired': 2.5, 'Stressed': 2.0, 'Anxious': 1.5};
-
-  List<String> _dayLabels(List<DateTime> days) => [for (final d in days) DateFormat('E').format(d).substring(0, 1)];
+  // ---------------------------------------------------------------------------
+  // Habits
 
   List<Widget> _habitsView() {
     final p = AppState.instance.profile;
-    final cur = _days(7), prev = _days(7, offset: 7);
-    final w = _waterSeries(cur), wp = _waterSeries(prev);
-    final s = _sleepSeries(cur), sp = _sleepSeries(prev);
-    final m = _minSeries(cur), mp = _minSeries(prev);
-    final moodCounts = <String, int>{};
-    for (final x in _moods.where((x) => DateTime.parse(x['logged_at']).isAfter(cur.first))) {
-      moodCounts[x['mood']] = (moodCounts[x['mood']] ?? 0) + 1;
-    }
-    final topMood = moodCounts.isEmpty ? null : (moodCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first.key;
-    final moodSeries = [
-      for (final d in cur) _avg(_moods.where((x) => isoDate(DateTime.parse(x['logged_at']).toLocal()) == isoDate(d)).map((x) => _moodScore[x['mood']] ?? 3.0).toList())
-    ];
-    final latestBadge = _earned.isEmpty ? null : (_earned.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first;
-    final badgeRow = latestBadge == null ? null : _badges.where((b) => b['code'] == latestBadge.key).firstOrNull;
+    double water(DateTime d) => (_water[isoDate(d)] ?? 0) / 1000.0;
+    double steps(DateTime d) => (_steps[isoDate(d)] ?? 0).toDouble();
+    double minutes(DateTime d) => (_minutes[isoDate(d)] ?? 0).toDouble();
+    double sleep(DateTime d) => _sleepByDay[isoDate(d)] ?? 0;
+    double mood(DateTime d) => _avg(_moods.where((x) => isoDate(DateTime.parse(x['logged_at']).toLocal()) == isoDate(d)).map((x) => _moodScore[x['mood']] ?? 3.0));
+    double variety(DateTime d) => _diversity.where((r) => r['log_date'] == isoDate(d)).map((r) => r['food_group']).toSet().length.toDouble();
 
-    final weeks = [for (int i = 3; i >= 0; i--) _days(7, offset: i * 7)];
-    final weekAvgs = [for (final wk in weeks) _avg(_waterSeries(wk))];
-    final goalL = (p?.waterGoalMl ?? 2500) / 1000;
-    final met = _waterSeries(_days(28)).where((x) => x >= goalL).length;
-    final sleepGoal = p?.sleepGoalHours ?? 8;
-    final labels = _dayLabels(cur);
+    final (sv, sl) = _series(steps);
+    final (wv, wl) = _series(water);
+    final (mv, ml) = _series(minutes);
+    final (slv, sll) = _series(sleep, skipEmpty: true);
+    final (dv, dl) = _series(variety);
+    final (mov, mol) = _series(mood, skipEmpty: true);
+    final unit = _month ? 'a day, weekly average' : 'a day';
 
     return [
-      const SectionHeader('Last 7 days'),
-      _trendCard('Water', Symbols.water_drop_rounded, AppColors.water, _avg(w).toStringAsFixed(1), 'L a day', _trend(w, wp), w, labels, goal: goalL, onTap: () => context.push('/tools/water')),
-      _trendCard('Sleep', Symbols.bedtime_rounded, AppColors.sleep, _avg(s.where((x) => x > 0).toList()).toStringAsFixed(1), 'h a night', _trend(s, sp), s, labels,
-          goal: sleepGoal, onTap: () => context.push('/tools/sleep')),
-      _trendCard('Active minutes', Symbols.directions_walk_rounded, AppColors.activity, _avg(m).round().toString(), 'min a day', _trend(m, mp), m, labels,
-          onTap: () => context.push('/tools/activity')),
-      _trendCard('Mood', Symbols.mood_rounded, AppColors.mind, topMood ?? '-', topMood == null ? null : 'most often', null, moodSeries, labels,
-          onTap: () => context.push('/home')),
-      const SectionHeader('Water, last 4 weeks'),
-      VCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          MetricValue('$met', unit: 'of 28 days at goal', size: 26),
-          const SizedBox(height: 2),
-          Text('Goal ${goalL.toStringAsFixed(1)} L a day (dashed line)', style: T.bodySm.c(AppColors.onSurfaceVariant)),
-          const SizedBox(height: Sp.md),
-          BarChart(values: weekAvgs, labels: [for (final wk in weeks) DateFormat('d MMM').format(wk.first)], color: AppColors.water, goal: goalL, height: 140),
-        ]),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: Segmented(options: const ['7 days', '4 weeks'], value: _month ? '4 weeks' : '7 days', onChanged: (v) => setState(() => _month = v == '4 weeks')),
       ),
-      ListGroup(children: [
-        ListRow(
-          icon: Symbols.emoji_events_rounded,
-          color: AppColors.warning,
-          title: 'Milestones',
-          subtitle: badgeRow == null ? 'Log a few days to unlock the first one' : 'Latest: ${badgeRow['title']}',
-          value: '${_earned.length}/${_badges.length}',
-          onTap: () => context.push('/milestones'),
-        ),
-        ListRow(icon: Symbols.tune_rounded, color: AppColors.primary, title: 'Adjust targets', subtitle: 'Water, sleep and steps', onTap: _targets),
-        ListRow(icon: Symbols.download_rounded, color: AppColors.water, title: 'Export summary (PDF)', subtitle: 'Last 7 days, body metrics and assessments', onTap: _export),
-      ]),
+      _chart('Walking and daily steps', 'steps', AppColors.activity, Fmt.thousands(_avg(sv.where((v) => v > 0))), 'steps $unit', _trend(steps), sv, sl,
+          goal: (p?.stepGoal ?? 8000).toDouble(), onTap: () => context.push('/tools/activity')),
+      _chart('Water intake', 'water', AppColors.water, _avg(wv).toStringAsFixed(1), 'L $unit', _trend(water), wv, wl,
+          goal: (p?.waterGoalMl ?? 2500) / 1000, onTap: () => context.push('/tools/water')),
+      _chart('Physical activity', 'progress', AppColors.activity, _avg(mv).round().toString(), 'active min $unit', _trend(minutes), mv, ml,
+          goal: 150 / 7, onTap: () => context.push('/tools/activity')),
+      _chart('Sleep', 'sleep', AppColors.sleep, _avg(slv.where((x) => x > 0)).toStringAsFixed(1), 'h a night', _trend(sleep), slv, sll,
+          goal: p?.sleepGoalHours ?? 8, onTap: () => context.push('/tools/sleep')),
+      _chart('Food variety', 'diet', AppColors.nutrition, _avg(dv).toStringAsFixed(1), 'of 8 food groups $unit', _trend(variety), dv, dl,
+          goal: 5, onTap: () => context.push('/diet/diversity')),
+      _chart('Mood', 'stress', AppColors.mind, mov.any((v) => v > 0) ? _avg(mov.where((v) => v > 0)).toStringAsFixed(1) : '-', 'out of 5', null, mov, mol,
+          onTap: () => context.push('/home')),
     ];
   }
 
-  Widget _trendCard(String label, IconData icon, Color color, String value, String? unit, String? trend, List<double> series, List<String> labels, {double? goal, VoidCallback? onTap}) {
-    final up = trend != null && trend.startsWith('+');
-    final down = trend != null && trend.startsWith('-');
+  Widget _chart(String label, String image, Color color, String value, String? unit, String? trend, List<double> series, List<String> labels, {double? goal, VoidCallback? onTap}) {
     return VCard(
       onTap: onTap,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        CategoryLabel(label, icon: icon, color: color, trailing: trend == null ? null : '$trend vs last week'),
-        const SizedBox(height: 8),
-        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Expanded(child: MetricValue(value, unit: unit, size: 26)),
-          if (up || down) Icon(up ? Symbols.trending_up_rounded : Symbols.trending_down_rounded, size: 20, color: AppColors.onSurfaceVariant),
+        Row(children: [
+          ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/icons3d/$image.jpg', width: 36, height: 36, fit: BoxFit.cover)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(label, style: T.labelLg.w(FontWeight.w700))),
+          if (trend != null) TagPill(trend == 'Steady' ? trend : '$trend vs last week', bg: AppColors.surfaceContainer),
         ]),
+        const SizedBox(height: 10),
+        MetricValue(value, unit: unit, size: 24),
         const SizedBox(height: Sp.md),
         BarChart(values: series, labels: labels, color: color, goal: goal, height: 96),
       ]),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Health measures
+
+  List<Widget> _healthView() {
+    final p = AppState.instance.profile;
+    List<double> vals(List<Rec> rows) => [for (final r in rows.reversed) (r['score'] as num?)?.toDouble() ?? 0];
+    List<String> dates(List<Rec> rows) => [for (final r in rows.reversed) DateFormat('d/M').format(DateTime.parse(r['created_at']).toLocal())];
+    String when(DateTime d) => DateFormat('d MMM yyyy').format(d);
+
+    Widget history(String title, String image, Color c, List<Rec> rows, String Function(Rec r) headline, String empty, String route, {double? goal}) => VCard(
+          onTap: () => context.push(route),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/icons3d/$image.jpg', width: 36, height: 36, fit: BoxFit.cover)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(title, style: T.labelLg.w(FontWeight.w700))),
+              if (rows.isNotEmpty) Text(DateFormat('d MMM').format(DateTime.parse(rows.first['created_at']).toLocal()), style: T.labelSm.c(AppColors.onSurfaceVariant)),
+            ]),
+            const SizedBox(height: 10),
+            if (rows.isEmpty)
+              Text(empty, style: T.bodyMd.c(AppColors.onSurfaceVariant))
+            else ...[
+              Text(headline(rows.first), style: T.headlineSm),
+              if (rows.length > 1) ...[
+                const SizedBox(height: Sp.md),
+                BarChart(values: vals(rows), labels: dates(rows), color: c, goal: goal, height: 90),
+              ],
+            ],
+          ]),
+        );
+
+    final bp = _vitals.bp, fbg = _vitals.fastingGlucose, tg = _vitals.triglycerides;
+    return [
+      const SectionHeader('Stress and diet'),
+      history('Stress level (DASS-21)', 'stress', AppColors.mind, _stress, (r) => '${(r['score'] as num).round()} of 42 · ${r['category']}', 'Take the anxiety tracker to start seeing your stress over time.', '/tools/stress'),
+      history('Dietary quality (PDQS)', 'diet', AppColors.nutrition, _pdqs, (r) => '${(r['score'] as num).round()} of 42 · ${pdqsBand(r['score'] as num).$1}', 'A weekly 2-minute check-in. Scored out of 42.', '/diet/pdqs', goal: 28),
+      const SectionHeader('Body'),
+      history('BMI', 'bmi', AppColors.body, _bmi, (r) => '${(r['score'] as num).toStringAsFixed(1)} · ${r['category']}',
+          p?.bmi == null ? 'Add your height and weight.' : 'Current BMI ${p!.bmi!.toStringAsFixed(1)}. Recalculate in the BMI tool to build a history.', '/tools/bmi'),
+      history('Waist-to-hip ratio', 'whr', AppColors.water, _whr, (r) => '${(r['score'] as num).toStringAsFixed(2)} · ${r['category'] ?? ''}',
+          p?.whr == null ? 'Add your waist and hip measurements.' : 'Current ratio ${p!.whr!.toStringAsFixed(2)}. Recheck in the WHR tool to build a history.', '/tools/whr'),
+      SectionHeader('Lab readings', subtitle: 'Your most recent results', trailing: TextLinkButton('Log', leading: Symbols.add_rounded, onTap: () async {
+        if (await showVitalsSheet(context)) _load();
+      })),
+      ListGroup(dividerIndent: 64, children: [
+        _vitalRow('bp', 'Blood pressure', bp == null ? null : '${bp.value.round()}/${bp.extra!.round()} mmHg', bp == null ? null : '${VitalBands.bp(bp.value, bp.extra!).$1} · ${when(bp.at)}'),
+        _vitalRow('glucose', 'Fasting blood glucose', fbg == null ? null : '${fbg.value.round()} mg/dL', fbg == null ? null : '${VitalBands.fastingGlucose(fbg.value).$1} · ${when(fbg.at)}'),
+        _vitalRow('tg', 'Triglycerides', tg == null ? null : '${tg.value.round()} mg/dL', tg == null ? null : '${VitalBands.triglycerides(tg.value).$1} · ${when(tg.at)}'),
+      ]),
+    ];
+  }
+
+  Widget _vitalRow(String image, String title, String? value, String? sub) => InkWell(
+        onTap: () async {
+          if (await showVitalsSheet(context)) _load();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 10),
+          child: Row(children: [
+            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/icons3d/$image.jpg', width: 36, height: 36, fit: BoxFit.cover)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: T.bodyLg.w(FontWeight.w600)),
+                Text(sub ?? 'Not recorded yet', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              ]),
+            ),
+            Text(value ?? 'Log', style: T.labelLg.c(value == null ? AppColors.primary : AppColors.onSurface)),
+          ]),
+        ),
+      );
+
+  // ---------------------------------------------------------------------------
+  // Periodic assessments
 
   List<Widget> _assessmentView() {
     if (_assessments.isEmpty) {
@@ -252,33 +373,38 @@ class _ProgressScreenState extends State<ProgressScreen> {
         EmptyState(
           icon: Symbols.assignment_rounded,
           title: 'No assessments yet',
-          text: 'Completed term assessments appear here so you can compare terms.',
+          text: 'Completed six-monthly assessments appear here so you can compare terms.',
           action: SoftButton('View assessments', expand: false, onTap: () => context.push('/assessments')),
         ),
       ];
     }
-    final ordered = _assessments.reversed.toList();
-    final labels = [for (final a in ordered) DateFormat("MMM ''yy").format(DateTime.parse(a['completed_at']).toLocal())];
-    List<double> series(String k) => [for (final a in ordered) ((a['scores'] as Map?)?[k] as num?)?.toDouble() ?? 0];
-    Widget chartCard(String title, String k, Color c, String unit, IconData icon) {
-      final s = series(k);
-      final last = s.last, diff = s.last - s.first;
-      return VCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          CategoryLabel(title, icon: icon, color: c, trailing: s.length > 1 ? '${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)} since first' : null),
-          const SizedBox(height: 8),
-          MetricValue(last % 1 == 0 ? '${last.toInt()}' : last.toStringAsFixed(1), unit: unit.isEmpty ? null : unit, size: 26),
-          const SizedBox(height: Sp.md),
-          BarChart(values: s, labels: labels, color: c, height: 96),
-        ]),
-      );
-    }
-
+    final latest = _assessments.first;
+    final domains = Map<String, dynamic>.from((latest['scores'] as Map?)?['domains'] ?? {});
+    final withOverall = _assessments.reversed.where((a) => (a['scores'] as Map?)?['overall'] != null).toList();
     return [
-      chartCard('BMI', 'bmi', AppColors.body, '', Symbols.monitor_weight_rounded),
-      chartCard('Perceived stress', 'stress', AppColors.mind, 'of 16', Symbols.psychology_rounded),
-      chartCard('Active days', 'activity_days', AppColors.activity, 'a week', Symbols.directions_walk_rounded),
-      chartCard('Nutrition habits', 'diet_score', AppColors.nutrition, 'of 10', Symbols.nutrition_rounded),
+      if (domains.isNotEmpty)
+        VCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text('Latest snapshot', style: T.headlineSm),
+            const SizedBox(height: 2),
+            Text('${latest['title'] ?? 'Assessment'} · well-being by area, out of 100', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            const SizedBox(height: Sp.md),
+            DomainBars(domains: domains),
+          ]),
+        ),
+      if (withOverall.length > 1)
+        VCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CategoryLabel('Overall well-being', icon: Symbols.monitoring_rounded, color: AppColors.primary),
+            const SizedBox(height: Sp.md),
+            BarChart(
+              values: [for (final a in withOverall) ((a['scores'] as Map)['overall'] as num).toDouble()],
+              labels: [for (final a in withOverall) DateFormat("MMM ''yy").format(DateTime.parse(a['completed_at']).toLocal())],
+              color: AppColors.primary,
+              height: 110,
+            ),
+          ]),
+        ),
       const SectionHeader('History'),
       ListGroup(dividerIndent: 60, children: [
         for (final a in _assessments)

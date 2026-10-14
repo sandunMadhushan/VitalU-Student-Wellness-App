@@ -3,7 +3,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -409,7 +408,7 @@ class VChip extends StatelessWidget {
           child: Container(
             height: height,
             padding: EdgeInsets.symmetric(horizontal: dense ? 11 : 14),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
+            child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
               if (icon != null) ...[Icon(icon, size: 17, color: c, fill: selected ? 1 : 0), const SizedBox(width: 6)],
               Flexible(child: Text(label, style: (dense ? T.labelSm.s(12.5) : T.labelMd).c(c), overflow: TextOverflow.ellipsis)),
             ]),
@@ -1129,7 +1128,9 @@ class TileGrid extends StatelessWidget {
               ]),
             )
           else
-            children[i],
+            // A lone last tile still gets a bounded height, so tiles that
+            // use a Spacer lay out the same as their paired neighbours.
+            IntrinsicHeight(child: children[i]),
         ],
       ]);
 }
@@ -1177,7 +1178,7 @@ class HeroBanner extends StatelessWidget {
         SizedBox(
           width: 108,
           height: illustrationHeight,
-          child: SvgPicture.asset('assets/illustrations/$illustration.svg', fit: BoxFit.contain, alignment: Alignment.bottomCenter),
+          child: Image.asset('assets/art/$illustration.webp', fit: BoxFit.contain, alignment: Alignment.bottomCenter),
         ),
       ]),
     );

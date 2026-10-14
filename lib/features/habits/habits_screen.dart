@@ -115,7 +115,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
           title: 'Small changes,\nbig difference',
           subtitle: quote,
           accent: AppColors.cycle,
-          illustration: 'mindfulness_scgo',
+          illustration: 'hero_habits',
           illustrationHeight: 96,
         ),
         Text(

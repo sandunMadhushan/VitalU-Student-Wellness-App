@@ -54,7 +54,7 @@ const phaseCopy = <CyclePhase, PhaseCopy>{
   CyclePhase.menstrual: PhaseCopy(
     name: 'Menstrual',
     icon: Symbols.water_drop_rounded,
-    illustration: 'relaxing_at_home',
+    illustration: 'cycle_menstrual',
     greeting: 'Be extra kind to yourself today',
     message: 'Your period is a time to slow down a little. It is completely okay to rest more, move gently and keep your plans light.',
     mayNotice: ['Cramps', 'Low energy', 'Lower back ache', 'Feeling tired', 'Wanting comfort food'],
@@ -71,7 +71,7 @@ const phaseCopy = <CyclePhase, PhaseCopy>{
   CyclePhase.follicular: PhaseCopy(
     name: 'Follicular',
     icon: Symbols.eco_rounded,
-    illustration: 'step_to_the_sun',
+    illustration: 'cycle_follicular',
     greeting: 'Your energy is on the rise',
     message: 'Many people feel fresher and more motivated in this phase. A great time to start new topics, try something new or plan your week.',
     mayNotice: ['More energy', 'Brighter mood', 'Clearer focus', 'Feeling motivated'],
@@ -87,7 +87,7 @@ const phaseCopy = <CyclePhase, PhaseCopy>{
   CyclePhase.ovulation: PhaseCopy(
     name: 'Ovulation',
     icon: Symbols.wb_twilight_rounded,
-    illustration: 'super_woman',
+    illustration: 'cycle_ovulation',
     greeting: 'You might be feeling your brightest',
     message: 'This is often a peak-energy window. Lean into group study, presentations and anything social, and keep a water bottle close.',
     mayNotice: ['High energy', 'Feeling social', 'A slight one-sided twinge', 'More discharge'],
@@ -103,7 +103,7 @@ const phaseCopy = <CyclePhase, PhaseCopy>{
   CyclePhase.luteal: PhaseCopy(
     name: 'Luteal',
     icon: Symbols.bedtime_rounded,
-    illustration: 'yoga',
+    illustration: 'cycle_luteal',
     greeting: 'Time to slow down gently',
     message: 'Your body is shifting into a calmer rhythm. Regular meals, good sleep and steady study pacing help you feel your best.',
     mayNotice: ['Bigger appetite', 'Slightly lower energy', 'Wanting more rest'],
@@ -119,7 +119,7 @@ const phaseCopy = <CyclePhase, PhaseCopy>{
   CyclePhase.premenstrual: PhaseCopy(
     name: 'Before your period',
     icon: Symbols.favorite_rounded,
-    illustration: 'yoga',
+    illustration: 'cycle_premenstrual',
     greeting: 'Your period may be on its way',
     message: 'You might feel more sensitive, tired or irritable over the next few days. That is okay. These changes can be a normal part of your cycle, so give yourself a little extra care.',
     mayNotice: ['Mood changes', 'Irritability', 'Tiredness', 'Cravings', 'Bloating', 'Tender breasts'],

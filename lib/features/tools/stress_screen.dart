@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -164,7 +163,7 @@ class _StressScreenState extends State<StressScreen> {
           height: 170,
           decoration: BoxDecoration(color: AppColors.tint(AppColors.mind), borderRadius: BorderRadius.circular(Rad.xl)),
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: SvgPicture.asset('assets/illustrations/meditation.svg', fit: BoxFit.contain, alignment: Alignment.bottomCenter),
+          child: Image.asset('assets/art/stress_intro.webp', fit: BoxFit.contain, alignment: Alignment.bottomCenter),
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('How has the past week felt?', style: T.headlineLg),
@@ -508,27 +507,27 @@ class _Idea {
 }
 
 const _ideas = [
-  _Idea('mint_tea', '3 min', 'The mindful cup', 'Doing one simple thing slowly tells your nervous system it is safe to slow down too.', [
+  _Idea('idea_tea', '3 min', 'The mindful cup', 'Doing one simple thing slowly tells your nervous system it is safe to slow down too.', [
     'Make a cup of plain tea, coriander tea or just warm water.',
     'Hold it in both hands and notice the warmth and the smell.',
     'Take five slow sips, doing nothing else. No phone, no notes.',
   ]),
-  _Idea('personal_notes', '5 min', 'Worry dump, then bin it', 'Getting worries out of your head and onto paper makes them feel smaller and more manageable.', [
+  _Idea('idea_journal', '5 min', 'Worry dump, then bin it', 'Getting worries out of your head and onto paper makes them feel smaller and more manageable.', [
     'Set a 5-minute timer and write down every worry, big or small, without editing.',
     'Circle one thing you can actually do something about today.',
     'Crumple or tear up the rest and throw it away. Done for now.',
   ]),
-  _Idea('music', '1 song', 'One-song shake-out', 'Moving your body burns off stress hormones and lifts your mood fast.', [
+  _Idea('idea_dance', '1 song', 'One-song shake-out', 'Moving your body burns off stress hormones and lifts your mood fast.', [
     'Put on a song you love, the more upbeat the better.',
     'Dance, jump or shake out your arms and legs until it ends.',
     'Finish with three big stretches towards the ceiling.',
   ]),
-  _Idea('sunlight', '10 min', 'Sunlight stroll, phone away', 'Daylight and a change of scene reset a busy mind better than scrolling.', [
+  _Idea('idea_walk', '10 min', 'Sunlight stroll, phone away', 'Daylight and a change of scene reset a busy mind better than scrolling.', [
     'Walk outside for 10 minutes: around the faculty, a garden or the lake.',
     'Keep your phone in your pocket the whole time.',
     'Spot 5 things you can see, 4 you can hear, 3 you can touch, 2 you can smell and 1 you can taste.',
   ]),
-  _Idea('relaxation', '2 min', 'Hammock breathing', 'Breathing out longer than you breathe in switches on the body\'s calm-down response.', [
+  _Idea('idea_hammock', '2 min', 'Hammock breathing', 'Breathing out longer than you breathe in switches on the body\'s calm-down response.', [
     'Sit or lie back and rest one hand on your belly.',
     'Breathe in through your nose for 4, then out slowly for 6.',
     'Repeat for 2 minutes, or follow the guided exercise below.',
@@ -551,7 +550,7 @@ class _IdeaCard extends StatelessWidget {
           color: AppColors.tint(c),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Stack(children: [
-            Positioned.fill(child: SvgPicture.asset('assets/illustrations/${idea.illustration}.svg', fit: BoxFit.contain, alignment: Alignment.bottomCenter)),
+            Positioned.fill(child: Image.asset('assets/art/${idea.illustration}.webp', fit: BoxFit.contain, alignment: Alignment.bottomCenter)),
             Positioned(top: 0, right: 0, child: TagPill(idea.minutes, icon: Symbols.timer_rounded, bg: AppColors.surfaceContainerLowest, fg: c)),
           ]),
         ),
@@ -609,7 +608,7 @@ class CalmMusicCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
             child: Row(children: [
               if (!compact) ...[
-                SizedBox(width: 84, height: 72, child: SvgPicture.asset('assets/illustrations/happy_music.svg', fit: BoxFit.contain)),
+                SizedBox(width: 84, height: 72, child: Image.asset('assets/art/calm_music.webp', fit: BoxFit.contain)),
                 const SizedBox(width: 12),
               ],
               Expanded(

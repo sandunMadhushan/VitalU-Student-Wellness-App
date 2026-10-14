@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -207,7 +206,7 @@ class _CycleScreenState extends State<CycleScreen> {
             ],
             const SizedBox(height: 8),
             Wrap(spacing: 8, children: [
-              for (final f in const ['spotting', 'light', 'medium', 'heavy'])
+              for (final f in const ['light', 'medium', 'heavy'])
                 VChip(f[0].toUpperCase() + f.substring(1), selected: flow == f, selectedColor: c, onTap: () => set(() => flow = f)),
             ]),
             const SizedBox(height: Sp.lg),
@@ -239,31 +238,6 @@ class _CycleScreenState extends State<CycleScreen> {
     if (v == null) return;
     await Repo.upsertDailyLog(DateTime.now(), {field: v.isEmpty ? null : v});
     _load();
-  }
-
-  Future<void> _moreLog() async {
-    bool spotting = _today?['spotting'] == true;
-    final notes = TextEditingController(text: _today?['notes'] ?? '');
-    await showVSheet(context, builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
-          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('More for today', style: T.headlineMd),
-            const SizedBox(height: Sp.sm),
-            SwitchListTile(value: spotting, onChanged: (v) => set(() => spotting = v), title: Text('Spotting', style: T.labelLg), contentPadding: EdgeInsets.zero),
-            const SizedBox(height: Sp.sm),
-            VTextField(controller: notes, hint: 'Notes (headache, bloating, skin, cravings…)', maxLines: 3),
-            const SizedBox(height: Sp.sm),
-            SoftButton('Log water', icon: Symbols.water_drop_rounded, onTap: () {
-              Navigator.pop(ctx);
-              context.push('/tools/water');
-            }),
-            const SizedBox(height: Sp.md),
-            PrimaryButton('Save', onTap: () async {
-              await Repo.upsertDailyLog(DateTime.now(), {'spotting': spotting, 'notes': notes.text.trim().isEmpty ? null : notes.text.trim()});
-              if (ctx.mounted) Navigator.pop(ctx);
-              _load();
-            }),
-          ]);
-        }));
   }
 
   /// A month in detail: the calendar, its logged periods and daily notes.
@@ -376,8 +350,6 @@ class _CycleScreenState extends State<CycleScreen> {
         if (l['mood'] != null) 'Mood: ${l['mood']}',
         if (l['energy'] != null) 'Energy: ${l['energy']}',
         if (l['cravings'] != null && l['cravings'] != 'None') 'Cravings: ${l['cravings']}',
-        if (l['spotting'] == true) 'Spotting',
-        if (l['notes'] != null) l['notes'] as String,
       ];
 
   void _history() {
@@ -515,7 +487,6 @@ class _CycleScreenState extends State<CycleScreen> {
         symptom('mood', 'Mood', Symbols.mood_rounded, const ['Calm', 'Happy', 'Low', 'Irritable', 'Anxious']),
         symptom('energy', 'Energy', Symbols.bolt_rounded, const ['Low', 'Steady', 'High']),
         symptom('sleep', 'Sleep', Symbols.bedtime_rounded, const ['Restful', 'Okay', 'Restless']),
-        ListRow(icon: Symbols.edit_note_rounded, color: c, title: 'Spotting and notes', onTap: _moreLog),
       ]),
       const SectionHeader('What is happening?', subtitle: 'How your body changes through each phase'),
       VCard(child: CycleExplainer(cycleLen: _cycleLen, periodLen: _periodLen, current: phase)),
@@ -702,7 +673,7 @@ class _PhaseMessageState extends State<_PhaseMessage> {
                 ]),
               ),
             ),
-            SizedBox(width: 104, height: 96, child: SvgPicture.asset('assets/illustrations/${p.illustration}.svg', fit: BoxFit.contain, alignment: Alignment.bottomCenter)),
+            SizedBox(width: 104, height: 104, child: Image.asset('assets/art/${p.illustration}.webp', fit: BoxFit.contain, alignment: Alignment.bottomCenter)),
           ]),
         ),
         Padding(

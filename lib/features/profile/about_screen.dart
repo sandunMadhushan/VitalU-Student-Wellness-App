@@ -121,8 +121,8 @@ class _AboutScreenState extends State<AboutScreen> {
             title: 'Credits',
             subtitle: 'Illustrations and sounds',
             onTap: () => showInfoSheet(context, title: 'Credits', icon: Symbols.palette_rounded, paragraphs: const [
-              'Illustrations by unDraw (undraw.co), used under the unDraw licence.',
-              'Sounds: "Water Glass Pour", "Quick Win Success Fanfare" and "Peaceful Spa Bells" by BudgetPixel (budgetpixel.com), licensed under Creative Commons Attribution 4.0 (CC BY 4.0). The water sound has been shortened.',
+              'Illustrations, icons and badges were created for VitalU with Figma AI image generation.',
+              'Sounds: "Water Glass Pour", "Quick Win Success Fanfare" and "Peaceful Spa Bells" by BudgetPixel (budgetpixel.com), licensed under Creative Commons Attribution 4.0 (CC BY 4.0). The water sound has been shortened and the bells re-encoded at a lower bitrate.',
               'Badge mascots and the body and cycle diagrams were drawn for VitalU.',
             ]),
           ),

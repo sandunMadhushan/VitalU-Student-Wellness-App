@@ -26,7 +26,6 @@ dependencies:
   http: ^1.6.0
   http_parser: ^4.1.2
   sensors_plus: ^7.1.0
-  flutter_svg: ^2.3.0
   audioplayers: ^6.8.1
   confetti: ^0.8.0
   flutter_local_notifications: ^22.3.2
@@ -42,8 +41,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/illustrations/
+    - assets/art/
+    - assets/body_shapes/
     - assets/badges/
+    - assets/icons3d/
     - assets/sounds/
   fonts:
     - family: Manrope

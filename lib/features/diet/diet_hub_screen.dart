@@ -69,7 +69,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
           title: 'Eat well,\nfeel your best',
           subtitle: 'Balanced meals, tracked simply.',
           accent: AppColors.nutrition,
-          illustration: 'eating_together_tjhx',
+          illustration: 'hero_diet',
         ),
         VCard(
           onTap: () => _go('/diet/today'),
@@ -106,6 +106,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
         StreakBadgeCard(kind: StreakKind.food, version: _streakVersion),
         const SectionHeader('Plan and learn'),
         ListGroup(children: [
+          ListRow(icon: Symbols.verified_rounded, color: AppColors.nutrition, title: 'Diet quality score', subtitle: 'A weekly PDQS check-in, scored out of 42', onTap: () => _go('/diet/pdqs')),
           ListRow(icon: Symbols.calculate_rounded, color: AppColors.nutrition, title: 'Meal calorie counter', subtitle: 'Build a meal by portion and see the kcal', onTap: () => _go('/diet/counter')),
           ListRow(icon: Symbols.nutrition_rounded, color: AppColors.nutrition, title: 'Dietary diversity', subtitle: 'Eight food groups this week', onTap: () => _go('/diet/diversity')),
           ListRow(icon: Symbols.pie_chart_rounded, color: AppColors.water, title: 'Healthy plate guide', subtitle: 'Portions without a food scale', onTap: () => _go('/diet/plate')),

@@ -54,21 +54,44 @@ class Sfx {
 
 /// A single, app-wide calm music loop with a play/pause state any screen
 /// can listen to.
+///
+/// The player mixes with other audio instead of requesting exclusive audio
+/// focus: on Android a focus request that is not granted leaves the player
+/// silently stopped, which is how the music used to fail. [playing] follows
+/// the player's real state, so the button never shows "playing" in silence.
 class CalmMusic {
   CalmMusic._();
 
   static final playing = ValueNotifier<bool>(false);
   static AudioPlayer? _player;
+  static bool _sourceReady = false;
 
   static Future<void> toggle() => playing.value ? stop() : play();
 
+  static Future<AudioPlayer> _ensurePlayer() async {
+    final existing = _player;
+    if (existing != null) return existing;
+    final p = AudioPlayer(playerId: 'calm_music');
+    p.onPlayerStateChanged.listen((s) => playing.value = s == PlayerState.playing);
+    await p.setAudioContext(AudioContextConfig(focus: AudioContextConfigFocus.mixWithOthers).build());
+    await p.setReleaseMode(ReleaseMode.loop);
+    await p.setVolume(0.8);
+    return _player = p;
+  }
+
   static Future<void> play() async {
+    // Show the tap straight away; the state listener corrects it if needed.
+    playing.value = true;
     try {
-      final p = _player ??= AudioPlayer();
-      await p.setReleaseMode(ReleaseMode.loop);
-      await p.play(AssetSource('sounds/calm_bells.mp3'), volume: 0.7);
-      playing.value = true;
-    } catch (_) {
+      final p = await _ensurePlayer();
+      if (!_sourceReady) {
+        await p.setSource(AssetSource('sounds/calm_bells.mp3'));
+        _sourceReady = true;
+      }
+      await p.resume();
+    } catch (e) {
+      debugPrint('Calm music failed to start: $e');
+      _sourceReady = false;
       playing.value = false;
     }
   }
@@ -76,7 +99,8 @@ class CalmMusic {
   static Future<void> stop() async {
     playing.value = false;
     try {
-      await _player?.stop();
+      await _player?.pause();
+      await _player?.seek(Duration.zero);
     } catch (_) {}
   }
 }

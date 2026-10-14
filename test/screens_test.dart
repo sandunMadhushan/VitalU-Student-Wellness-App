@@ -30,6 +30,7 @@ import 'package:vitalu/features/diet/meal_counter_screen.dart';
 import 'package:vitalu/features/diet/meal_log_screen.dart';
 import 'package:vitalu/features/diet/meal_planner_screen.dart';
 import 'package:vitalu/features/diet/nutrition_today_screen.dart';
+import 'package:vitalu/features/diet/pdqs_screen.dart';
 import 'package:vitalu/features/diet/plate_screen.dart';
 import 'package:vitalu/features/home/home_screen.dart';
 import 'package:vitalu/features/habits/habits_screen.dart';
@@ -41,6 +42,7 @@ import 'package:vitalu/features/profile/profile_screen.dart';
 import 'package:vitalu/features/progress/milestones_screen.dart';
 import 'package:vitalu/features/progress/notifications_screen.dart';
 import 'package:vitalu/features/progress/progress_screen.dart';
+import 'package:vitalu/features/support/consult_screen.dart';
 import 'package:vitalu/features/support/help_screen.dart';
 import 'package:vitalu/features/support/professionals_screen.dart';
 import 'package:vitalu/features/tools/activity_screen.dart';
@@ -126,6 +128,8 @@ final _screens = <String, Widget Function()>{
   'about': () => const AboutScreen(),
   'professionals': () => const ProfessionalsScreen(),
   'help': () => const HelpScreen(),
+  'consult': () => const ConsultScreen(),
+  'pdqs': () => const PdqsScreen(),
 };
 
 Future<void> _font(String family, List<String> files) async {
@@ -172,7 +176,10 @@ void main() {
           key: key,
           child: MaterialApp.router(debugShowCheckedModeBanner: false, theme: buildTheme(dark ? Brightness.dark : Brightness.light), routerConfig: router),
         ));
+        // Real time as well as fake time, so network calls (which fail
+        // fast against the dummy backend) settle and screens leave loading.
         for (int i = 0; i < 10; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
           await tester.pump(const Duration(milliseconds: 200));
         }
         await tester.runAsync(() async {

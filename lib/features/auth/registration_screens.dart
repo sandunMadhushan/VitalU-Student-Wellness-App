@@ -9,6 +9,7 @@ import '../../core/app_state.dart';
 import '../../data/catalog.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
+import '../../ui/ruler.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -48,22 +49,17 @@ class _Intro extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
-  const _Actions({required this.label, required this.onContinue, this.onSkip, this.busy = false, this.skipLabel = 'Skip for now', this.note});
+  const _Actions({required this.label, required this.onContinue, this.busy = false, this.note});
   final String label;
   final VoidCallback? onContinue;
-  final VoidCallback? onSkip;
   final bool busy;
-  final String skipLabel;
 
-  /// Shown under the button instead of a skip link, e.g. why it is disabled.
+  /// Shown under the button, e.g. why it is disabled.
   final String? note;
   @override
   Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
         PrimaryButton(label, loading: busy, onTap: onContinue),
-        if (onSkip != null)
-          TextLinkButton(skipLabel, color: AppColors.onSurfaceVariant, onTap: onSkip)
-        else if (note != null)
-          Padding(padding: const EdgeInsets.only(top: 10, bottom: 4), child: Text(note!, style: T.bodySm.c(AppColors.onSurfaceVariant))),
+        if (note != null) Padding(padding: const EdgeInsets.only(top: 10, bottom: 4), child: Text(note!, style: T.bodySm.c(AppColors.onSurfaceVariant))),
       ]);
 }
 
@@ -138,6 +134,15 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
   }
 
   bool get _usernameValid => _usernameFormat.hasMatch(_username.text.trim().toLowerCase());
+
+  int? get _age {
+    final d = _dob;
+    if (d == null) return null;
+    final now = DateTime.now();
+    var a = now.year - d.year;
+    if (now.month < d.month || (now.month == d.month && now.day < d.day)) a--;
+    return a;
+  }
 
   bool get _complete =>
       _dob != null &&
@@ -226,6 +231,14 @@ class _RegistrationStep1State extends State<RegistrationStep1> {
             title: 'Date of birth',
             value: _dob == null ? 'Select' : DateFormat('d MMM yyyy').format(_dob!),
             onTap: _pickDob,
+          ),
+          ListRow(
+            icon: Symbols.hourglass_rounded,
+            color: AppColors.mind,
+            title: 'Age',
+            value: _age == null ? 'Set from date of birth' : '$_age years',
+            chevron: false,
+            onTap: _dob == null ? _pickDob : null,
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 12),
@@ -335,35 +348,22 @@ class RegistrationStep2 extends StatefulWidget {
 }
 
 class _RegistrationStep2State extends State<RegistrationStep2> {
-  late final Set<String> _selected = {...?AppState.instance.profile?.conditions};
-  bool _none = false;
+  late final Set<String> _personal = {...?AppState.instance.profile?.conditions.where((k) => !isFamilyCondition(k))};
+  late final Set<String> _family = {...?AppState.instance.profile?.conditions.where(isFamilyCondition)};
+
+  // A previously saved step counts as answered, so returning students are
+  // not asked to tick "none" again.
+  late bool _noPersonal = (AppState.instance.profile?.registrationStep ?? 0) >= 2 && _personal.isEmpty;
+  late bool _noFamily = (AppState.instance.profile?.registrationStep ?? 0) >= 2 && _family.isEmpty;
   bool _busy = false;
 
-  static const _keys = [
-    'family_heart',
-    'family_diabetes',
-    'family_cholesterol',
-    'family_obesity',
-    'asthma_allergies',
-    'allergies_intolerances',
-    'high_bp',
-    'migraine',
-    'anxiety_sleep',
-    'gastritis',
-    'constipation',
-    'skin_disease',
-    'kidney_disease',
-    'liver_disease',
-    'hemorrhoids',
-    'anaemia',
-    'std',
-    'pcos',
-  ];
+  bool get _complete => (_personal.isNotEmpty || _noPersonal) && (_family.isNotEmpty || _noFamily);
 
-  Future<void> _continue({bool skip = false}) async {
+  Future<void> _continue() async {
+    if (!_complete) return;
     setState(() => _busy = true);
     try {
-      await _saveStep(skip ? {} : {'health_conditions': _none ? <String>[] : _selected.toList()}, 2);
+      await _saveStep({'health_conditions': [..._personal, ..._family]}, 2);
       if (mounted) context.push('/register/3');
     } catch (_) {
       if (mounted) toast(context, 'Could not save. Please try again.', error: true);
@@ -377,50 +377,78 @@ class _RegistrationStep2State extends State<RegistrationStep2> {
     return VPage(
       header: RegistrationHeader(title: 'Step 2 of 3', onBack: () => goBack(context, '/register/1')),
       spacing: Sp.md,
-      bottom: _Actions(label: 'Continue', busy: _busy, onContinue: () => _continue(), onSkip: () => _continue(skip: true), skipLabel: 'Skip this step'),
+      bottom: _Actions(
+        label: 'Continue',
+        busy: _busy,
+        onContinue: _complete ? _continue : null,
+        note: _complete ? null : 'Answer both sections, or pick "None" in each',
+      ),
       children: [
         const _StepProgress(step: 2),
-        const _Intro('Any health history?', 'Select anything that applies to you or your family. You can change this later in your profile.'),
-        VCard(
-          color: AppColors.surfaceContainer,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Symbols.lock_rounded, size: 16, color: AppColors.onSurfaceVariant, fill: 1),
-            const SizedBox(width: 8),
-            Expanded(child: Text('VitalU uses this solely to tailor gentle preventative tips.', style: T.bodySm.c(AppColors.onSurfaceVariant))),
-          ]),
+        const _Intro('Your health background', 'This helps VitalU tailor gentle, preventative tips. You can change it later in your profile.'),
+        _section(
+          icon: Symbols.person_rounded,
+          color: AppColors.primary,
+          title: 'About you',
+          subtitle: 'Anything you have been diagnosed with',
+          chips: [
+            for (final k in personalConditionKeys.where((k) => k != 'pcos' || AppState.instance.profile?.sex != 'male'))
+              _chip(conditionByKey(k)!.label, _personal.contains(k), () {
+                _personal.contains(k) ? _personal.remove(k) : _personal.add(k);
+                if (_personal.isNotEmpty) _noPersonal = false;
+              }),
+            _chip('None of these', _noPersonal, () {
+              _noPersonal = !_noPersonal;
+              if (_noPersonal) _personal.clear();
+            }, none: true),
+          ],
         ),
-        Wrap(spacing: 6, runSpacing: 6, children: [
-          for (final k in _keys) _chip(conditionByKey(k)!),
-          VChip(
-            'None of these',
-            height: 30,
-            dense: true,
-            selected: _none,
-            selectedColor: AppColors.onSurfaceVariant,
-            onTap: () => setState(() {
-              _none = !_none;
-              if (_none) _selected.clear();
-            }),
-          ),
-        ]),
+        _section(
+          icon: Symbols.family_restroom_rounded,
+          color: AppColors.heart,
+          title: 'Family history',
+          subtitle: 'Parents, brothers, sisters or grandparents',
+          chips: [
+            for (final k in familyConditionKeys)
+              _chip(familyConditionLabel(k), _family.contains(k), () {
+                _family.contains(k) ? _family.remove(k) : _family.add(k);
+                if (_family.isNotEmpty) _noFamily = false;
+              }),
+            _chip('None, or not sure', _noFamily, () {
+              _noFamily = !_noFamily;
+              if (_noFamily) _family.clear();
+            }, none: true),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _chip(Condition c) {
-    final on = _selected.contains(c.key);
-    return VChip(
-      c.label,
-      height: 30,
-      dense: true,
-      selected: on,
-      onTap: () => setState(() {
-        on ? _selected.remove(c.key) : _selected.add(c.key);
-        if (!on) _none = false;
-      }),
-    );
-  }
+  Widget _section({required IconData icon, required Color color, required String title, required String subtitle, required List<Widget> chips}) => VCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            IconCircle(icon, size: 34, iconSize: 18, fg: color, radius: 10, fill: 1),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: T.headlineSm),
+                Text(subtitle, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          Wrap(spacing: 6, runSpacing: 6, children: chips),
+        ]),
+      );
+
+  Widget _chip(String label, bool on, VoidCallback toggle, {bool none = false}) => VChip(
+        label,
+        height: 32,
+        dense: true,
+        selected: on,
+        selectedColor: none ? AppColors.onSurfaceVariant : AppColors.primary,
+        onTap: () => setState(toggle),
+      );
 }
 
 // ---------------------------------------------------------------------------
@@ -489,41 +517,62 @@ class RegistrationStep3 extends StatefulWidget {
 
 class _RegistrationStep3State extends State<RegistrationStep3> {
   final p = AppState.instance.profile;
-  late final _h = Measure('cm', 'in', 0.393701, p?.heightCm);
-  late final _w = Measure('kg', 'lb', 2.20462, p?.weightKg);
-  late final _waist = Measure('cm', 'in', 0.393701, p?.waistCm);
-  late final _hip = Measure('cm', 'in', 0.393701, p?.hipCm);
+  late double _height = (p?.heightCm ?? 160).clamp(120, 220).toDouble();
+  late double _weight = (p?.weightKg ?? 60).clamp(30, 200).toDouble();
+  late double _waist = (p?.waistCm ?? 76).clamp(45, 160).toDouble();
+  late double _hip = (p?.hipCm ?? 96).clamp(60, 170).toDouble();
+  late String? _shape = p?.bodyShape;
+  String _hUnit = 'cm';
+  String _wUnit = 'kg';
+  String _gUnit = 'cm';
+  int _page = 0;
   bool _busy = false;
 
-  Future<void> _finish({bool skip = false}) async {
+  static const _titles = ['Height', 'Weight', 'Waist and hip', 'Body shape'];
+
+  void _back() {
+    if (_page > 0) {
+      setState(() => _page--);
+    } else {
+      goBack(context, '/register/2');
+    }
+  }
+
+  void _next() {
+    if (_page < _titles.length - 1) {
+      setState(() => _page++);
+    } else {
+      _finish();
+    }
+  }
+
+  Future<void> _finish() async {
     if (!(AppState.instance.profile?.basicsComplete ?? false)) {
       toast(context, 'Complete step 1 before creating your profile.', error: true);
       context.go('/register/1');
       return;
     }
-    String? err;
-    if (!skip) {
-      final h = _h.metric, w = _w.metric, wa = _waist.metric, hi = _hip.metric;
-      if (h != null && (h < 100 || h > 230)) err = 'Height looks unusual. Please check it.';
-      if (w != null && (w < 25 || w > 250)) err = 'Weight looks unusual. Please check it.';
-      if (wa != null && (wa < 40 || wa > 200)) err = 'Waist looks unusual. Please check it.';
-      if (hi != null && (hi < 50 || hi > 200)) err = 'Hip looks unusual. Please check it.';
-    }
-    if (err != null) return toast(context, err, error: true);
+    if (_shape == null) return;
     setState(() => _busy = true);
+    final values = <String, dynamic>{
+      'onboarding_completed': true,
+      'height_cm': double.parse(_height.toStringAsFixed(1)),
+      'weight_kg': double.parse(_weight.toStringAsFixed(1)),
+      'waist_cm': double.parse(_waist.toStringAsFixed(1)),
+      'hip_cm': double.parse(_hip.toStringAsFixed(1)),
+      'water_goal_ml': Calc.waterTargetFor(_weight),
+      'measured_at': DateTime.now().toUtc().toIso8601String(),
+      'body_shape': _shape,
+    };
     try {
-      final values = <String, dynamic>{'onboarding_completed': true};
-      if (!skip) {
-        if (_h.metric != null) values['height_cm'] = _h.metric;
-        if (_w.metric != null) {
-          values['weight_kg'] = _w.metric;
-          values['water_goal_ml'] = Calc.waterTargetFor(_w.metric);
-        }
-        if (_waist.metric != null) values['waist_cm'] = _waist.metric;
-        if (_hip.metric != null) values['hip_cm'] = _hip.metric;
-        if (values.length > 1) values['measured_at'] = DateTime.now().toUtc().toIso8601String();
+      try {
+        await _saveStep(values, 3);
+      } on PostgrestException catch (e) {
+        // The body shape column arrives with a database migration; never
+        // block registration while it is pending.
+        if (e.code != 'PGRST204' && e.code != '42703') rethrow;
+        await _saveStep({...values}..remove('body_shape'), 3);
       }
-      await _saveStep(values, 3);
       if (mounted) context.go('/register/done');
     } catch (_) {
       if (mounted) toast(context, 'Could not save. Please try again.', error: true);
@@ -532,37 +581,241 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
     }
   }
 
-  Widget _row(String title, String? sub, IconData icon, Measure m) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: 12),
-        child: Row(children: [
-          IconCircle(icon, size: 32, iconSize: 18, fg: AppColors.body, radius: 8, fill: 1),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: T.bodyLg),
-              if (sub != null) Text(sub, style: T.bodySm.c(AppColors.onSurfaceVariant)),
-            ]),
-          ),
-          MeasureField(controller: m.controller, units: [m.metricUnit, m.altUnit], unit: m.unit, onUnit: (u) => setState(() => m.switchTo(u))),
-        ]),
-      );
-
   @override
   Widget build(BuildContext context) {
+    final last = _page == _titles.length - 1;
     return VPage(
-      header: RegistrationHeader(title: 'Step 3 of 3', onBack: () => goBack(context, '/register/2')),
+      header: RegistrationHeader(title: 'Step 3 of 3', onBack: _back),
       spacing: Sp.lg,
-      bottom: _Actions(label: 'Finish setup', busy: _busy, onContinue: () => _finish(), onSkip: () => _finish(skip: true), skipLabel: "I'll add these later"),
+      bottom: _Actions(
+        label: last ? 'Finish setup' : 'Next',
+        busy: _busy,
+        onContinue: last && _shape == null ? null : _next,
+        note: last && _shape == null ? 'Pick the shape closest to yours' : null,
+      ),
       children: [
-        const _StepProgress(step: 3),
-        const _Intro('A few numbers to personalize your tools', "Don't know these? No problem, skip and add later."),
-        ListGroup(dividerIndent: 60, children: [
-          _row('Height', null, Symbols.height_rounded, _h),
-          _row('Weight', null, Symbols.monitor_weight_rounded, _w),
-          _row('Waist', null, Symbols.straighten_rounded, _waist),
-          _row('Hip', null, Symbols.accessibility_new_rounded, _hip),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const _StepProgress(step: 3),
+          const SizedBox(height: 10),
+          Row(children: [
+            for (int i = 0; i < _titles.length; i++) ...[
+              if (i > 0) const SizedBox(width: 4),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: i == _page ? 20 : 6,
+                height: 6,
+                decoration: BoxDecoration(color: i <= _page ? AppColors.primary : AppColors.surfaceContainerHigh, borderRadius: BorderRadius.circular(3)),
+              ),
+            ],
+            const SizedBox(width: 10),
+            Text('${_page + 1} of ${_titles.length} · ${_titles[_page]}', style: T.labelMd.c(AppColors.onSurfaceVariant)),
+          ]),
         ]),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          transitionBuilder: (child, a) => FadeTransition(
+            opacity: a,
+            child: SlideTransition(position: Tween(begin: const Offset(0.05, 0), end: Offset.zero).animate(a), child: child),
+          ),
+          child: KeyedSubtree(key: ValueKey(_page), child: _pageBody()),
+        ),
       ],
+    );
+  }
+
+  Widget _pageBody() => switch (_page) {
+        0 => _heightPage(),
+        1 => _weightPage(),
+        2 => _girthPage(),
+        _ => _shapePage(),
+      };
+
+  Widget _unitToggle(List<String> units, String value, ValueChanged<String> onChanged) =>
+      Center(child: Segmented(options: units, value: value, onChanged: (u) => setState(() => onChanged(u))));
+
+  Widget _bigValue(String value, String unit) => Text.rich(
+        TextSpan(text: value, children: [TextSpan(text: ' $unit', style: T.headlineSm.c(AppColors.onSurfaceVariant))]),
+        style: T.metric(40),
+      );
+
+  // Height: a vertical ruler, as on a wall.
+  Widget _heightPage() {
+    final cm = _hUnit == 'cm';
+    final inches = _height / 2.54;
+    final display = cm ? _bigValue(_height.round().toString(), 'cm') : _bigValue("${inches ~/ 12}' ${(inches % 12).round()}\"", '');
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const _Intro('Please share your height', 'This helps us tailor your plan for the best results.'),
+      const SizedBox(height: Sp.md),
+      _unitToggle(const ['cm', 'ft'], _hUnit, (u) => _hUnit = u),
+      const SizedBox(height: Sp.md),
+      SizedBox(
+        height: 380,
+        child: Row(children: [
+          RulerPicker(
+            axis: Axis.vertical,
+            crossExtent: 110,
+            value: cm ? _height : inches.roundToDouble(),
+            min: cm ? 120 : 48,
+            max: cm ? 220 : 86,
+            step: 1,
+            majorEvery: cm ? 10 : 12,
+            midEvery: cm ? 5 : 6,
+            label: cm ? null : (v) => "${v ~/ 12}'",
+            onChanged: (v) => setState(() => _height = cm ? v : v * 2.54),
+          ),
+          const SizedBox(width: Sp.md),
+          Expanded(child: Center(child: display)),
+        ]),
+      ),
+    ]);
+  }
+
+  // Weight: a horizontal ruler with a live BMI preview.
+  Widget _weightPage() {
+    final kg = _wUnit == 'kg';
+    final bmi = Calc.bmi(_height, _weight)!;
+    final cat = Calc.bmiCategory(bmi);
+    final c = switch (cat) {
+      'Normal Weight' => AppColors.tertiary,
+      'Overweight' => AppColors.warning,
+      'Obesity' => AppColors.error,
+      _ => AppColors.water,
+    };
+    final shown = kg ? _weight : _weight * 2.20462;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const _Intro('Please share your weight', 'All bodies are unique. Tracking your weight helps us support your goals better.'),
+      const SizedBox(height: Sp.md),
+      _unitToggle(const ['kg', 'lbs'], _wUnit, (u) => _wUnit = u),
+      const SizedBox(height: Sp.xl),
+      Center(child: _bigValue(kg ? shown.toStringAsFixed(1) : shown.round().toString(), kg ? 'kg' : 'lbs')),
+      const SizedBox(height: Sp.md),
+      RulerPicker(
+        value: kg ? double.parse(_weight.toStringAsFixed(1)) : shown.roundToDouble(),
+        min: kg ? 30 : 66,
+        max: kg ? 200 : 440,
+        step: kg ? 0.1 : 1,
+        majorEvery: 10,
+        midEvery: 5,
+        label: kg ? (v) => v.round().toString() : null,
+        onChanged: (v) => setState(() => _weight = kg ? v : v / 2.20462),
+      ),
+      const SizedBox(height: Sp.lg),
+      VCard(
+        color: AppColors.surfaceContainerLow,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text.rich(TextSpan(text: 'Your BMI: ', children: [TextSpan(text: bmi.toStringAsFixed(1), style: T.headlineSm.c(c))]), style: T.labelLg),
+          const SizedBox(height: 4),
+          Text(
+            cat == 'Normal Weight' ? 'You are in the healthy range. Keep up the good habits!' : 'Step by step! VitalU will help you move towards a healthier, more active you.',
+            style: T.bodySm.c(AppColors.onSurfaceVariant),
+          ),
+        ]),
+      ),
+    ]);
+  }
+
+  // Waist and hip: two horizontal rulers and a how-to-measure picture.
+  Widget _girthPage() {
+    final cm = _gUnit == 'cm';
+    double show(double v) => cm ? v : v / 2.54;
+    Widget girth(String title, String hint, double value, double min, double max, ValueChanged<double> set) => VCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(title, style: T.headlineSm),
+                  Text(hint, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                ]),
+              ),
+              MetricValue(show(value).toStringAsFixed(1), unit: _gUnit, size: 24),
+            ]),
+            const SizedBox(height: Sp.sm),
+            RulerPicker(
+              crossExtent: 78,
+              spacing: 10,
+              value: (show(value) * 2).round() / 2,
+              min: cm ? min : (min / 2.54).floorToDouble(),
+              max: cm ? max : (max / 2.54).ceilToDouble(),
+              step: 0.5,
+              majorEvery: 10,
+              midEvery: 2,
+              label: (v) => v.round().toString(),
+              onChanged: (v) => setState(() => set(cm ? v : v * 2.54)),
+            ),
+          ]),
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const _Intro('Your waist and hip', 'These show where your body stores weight, which matters for heart health.'),
+      const SizedBox(height: Sp.md),
+      Container(
+        height: 200,
+        decoration: BoxDecoration(color: AppColors.tint(AppColors.body), borderRadius: BorderRadius.circular(Rad.xl)),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: Image.asset('assets/art/measure_guide.webp', fit: BoxFit.contain, alignment: Alignment.bottomCenter),
+      ),
+      const SizedBox(height: Sp.md),
+      _unitToggle(const ['cm', 'in'], _gUnit, (u) => _gUnit = u),
+      const SizedBox(height: Sp.md),
+      girth('Waist', 'Midway between your lowest rib and hip bone, after breathing out', _waist, 45, 160, (v) => _waist = v),
+      const SizedBox(height: Sp.md),
+      girth('Hip', 'Around the widest part of your buttocks', _hip, 60, 170, (v) => _hip = v),
+    ]);
+  }
+
+  // Body shape: where the body tends to store fat.
+  Widget _shapePage() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const _Intro('Which body shape is closest to yours?', 'This helps us understand where your body tends to store fat. There is no right or wrong shape.'),
+      const SizedBox(height: Sp.md),
+      LayoutBuilder(builder: (context, c) {
+        final w = (c.maxWidth - 2 * 10) / 3;
+        return Wrap(spacing: 10, runSpacing: 10, alignment: WrapAlignment.center, children: [
+          for (final s in bodyShapes) SizedBox(width: w, child: _shapeCard(s)),
+        ]);
+      }),
+    ]);
+  }
+
+  Widget _shapeCard(BodyShape s) {
+    final on = _shape == s.key;
+    final c = AppColors.primary;
+    final male = AppState.instance.profile?.sex == 'male';
+    // Men rarely have an hourglass figure; the balanced male shape is a trapezoid.
+    final label = male && s.key == 'hourglass' ? 'Trapezoid' : s.label;
+    final note = male && s.key == 'hourglass' ? 'Balanced, with a narrower waist' : s.note;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: on ? AppColors.tint(c) : AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(Rad.lg),
+        border: Border.all(color: on ? c : AppColors.outlineVariant, width: on ? 2 : 1),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(Rad.lg),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _shape = s.key);
+          },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 10),
+            child: Column(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(Rad.base),
+                child: AspectRatio(
+                  aspectRatio: 0.42,
+                  child: Image.asset('assets/body_shapes/${male ? 'male' : 'female'}_${s.key}.jpg', fit: BoxFit.cover, alignment: Alignment.topCenter),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(label, style: T.labelMd.semi.c(on ? c : AppColors.onSurface), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 2),
+              Text(note, style: T.labelSm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center, maxLines: 2),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -21,6 +21,8 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build web --release --base-href "/"
+      # The admin dashboard is a separate static site, served at /admin/.
+      - run: cp -r admin build/web/admin
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web

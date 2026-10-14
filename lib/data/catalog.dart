@@ -39,6 +39,63 @@ Condition? conditionByKey(String k) {
   return null;
 }
 
+/// Conditions the student has themselves, asked separately from family history.
+const personalConditionKeys = <String>[
+  'asthma_allergies',
+  'allergies_intolerances',
+  'high_bp',
+  'migraine',
+  'anxiety_sleep',
+  'gastritis',
+  'constipation',
+  'skin_disease',
+  'kidney_disease',
+  'liver_disease',
+  'hemorrhoids',
+  'anaemia',
+  'std',
+  'pcos',
+];
+
+/// Conditions in parents, siblings or grandparents.
+const familyConditionKeys = <String>['family_heart', 'family_hypertension', 'family_diabetes', 'family_cholesterol', 'family_obesity'];
+
+bool isFamilyCondition(String key) => key.startsWith('family_');
+
+/// Short label for a family-history key, shown under a "Family history" heading.
+String familyConditionLabel(String key) => switch (key) {
+      'family_heart' => 'Heart disease or stroke',
+      'family_hypertension' => 'High blood pressure',
+      'family_diabetes' => 'Diabetes',
+      'family_cholesterol' => 'High cholesterol',
+      'family_obesity' => 'Obesity',
+      _ => conditionByKey(key)?.label ?? key,
+    };
+
+/// Body shapes offered at registration, as a simple picture of where the body
+/// tends to store fat.
+class BodyShape {
+  const BodyShape(this.key, this.label, this.note);
+  final String key;
+  final String label;
+  final String note;
+}
+
+const bodyShapes = <BodyShape>[
+  BodyShape('apple', 'Apple', 'Fuller around the middle'),
+  BodyShape('pear', 'Pear', 'Fuller hips and thighs'),
+  BodyShape('hourglass', 'Hourglass', 'Balanced, with a defined waist'),
+  BodyShape('rectangle', 'Rectangle', 'Waist, hips and shoulders similar'),
+  BodyShape('inverted_triangle', 'Inverted triangle', 'Broader shoulders and chest'),
+];
+
+BodyShape? bodyShapeByKey(String? k) {
+  for (final s in bodyShapes) {
+    if (s.key == k) return s;
+  }
+  return null;
+}
+
 const faculties = <String>[
   'Faculty of Agriculture',
   'Faculty of Allied Health Sciences',
@@ -204,6 +261,16 @@ IconData iconByName(String? name) {
       return Symbols.ecg_heart_rounded;
     case 'glucose':
       return Symbols.glucose_rounded;
+    case 'school':
+      return Symbols.school_rounded;
+    case 'savings':
+      return Symbols.savings_rounded;
+    case 'diversity_3':
+      return Symbols.diversity_3_rounded;
+    case 'campaign':
+      return Symbols.campaign_rounded;
+    case 'assignment':
+      return Symbols.assignment_rounded;
     default:
       return Symbols.spa_rounded;
   }

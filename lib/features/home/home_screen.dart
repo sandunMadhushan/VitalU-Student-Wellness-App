@@ -8,11 +8,13 @@ import '../../core/push.dart';
 import '../../core/step_sync.dart';
 import '../../data/models.dart';
 import '../../data/repo.dart';
+import '../../ui/badge_ui.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
-import '../assessments/assessment_data.dart';
-import 'breathing.dart';
+import '../diet/pdqs_screen.dart' show pdqsBand;
+import 'health_habits.dart';
+import 'vitals_sheet.dart';
 
 const moods = <(String, IconData, String)>[
   ('Centered', Symbols.self_improvement_rounded, 'Clear and steady'),
@@ -57,30 +59,30 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+Future<R> _safe<R>(Future<R> f, R fallback) async {
+  try {
+    return await f;
+  } catch (e) {
+    debugPrint('home: $e');
+    return fallback;
+  }
+}
+
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _loading = true;
   int _water = 0;
   int _steps = 0;
-  int _activeMinutes = 0;
-  int _mealsToday = 0;
-  int _diversityToday = 0;
-  int _diversityWeek = 0;
   Rec? _sleep;
   Rec? _mood;
   Rec? _openWindow;
   Rec? _nextWindow;
   Rec? _assessment;
-
-  // Weekly snapshots used to compare this week's average against each
-  // tracker's baseline requirement.
-  Map<String, int> _waterWeek = {};
-  Map<String, int> _stepsWeek = {};
-  Map<String, int> _minutesWeek = {};
-  List<Rec> _sleepWeek = [];
-  List<Rec> _moodWeek = [];
-
-  /// WHO/IPAQ baseline: at least 150 minutes of moderate activity a week.
-  static const _activeMinutesBaseline = 150;
+  Rec? _pdqs;
+  Rec? _stress;
+  LatestVitals _vitals = const LatestVitals();
+  List<HabitInsight> _habits = [];
+  List<Rec> _badges = [];
+  Map<String, DateTime> _earned = {};
 
   @override
   void initState() {
@@ -104,60 +106,69 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _load() async {
-    try {
-      // Picks up fresh steps from the phone's sensor so the dashboard is
-      // current even if the student never opens the Activity tracker.
-      await StepSync.sync();
-      final now = DateTime.now();
-      final today = isoDate(now);
-      final ws = weekStart(now);
-      final results = await Future.wait([
-        Repo.waterTotal(now),
-        Repo.activityTotals(now),
-        Repo.sleepLatest(),
-        Repo.moodLatest(),
-        Repo.currentAndNextWindow(),
-        Repo.mealsOn(now),
-        Repo.diversityBetween(ws, now),
-        Repo.waterByDay(7),
-        Repo.stepsByDay(ws, ws.add(const Duration(days: 6))),
-        Repo.minutesByDay(ws, ws.add(const Duration(days: 6))),
-        Repo.sleepBetween(ws, now),
-        Repo.moodsSince(ws),
-      ]);
-      _water = results[0] as int;
-      final act = results[1] as Rec;
-      _steps = act['steps'] as int;
-      _activeMinutes = act['minutes'] as int;
-      final s = results[2] as Rec?;
-      _sleep = (s != null && now.difference(DateTime.parse(s['sleep_date'])).inDays <= 1) ? s : null;
-      final m = results[3] as Rec?;
-      _mood = (m != null && now.difference(DateTime.parse(m['logged_at']).toLocal()).inHours < 24) ? m : null;
-      final (open, next) = results[4] as (Rec?, Rec?);
-      _openWindow = open;
-      _nextWindow = next;
-      _assessment = open == null ? null : await Repo.assessmentFor(open['id']);
-      _mealsToday = (results[5] as List).length;
-      final diversityRows = results[6] as List<Rec>;
-      _diversityToday = diversityRows.where((r) => r['log_date'] == today).map((r) => r['food_group']).toSet().length;
-      _diversityWeek = diversityRows.map((r) => r['food_group']).toSet().length;
-      _waterWeek = results[7] as Map<String, int>;
-      _stepsWeek = results[8] as Map<String, int>;
-      _minutesWeek = results[9] as Map<String, int>;
-      _sleepWeek = results[10] as List<Rec>;
-      _moodWeek = results[11] as List<Rec>;
-      await AppState.instance.refreshUnread();
-    } catch (e) {
-      debugPrint('home load: $e');
-    }
+    final p = AppState.instance.profile;
+    // Picks up fresh steps from the phone's sensor so the dashboard is
+    // current even if the student never opens the Activity tracker.
+    await _safe(StepSync.sync(), null);
+    final now = DateTime.now();
+    final from = dayStart(now).subtract(const Duration(days: 6));
+    final r = await Future.wait<Object?>([
+      _safe(Repo.waterTotal(now), 0), // 0
+      _safe(Repo.activityTotals(now), <String, dynamic>{'steps': 0}), // 1
+      _safe(Repo.sleepLatest(), null), // 2
+      _safe(Repo.moodLatest(), null), // 3
+      _safe(Repo.currentAndNextWindow(), (null, null)), // 4
+      _safe(Repo.waterByDay(7), <String, int>{}), // 5
+      _safe(Repo.stepsByDay(from, now), <String, int>{}), // 6
+      _safe(Repo.minutesByDay(from, now), <String, int>{}), // 7
+      _safe(Repo.sleepBetween(from, now), <Rec>[]), // 8
+      _safe(Repo.diversityBetween(from, now), <Rec>[]), // 9
+      _safe(Repo.latestToolResult('pdqs'), null), // 10
+      _safe(Repo.latestToolResult('stress'), null), // 11
+      _safe(Repo.latestVitals(), const LatestVitals()), // 12
+      _safe(Repo.badges(), <Rec>[]), // 13
+      _safe(Repo.earnedBadges(), <String, DateTime>{}), // 14
+      _safe(Repo.assessments(), <Rec>[]), // 15
+      (p?.isFemale ?? false) ? _safe(Repo.dailyLogsSince(now.subtract(const Duration(days: 14))), <Rec>[]) : Future.value(<Rec>[]), // 16
+    ]);
+    _water = r[0] as int;
+    _steps = ((r[1] as Rec)['steps'] as num?)?.toInt() ?? 0;
+    final s = r[2] as Rec?;
+    _sleep = (s != null && now.difference(DateTime.parse(s['sleep_date'])).inDays <= 1) ? s : null;
+    final m = r[3] as Rec?;
+    _mood = (m != null && now.difference(DateTime.parse(m['logged_at']).toLocal()).inHours < 24) ? m : null;
+    final (open, next) = r[4] as (Rec?, Rec?);
+    _openWindow = open;
+    _nextWindow = next;
+    _assessment = open == null ? null : await _safe(Repo.assessmentFor(open['id']), null);
+    _pdqs = r[10] as Rec?;
+    _stress = r[11] as Rec?;
+    _vitals = r[12] as LatestVitals;
+    _badges = r[13] as List<Rec>;
+    _earned = r[14] as Map<String, DateTime>;
+    final completed = (r[15] as List<Rec>).where((a) => a['status'] == 'completed').firstOrNull;
+    _habits = healthHabits(HabitSignals(
+      waterByDay: r[5] as Map<String, int>,
+      waterGoal: p?.waterGoalMl ?? 2500,
+      stepsByDay: r[6] as Map<String, int>,
+      minutesByDay: r[7] as Map<String, int>,
+      stepGoal: p?.stepGoal ?? 8000,
+      sleep: r[8] as List<Rec>,
+      diversity: r[9] as List<Rec>,
+      pdqs: _pdqs,
+      assessment: completed,
+      cycleLogs: r[16] as List<Rec>,
+    ));
+    await _safe(AppState.instance.refreshUnread(), null);
     if (mounted) setState(() => _loading = false);
   }
 
+  /// "Good Morning", "Good Afternoon" or "Good Evening", always title case.
   String get _greeting {
     final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (h < 12) return 'Good Morning';
+    if (h < 17) return 'Good Afternoon';
+    return 'Good Evening';
   }
 
   bool get _windowActive => _openWindow != null && _assessment?['status'] != 'completed';
@@ -171,251 +182,567 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: AppState.instance,
-      builder: (context, _) {
-        final name = AppState.instance.profile?.firstName;
-        return VPage(
-          header: MainHeader(name == null ? _greeting : '$_greeting, $name'),
-          nav: NavTab.home,
-          onRefresh: _load,
-          topPadding: 0,
-          children: _loading ? [const Loading()] : _children(),
-        );
-      },
+      builder: (context, _) => VPage(
+        header: _HomeHeader(greeting: _greeting, name: AppState.instance.profile?.firstName),
+        nav: NavTab.home,
+        onRefresh: _load,
+        topPadding: Sp.xs,
+        children: _loading ? [const Loading()] : _children(),
+      ),
     );
   }
 
   List<Widget> _children() {
     final p = AppState.instance.profile;
-    final waterGoal = p?.waterGoalMl ?? 2500;
-    final stepGoal = p?.stepGoal ?? 8000;
-    final sleepGoalMin = ((p?.sleepGoalHours ?? 8) * 60).round();
-    final sleepMin = _sleep == null ? 0 : Repo.sleepMinutes(_sleep!);
-    final mood = _mood == null ? null : moodInfo(_mood!['mood']);
-
+    final upcoming = _nextWindow == null ? null : DateTime.parse(_nextWindow!['opens_at']).toLocal();
+    final soon = upcoming != null && upcoming.difference(DateTime.now()).inDays <= 21;
     return [
-      HeroBanner(
-        title: 'Track your health,\nstay in control',
-        subtitle: DateFormat('EEEE, d MMMM').format(DateTime.now()),
-        accent: AppColors.primary,
-        illustration: 'healthy_habit_bh5w',
-      ),
-      if (_windowActive) _assessmentCard(),
-      _todayCard(
-        water: (_water, waterGoal),
-        steps: (_steps, stepGoal),
-        sleep: (sleepMin, sleepGoalMin),
-        activeMinutes: _activeMinutes,
-      ),
-      TileGrid(children: [
-        MetricTile(
-          label: 'Meals',
-          icon: Symbols.restaurant_rounded,
-          color: AppColors.nutrition,
-          value: '$_mealsToday',
-          unit: 'logged',
-          caption: _mealsToday == 0 ? 'Nothing yet today' : 'Today',
-          onTap: () => _go('/diet'),
-        ),
-        MetricTile(
-          label: 'Food variety',
-          icon: Symbols.nutrition_rounded,
-          color: AppColors.nutrition,
-          value: '$_diversityToday',
-          unit: 'of 8',
-          caption: 'Food groups today',
-          progress: _diversityToday / 8,
-          onTap: () => _go('/diet/diversity'),
-        ),
-        MetricTile(
-          label: 'Mood',
-          icon: mood?.$2 ?? Symbols.mood_rounded,
-          color: AppColors.mind,
-          value: mood?.$1 ?? '–',
-          caption: mood?.$3 ?? 'Tap to check in',
-          onTap: () => showMoodPicker(context, onSaved: _load),
-        ),
-      ]),
-      SectionHeader('Body', trailing: p?.measuredAt == null ? null : Text('Updated ${DateFormat('d MMM').format(p!.measuredAt!.toLocal())}', style: T.labelMd.c(AppColors.onSurfaceVariant))),
-      bodyMetricTiles(p, _go),
-      SectionHeader('Progress', subtitle: 'This week versus your baseline', trailing: TextLinkButton('Full view', onTap: () => _go('/progress'))),
-      _progressSection(p, waterGoal: waterGoal, stepGoal: stepGoal, sleepGoalMin: sleepGoalMin),
-      if (!_windowActive && _nextWindow != null)
+      _hero(),
+      if (_windowActive) _assessmentOpenCard() else if (soon) _assessmentSoonCard(upcoming),
+      SectionHeader('Daily health updates', subtitle: DateFormat('EEEE, d MMMM').format(DateTime.now())),
+      TileGrid(gap: 10, children: _indicatorTiles(p)),
+      const SectionHeader('Your key habits', subtitle: 'From your recent logs and health assessments'),
+      _habitsCard(),
+      _consultCard(),
+      SectionHeader('Your badges', trailing: TextLinkButton('See all', onTap: () => _go('/milestones'))),
+      _badgesRow(),
+      _progressCard(),
+      if (!_windowActive && !soon && _nextWindow != null)
         ListGroup(children: [
           ListRow(
             icon: Symbols.assignment_rounded,
             color: AppColors.primary,
-            title: 'Next health assessment',
-            value: DateFormat('d MMM').format(DateTime.parse(_nextWindow!['opens_at']).toLocal()),
+            title: 'Next periodic health assessment',
+            value: DateFormat('d MMM').format(upcoming!),
             onTap: () => _go('/assessments'),
           ),
         ]),
-      const SectionHeader('Explore'),
-      ListGroup(children: [
-        ListRow(icon: Symbols.air_rounded, color: AppColors.mind, title: 'Breathing exercise', subtitle: 'One minute to reset', onTap: () => showBreathing(context)),
-        ListRow(icon: Symbols.menu_book_rounded, color: AppColors.water, title: 'Health library', subtitle: 'Short reads on sleep, food and stress', onTap: () => _go('/library')),
-        ListRow(icon: Symbols.lab_profile_rounded, color: AppColors.heart, title: 'Blood report reader', subtitle: 'Understand your lab results', onTap: () => _go('/blood-report')),
-        ListRow(icon: Symbols.stethoscope_rounded, color: AppColors.primary, title: 'Talk to a professional', subtitle: 'Campus counsellors and doctors', onTap: () => _go('/professionals')),
-      ]),
-      ListGroup(children: [
-        ListRow(
-          icon: Symbols.emergency_rounded,
-          color: AppColors.error,
-          title: 'Emergency & support lines',
-          subtitle: '1990 ambulance · 1926 mental health',
-          onTap: () => _go('/help'),
-        ),
-      ]),
     ];
   }
 
-  /// Hero summary: water, steps and sleep as a row of soft pastel ring cards.
-  Widget _todayCard({required (int, int) water, required (int, int) steps, required (int, int) sleep, required int activeMinutes}) {
-    return VCard(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          Expanded(child: Text('Today', style: T.headlineMd)),
-          if (activeMinutes > 0) TagPill('$activeMinutes min active', icon: Symbols.bolt_rounded, fill: 1, bg: AppColors.tint(AppColors.activity), fg: AppColors.activity),
+  // ---------------------------------------------------------------------------
+  // Hero
+
+  Widget _hero() {
+    final dark = AppColors.isDark;
+    final mood = _mood == null ? null : moodInfo(_mood!['mood']);
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Rad.xl),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [
+          Color.alphaBlend(AppColors.primary.withValues(alpha: dark ? 0.30 : 0.16), AppColors.surfaceContainerLowest),
+          Color.alphaBlend(AppColors.water.withValues(alpha: dark ? 0.12 : 0.06), AppColors.surfaceContainerLowest),
         ]),
-        const SizedBox(height: 14),
-        Row(children: [
-          Expanded(
-            child: MetricRingCard(
-              icon: Symbols.water_drop_rounded,
-              color: AppColors.water,
-              label: 'Water',
-              value: Fmt.litres(water.$1),
-              unit: 'L',
-              goal: '${Fmt.litres(water.$2)} L',
-              progress: water.$2 == 0 ? 0 : water.$1 / water.$2,
-              onTap: () => _go('/tools/water'),
-            ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 4, 0),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 18),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text.rich(
+                TextSpan(text: 'Take care of\nyour ', children: [TextSpan(text: 'health.', style: TextStyle(color: AppColors.primary))]),
+                style: T.headlineLg.lh(1.15),
+              ),
+              const SizedBox(height: 6),
+              Text('Small steps, every day.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              Material(
+                color: AppColors.surfaceContainerLowest.withValues(alpha: dark ? 0.6 : 0.9),
+                borderRadius: BorderRadius.circular(Rad.full),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(Rad.full),
+                  onTap: () => showMoodPicker(context, onSaved: _load),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(mood?.$2 ?? Symbols.mood_rounded, size: 18, color: AppColors.mind, fill: 1),
+                      const SizedBox(width: 6),
+                      Text(mood == null ? 'How are you feeling?' : 'Feeling ${mood.$1.toLowerCase()}', style: T.labelMd),
+                    ]),
+                  ),
+                ),
+              ),
+            ]),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: MetricRingCard(
-              icon: Symbols.directions_walk_rounded,
-              color: AppColors.activity,
-              label: 'Steps',
-              value: Fmt.thousands(steps.$1),
-              goal: Fmt.thousands(steps.$2),
-              progress: steps.$2 == 0 ? 0 : steps.$1 / steps.$2,
-              onTap: () => _go('/tools/activity'),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: MetricRingCard(
-              icon: Symbols.bedtime_rounded,
-              color: AppColors.sleep,
-              label: 'Sleep',
-              value: sleep.$1 == 0 ? '0h' : Fmt.hm(sleep.$1).replaceAll(' 0m', ''),
-              goal: '${(sleep.$2 / 60).round()} h',
-              progress: sleep.$2 == 0 ? 0 : sleep.$1 / sleep.$2,
-              onTap: () => _go('/tools/sleep'),
-            ),
-          ),
-        ]),
+        ),
+        SizedBox(height: 168, width: 128, child: Image.asset('assets/images/hero_doctor.webp', fit: BoxFit.contain, alignment: Alignment.bottomCenter)),
       ]),
     );
   }
 
-  /// This week's average for every tracked habit, each measured against its
-  /// own baseline requirement (a personal goal, or a health guideline for
-  /// activity), with the fluctuation shown as a delta.
-  Widget _progressSection(Profile? p, {required int waterGoal, required int stepGoal, required int sleepGoalMin}) {
-    final now = DateTime.now();
-    final ws = weekStart(now);
-    final daysSoFar = now.difference(ws).inDays + 1;
+  // ---------------------------------------------------------------------------
+  // Periodic assessment
 
-    final waterAvg = _waterWeek.values.isEmpty ? 0 : (_waterWeek.values.fold<int>(0, (a, b) => a + b) / daysSoFar).round();
-    final stepsAvg = _stepsWeek.values.isEmpty ? 0 : (_stepsWeek.values.fold<int>(0, (a, b) => a + b) / daysSoFar).round();
-    final activeMinutesWeek = _minutesWeek.values.fold<int>(0, (a, b) => a + b);
-    final sleepAvgMin = _sleepWeek.isEmpty ? 0 : (_sleepWeek.map(Repo.sleepMinutes).fold<int>(0, (a, b) => a + b) / _sleepWeek.length).round();
-    final moodDays = _moodWeek.map((m) => isoDate(DateTime.parse(m['logged_at']).toLocal())).toSet().length;
+  Widget _assessmentOpenCard() {
+    final w = _openWindow!;
+    final closes = DateTime.parse(w['closes_at']).toLocal();
+    final started = _assessment != null;
+    return _AlertCard(
+      image: 'assessment',
+      color: AppColors.primary,
+      kicker: 'Open until ${DateFormat('d MMM').format(closes)}',
+      title: 'Your periodic health assessment is open',
+      text: 'About ${w['estimated_minutes'] ?? 6} minutes. Answers are pooled anonymously to plan campus health support.',
+      action: started ? 'Continue' : 'Start now',
+      onTap: () => _go('/assessments/run'),
+    );
+  }
 
-    return ListGroup(children: [
-      _progressRow('Water', Symbols.water_drop_rounded, AppColors.water, Fmt.litres(waterAvg), 'L/day avg', waterAvg, waterGoal, onTap: () => _go('/tools/water')),
-      _progressRow('Sleep', Symbols.bedtime_rounded, AppColors.sleep, (sleepAvgMin / 60).toStringAsFixed(1), 'h/night avg', sleepAvgMin, sleepGoalMin, onTap: () => _go('/tools/sleep')),
-      _progressRow('Steps', Symbols.directions_walk_rounded, AppColors.activity, Fmt.thousands(stepsAvg), '/day avg', stepsAvg, stepGoal, onTap: () => _go('/tools/activity')),
-      _progressRow('Active minutes', Symbols.bolt_rounded, AppColors.activity, '$activeMinutesWeek', 'min this week', activeMinutesWeek, _activeMinutesBaseline, onTap: () => _go('/tools/activity')),
-      _progressRow('Food variety', Symbols.nutrition_rounded, AppColors.nutrition, '$_diversityWeek', 'of 8 groups this week', _diversityWeek, 8, onTap: () => _go('/diet/diversity')),
-      _progressRow('Mood check-ins', Symbols.mood_rounded, AppColors.mind, '$moodDays', 'of $daysSoFar days so far', moodDays, daysSoFar, onTap: () => showMoodPicker(context, onSaved: _load)),
+  Widget _assessmentSoonCard(DateTime opens) {
+    final days = DateTime(opens.year, opens.month, opens.day).difference(dayStart(DateTime.now())).inDays;
+    return _AlertCard(
+      image: 'assessment',
+      color: AppColors.warning,
+      kicker: days <= 0 ? 'Opens today' : (days == 1 ? 'Opens tomorrow' : 'Opens in $days days'),
+      title: 'Get ready: your next health assessment is coming up',
+      text: 'It opens on ${DateFormat('EEEE, d MMMM').format(opens)}. Have your latest height, weight and waist measurements handy.',
+      action: 'Remind me',
+      onTap: () async {
+        await Repo.schedule(
+          title: 'Health assessment now open',
+          body: 'Your ${_nextWindow!['term']} assessment is open. It takes about 6 minutes.',
+          category: 'milestone',
+          label: 'Assessment',
+          icon: 'event_upcoming',
+          route: '/assessments',
+          at: opens,
+        );
+        if (mounted) toast(context, "We'll remind you when it opens.");
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Daily health updates
+
+  List<Widget> _indicatorTiles(Profile? p) {
+    final waterGoal = p?.waterGoalMl ?? 2500;
+    final stepGoal = p?.stepGoal ?? 8000;
+    final sleepGoal = ((p?.sleepGoalHours ?? 8) * 60).round();
+    final sleepMin = _sleep == null ? 0 : Repo.sleepMinutes(_sleep!);
+    final measured = p?.measuredAt == null ? null : 'Updated ${DateFormat('d MMM').format(p!.measuredAt!.toLocal())}';
+    String when(DateTime d) => DateFormat('d MMM').format(d);
+    (String, Color) pct(num v, num goal) {
+      final f = goal <= 0 ? 0.0 : v / goal;
+      return ('${(f * 100).round()}%', f >= 1 ? AppColors.tertiary : (f >= 0.5 ? AppColors.warning : AppColors.onSurfaceVariant));
+    }
+
+    Color band(int level) => switch (level) {
+          0 => AppColors.tertiary,
+          1 => AppColors.warning,
+          2 => AppColors.activity,
+          _ => AppColors.error,
+        };
+
+    final bmi = p?.bmi;
+    final bmiCat = bmi == null ? null : Calc.bmiCategory(bmi);
+    final whr = p?.whr;
+    final whrCat = whr == null ? null : Calc.whrCategory(whr, p?.sex ?? 'female').$1;
+    final pdqsScore = (_pdqs?['score'] as num?)?.round();
+    final stressScore = (_stress?['score'] as num?)?.round();
+    final stressLevel = _stress?['category'] as String?;
+    final bp = _vitals.bp, fbg = _vitals.fastingGlucose, tg = _vitals.triglycerides;
+
+    Future<void> logVitals() async {
+      if (await showVitalsSheet(context)) _load();
+    }
+
+    return [
+      _HealthTile(
+        image: 'bmi',
+        label: 'BMI',
+        value: bmi?.toStringAsFixed(1) ?? '–',
+        status: bmiCat == null ? null : (bmiCat == 'Normal Weight' ? 'Healthy' : bmiCat),
+        statusColor: switch (bmiCat) {
+          'Normal Weight' => AppColors.tertiary,
+          'Overweight' => AppColors.warning,
+          'Obesity' => AppColors.error,
+          _ => AppColors.water,
+        },
+        caption: bmi == null ? 'Add height and weight' : measured,
+        onTap: () => _go('/tools/bmi'),
+      ),
+      _HealthTile(
+        image: 'whr',
+        label: 'Waist-to-hip ratio',
+        value: whr?.toStringAsFixed(2) ?? '–',
+        status: whrCat?.replaceAll(' Risk', ' risk'),
+        statusColor: switch (whrCat) {
+          'Low Risk' => AppColors.tertiary,
+          'Moderate Risk' => AppColors.warning,
+          _ => AppColors.error,
+        },
+        caption: whr == null ? 'Add waist and hip' : measured,
+        onTap: () => _go('/tools/whr'),
+      ),
+      _HealthTile(
+        image: 'diet',
+        label: 'Diet quality (PDQS)',
+        value: pdqsScore?.toString() ?? '–',
+        unit: pdqsScore == null ? null : '/ 42',
+        status: pdqsScore == null ? null : pdqsBand(pdqsScore).$1.replaceAll(' diet quality', ''),
+        statusColor: pdqsScore == null ? null : pdqsBand(pdqsScore).$2,
+        caption: _pdqs == null ? 'Take the weekly check-in' : 'Checked ${when(DateTime.parse(_pdqs!['created_at']).toLocal())}',
+        onTap: () => _go('/diet/pdqs'),
+      ),
+      _HealthTile(
+        image: 'water',
+        label: 'Water today',
+        value: Fmt.litres(_water),
+        unit: 'L',
+        status: pct(_water, waterGoal).$1,
+        statusColor: pct(_water, waterGoal).$2,
+        caption: 'Goal ${Fmt.litres(waterGoal)} L',
+        progress: _water / waterGoal,
+        progressColor: AppColors.water,
+        onTap: () => _go('/tools/water'),
+      ),
+      _HealthTile(
+        image: 'steps',
+        label: 'Steps today',
+        value: Fmt.thousands(_steps),
+        status: pct(_steps, stepGoal).$1,
+        statusColor: pct(_steps, stepGoal).$2,
+        caption: 'Goal ${Fmt.thousands(stepGoal)}',
+        progress: _steps / stepGoal,
+        progressColor: AppColors.activity,
+        onTap: () => _go('/tools/activity'),
+      ),
+      _HealthTile(
+        image: 'sleep',
+        label: 'Sleep last night',
+        value: sleepMin == 0 ? '–' : Fmt.hm(sleepMin).replaceAll(' 00m', ''),
+        status: sleepMin == 0 ? null : pct(sleepMin, sleepGoal).$1,
+        statusColor: pct(sleepMin, sleepGoal).$2,
+        caption: sleepMin == 0 ? 'Tap to log your sleep' : 'Goal ${(sleepGoal / 60).round()} h',
+        progress: sleepMin == 0 ? null : sleepMin / sleepGoal,
+        progressColor: AppColors.sleep,
+        onTap: () => _go('/tools/sleep'),
+      ),
+      _HealthTile(
+        image: 'stress',
+        label: 'Stress (DASS-21)',
+        value: stressScore?.toString() ?? '–',
+        unit: stressScore == null ? null : '/ 42',
+        status: stressLevel,
+        statusColor: switch (stressLevel) {
+          'Normal' => AppColors.tertiary,
+          'Mild' => AppColors.warning,
+          'Moderate' => AppColors.activity,
+          _ => AppColors.error,
+        },
+        caption: _stress == null ? 'Take the 3-minute check' : 'Checked ${when(DateTime.parse(_stress!['created_at']).toLocal())}',
+        onTap: () => _go('/tools/stress'),
+      ),
+      _HealthTile(
+        image: 'bp',
+        label: 'Blood pressure',
+        value: bp == null ? '–' : '${bp.value.round()}/${bp.extra!.round()}',
+        unit: bp == null ? null : 'mmHg',
+        status: bp == null ? null : VitalBands.bp(bp.value, bp.extra!).$1,
+        statusColor: bp == null ? null : band(VitalBands.bp(bp.value, bp.extra!).$2),
+        caption: bp == null ? 'Tap to log a reading' : 'Last recorded ${when(bp.at)}',
+        onTap: logVitals,
+      ),
+      _HealthTile(
+        image: 'glucose',
+        label: 'Fasting blood glucose',
+        value: fbg == null ? '–' : fbg.value.round().toString(),
+        unit: fbg == null ? null : 'mg/dL',
+        status: fbg == null ? null : VitalBands.fastingGlucose(fbg.value).$1,
+        statusColor: fbg == null ? null : band(VitalBands.fastingGlucose(fbg.value).$2),
+        caption: fbg == null ? 'Tap to log a reading' : 'Last recorded ${when(fbg.at)}',
+        onTap: logVitals,
+      ),
+      _HealthTile(
+        image: 'tg',
+        label: 'Triglycerides',
+        value: tg == null ? '–' : tg.value.round().toString(),
+        unit: tg == null ? null : 'mg/dL',
+        status: tg == null ? null : VitalBands.triglycerides(tg.value).$1,
+        statusColor: tg == null ? null : band(VitalBands.triglycerides(tg.value).$2),
+        caption: tg == null ? 'Tap to log a reading' : 'Last recorded ${when(tg.at)}',
+        onTap: logVitals,
+      ),
+    ];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Habits, consultation, badges, progress
+
+  Widget _habitsCard() {
+    if (_habits.isEmpty) {
+      return VCard(
+        child: Row(children: [
+          Icon(Symbols.insights_rounded, color: AppColors.primary, fill: 1),
+          const SizedBox(width: 12),
+          Expanded(child: Text('Log water, meals, activity and sleep for a few days and VitalU will point out the habits that matter most for you.', style: T.bodyMd.c(AppColors.onSurfaceVariant))),
+        ]),
+      );
+    }
+    return ListGroup(dividerIndent: 72, children: [
+      for (final h in _habits.take(5))
+        InkWell(
+          onTap: () => _go(h.route),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Sp.md, 12, Sp.md, 12),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset('assets/icons3d/${h.image}.jpg', width: 44, height: 44, fit: BoxFit.cover)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Icon(h.good ? Symbols.check_circle_rounded : Symbols.flag_rounded, size: 16, color: h.good ? AppColors.tertiary : AppColors.warning, fill: 1),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(h.title, style: T.labelLg.w(FontWeight.w700))),
+                  ]),
+                  const SizedBox(height: 2),
+                  Text(h.detail, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 4),
+                  Text(h.source, style: T.labelSm.c(AppColors.outline)),
+                ]),
+              ),
+            ]),
+          ),
+        ),
     ]);
   }
 
-  Widget _progressRow(String label, IconData icon, Color c, String value, String unit, num actual, num baseline, {required VoidCallback onTap}) {
-    final pct = baseline <= 0 ? 1.0 : actual / baseline;
-    final onTrack = pct >= 0.9;
-    final deltaColor = onTrack ? AppColors.tertiary : (pct >= 0.5 ? AppColors.warning : AppColors.error);
-    final deltaText = onTrack ? 'On track' : '${(pct * 100).clamp(0, 999).round()}% of baseline';
-    return ListRow(
-      icon: icon,
-      color: c,
-      title: label,
-      subtitle: '$value $unit',
-      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(onTrack ? Symbols.trending_up_rounded : Symbols.trending_down_rounded, size: 16, color: deltaColor),
-        const SizedBox(width: 4),
-        Text(deltaText, style: T.labelMd.c(deltaColor)),
-      ]),
-      onTap: onTap,
-    );
-  }
-
-  Widget _assessmentCard() {
-    final w = _openWindow!;
-    final closes = DateTime.parse(w['closes_at']).toLocal();
-    final answered = (_assessment?['answers'] as Map?)?.length ?? 0;
-    final progress = answered / assessmentQuestions.length;
-    final started = _assessment != null;
-    return VCard(
+  Widget _consultCard() {
+    final dark = AppColors.isDark;
+    final c = AppColors.primary;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Rad.xl),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [
+          Color.alphaBlend(c.withValues(alpha: dark ? 0.32 : 0.18), AppColors.surfaceContainerLowest),
+          Color.alphaBlend(c.withValues(alpha: dark ? 0.12 : 0.05), AppColors.surfaceContainerLowest),
+        ]),
+      ),
+      padding: const EdgeInsets.all(Sp.md),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          IconCircle(Symbols.assignment_rounded, fg: AppColors.primary, fill: 1),
-          const SizedBox(width: 12),
+        Row(children: [
+          ClipRRect(borderRadius: BorderRadius.circular(18), child: Image.asset('assets/icons3d/consult.jpg', width: 64, height: 64, fit: BoxFit.cover)),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Health assessment is open', style: T.headlineSm),
+              Text('Anonymous consultation', style: T.labelSm.c(c).w(FontWeight.w800)),
               const SizedBox(height: 2),
-              Text('${w['term']} · closes ${DateFormat('d MMM').format(closes)} · about ${w['estimated_minutes'] ?? 5} min', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              Text('Need health advice? Ask the health centre privately', style: T.headlineSm),
             ]),
           ),
         ]),
-        if (started) ...[
-          const SizedBox(height: Sp.md),
-          Row(children: [
-            Expanded(child: Bar(value: progress, height: 6)),
-            const SizedBox(width: 10),
-            Text('${(progress * 100).round()}%', style: T.labelMd.tnum.c(AppColors.onSurfaceVariant)),
-          ]),
-        ],
-        const SizedBox(height: Sp.md),
-        PrimaryButton(started ? 'Continue assessment' : 'Start assessment', onTap: () => _go('/assessments/run')),
-        const SizedBox(height: 4),
+        const SizedBox(height: 12),
+        PrimaryButton('Ask anonymously', leadingIcon: Symbols.lock_rounded, onTap: () => _go('/consult')),
+        const SizedBox(height: 8),
         Center(
-          child: TextLinkButton('Remind me tonight', onTap: () async {
-            final now = DateTime.now();
-            var at = DateTime(now.year, now.month, now.day, 20);
-            if (at.isBefore(now)) at = now.add(const Duration(hours: 1));
-            await Repo.schedule(
-              title: 'Health assessment',
-              body: 'Your ${w['term']} assessment is open. It takes about five minutes.',
-              category: 'milestone',
-              label: 'Assessment',
-              icon: 'event_upcoming',
-              route: '/assessments/run',
-              at: at,
-            );
-            if (mounted) toast(context, "We'll remind you at ${DateFormat('h:mm a').format(at)}");
-          }),
+          child: TextLinkButton('Emergency? Call 1990 or get help now', leading: Symbols.emergency_rounded, color: AppColors.error, onTap: () => _go('/help')),
         ),
+      ]),
+    );
+  }
+
+  Widget _badgesRow() {
+    final earned = _badges.where((b) => _earned.containsKey(b['code'])).toList()..sort((a, b) => _earned[b['code']]!.compareTo(_earned[a['code']]!));
+    if (earned.isEmpty) {
+      return VCard(
+        onTap: () => _go('/milestones'),
+        child: Row(children: [
+          const BadgeArt(code: 'aqua_achiever', size: 52, locked: true, ribbon: false),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('No badges yet', style: T.headlineSm),
+              const SizedBox(height: 2),
+              Text('Reach your water goal three days in a row to earn Aqua Achiever.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
+        ]),
+      );
+    }
+    return FullBleed(
+      child: SizedBox(
+        height: 128,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: Sp.margin),
+          itemCount: earned.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final b = earned[i];
+            return SizedBox(
+              width: 96,
+              child: VCard(
+                padding: const EdgeInsets.fromLTRB(6, 12, 6, 8),
+                onTap: () => showBadgePopup(context, code: b['code'], title: b['title'], description: b['description'], icon: b['icon'], category: b['category']),
+                child: Column(children: [
+                  BadgeArt(code: b['code'], icon: b['icon'], category: b['category'], size: 58, ribbon: false),
+                  const SizedBox(height: 6),
+                  Text(b['title'], style: T.labelSm.semi, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+                ]),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _progressCard() => VCard(
+        onTap: () => _go('/progress'),
+        child: Row(children: [
+          ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.asset('assets/icons3d/progress.jpg', width: 60, height: 60, fit: BoxFit.cover)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('My progress', style: T.headlineSm),
+              const SizedBox(height: 2),
+              Text('Steps, water, activity, sleep, stress and diet quality over time', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
+          Icon(Symbols.chevron_right_rounded, color: AppColors.outline),
+        ]),
+      );
+}
+
+/// Greeting on the left, notifications and avatar on the same row.
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.greeting, this.name});
+  final String greeting;
+  final String? name;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(Sp.margin, 10, 10, 6),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              Text(name == null ? greeting : '$greeting,', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+              if (name != null) Text(name!, style: T.headlineLg, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ]),
+          ),
+          CircleButton(Symbols.notifications_rounded, onTap: () => context.push('/notifications'), badge: AppState.instance.unreadCount > 0),
+          const SizedBox(width: 4),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Avatar(size: 40, ring: false, onTap: () => context.go('/profile'))),
+        ]),
+      );
+}
+
+/// One daily health indicator: a realistic icon, the value and a status.
+class _HealthTile extends StatelessWidget {
+  const _HealthTile({
+    required this.image,
+    required this.label,
+    required this.value,
+    this.unit,
+    this.status,
+    this.statusColor,
+    this.caption,
+    this.progress,
+    this.progressColor,
+    required this.onTap,
+  });
+  final String image;
+  final String label;
+  final String value;
+  final String? unit;
+  final String? status;
+  final Color? statusColor;
+  final String? caption;
+  final double? progress;
+  final Color? progressColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final sc = statusColor ?? AppColors.onSurfaceVariant;
+    return VCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset('assets/icons3d/$image.jpg', width: 44, height: 44, fit: BoxFit.cover)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: status == null
+                ? const SizedBox()
+                : Align(
+                    alignment: Alignment.topRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(color: sc.withValues(alpha: AppColors.isDark ? 0.2 : 0.12), borderRadius: BorderRadius.circular(Rad.full)),
+                      child: Text(status!, style: T.labelSm.c(sc).w(FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Text(label, style: T.labelMd.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 2),
+        MetricValue(value, unit: unit, size: 22),
+        if (caption != null) ...[
+          const SizedBox(height: 2),
+          Text(caption!, style: T.bodySm.c(AppColors.outline), maxLines: 1, overflow: TextOverflow.ellipsis),
+        ],
+        if (progress != null) ...[
+          const SizedBox(height: 8),
+          Bar(value: progress!, height: 5, color: progressColor),
+        ],
       ]),
     );
   }
 }
 
-//// BMI and waist-to-hip ratio, each with its value, status and a zoned scale
+/// A tinted call-to-action card with a 3D icon, used for assessment alerts.
+class _AlertCard extends StatelessWidget {
+  const _AlertCard({required this.image, required this.color, required this.kicker, required this.title, required this.text, required this.action, required this.onTap});
+  final String image;
+  final Color color;
+  final String kicker;
+  final String title;
+  final String text;
+  final String action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = AppColors.isDark;
+    return Container(
+      padding: const EdgeInsets.all(Sp.md),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Rad.xl),
+        color: Color.alphaBlend(color.withValues(alpha: dark ? 0.2 : 0.1), AppColors.surfaceContainerLowest),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset('assets/icons3d/$image.jpg', width: 54, height: 54, fit: BoxFit.cover)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Symbols.notifications_active_rounded, size: 14, color: color, fill: 1),
+                const SizedBox(width: 4),
+                Text(kicker, style: T.labelSm.c(color).w(FontWeight.w800)),
+              ]),
+              const SizedBox(height: 2),
+              Text(title, style: T.headlineSm),
+              const SizedBox(height: 4),
+              Text(text, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        PrimaryButton(action, color: color, height: 46, onTap: onTap),
+      ]),
+    );
+  }
+}
+
+/// BMI and waist-to-hip ratio, each with its value, status and a zoned scale
 /// showing where the student sits.
 Widget bodyMetricTiles(Profile? p, void Function(String) go) {
   final bmi = p?.bmi;

@@ -50,20 +50,30 @@ class _WaterScreenState extends State<WaterScreen> {
   bool _loading = true;
   List<Rec> _logs = [];
   late bool _nudge = AppState.instance.profile?.waterNudge ?? true;
-  double? _tempC;
+  WeatherNow? _wx;
+  bool _wxLoading = true;
   int _streakVersion = 0;
 
   int get _goal => AppState.instance.profile?.waterGoalMl ?? 2500;
   int get _total => _logs.fold<int>(0, (a, r) => a + (r['amount_ml'] as int));
-  int get _heatBonus => Calc.heatAdjustmentMl(_tempC);
+  int get _heatBonus => Calc.heatAdjustmentMl(_wx?.tempC);
 
   @override
   void initState() {
     super.initState();
     _load();
-    Weather.currentTempC().then((t) {
-      if (mounted) setState(() => _tempC = t);
-    });
+    _loadWeather();
+  }
+
+  Future<void> _loadWeather({bool force = false}) async {
+    setState(() => _wxLoading = true);
+    final w = await Weather.current(force: force);
+    if (mounted) {
+      setState(() {
+        _wx = w ?? _wx;
+        _wxLoading = false;
+      });
+    }
   }
 
   Future<void> _load() async {
@@ -89,7 +99,7 @@ class _WaterScreenState extends State<WaterScreen> {
         final info = await Streaks.of(StreakKind.water);
         // A third day in a row earns the badge: the app-wide badge pop-up
         // celebrates that one, so only show the day pop-up otherwise.
-        if (mounted && (earnedBefore || info.streak < StreakBadge.length)) await showStreakDayPopup(context, StreakKind.water, info);
+        if (mounted && (earnedBefore || info.streak < info.length)) await showStreakDayPopup(context, StreakKind.water, info);
       }
       if (_total >= _goal) await Repo.clearScheduled('/tools/water');
       if (_nudge && _total < _goal) {
@@ -168,6 +178,7 @@ class _WaterScreenState extends State<WaterScreen> {
       onRefresh: () async {
         await _load();
         setState(() => _streakVersion++);
+        _loadWeather(force: true);
       },
       children: [
         // 1. Your numbers and reminders.
@@ -228,22 +239,7 @@ class _WaterScreenState extends State<WaterScreen> {
             ),
           ]),
         ),
-        if (_heatBonus > 0)
-          VCard(
-            color: AppColors.warningContainer,
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(Symbols.sunny_rounded, size: 22, color: AppColors.warning, fill: 1),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Hot day, about ${_tempC!.round()}°C', style: T.headlineSm),
-                  const SizedBox(height: 2),
-                  Text('Your body loses more water in the heat. Aim for about $_heatBonus ml extra today, around ${Fmt.litres(_goal + _heatBonus)} L in total.',
-                      style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-                ]),
-              ),
-            ]),
-          ),
+        _weatherCard(),
         // 4. Add water.
         const SectionHeader('Add water'),
         TileGrid(children: [for (final p in _presets) _preset(p)]),
@@ -260,6 +256,88 @@ class _WaterScreenState extends State<WaterScreen> {
           ListGroup(children: [for (final r in _logs.reversed) _entry(r)]),
         const PrivacyNote('A wellness tracker, not a diagnosis of any disease.'),
       ],
+    );
+  }
+
+  /// Today's temperature with suggestions for that kind of day. Always
+  /// shown, not only on hot days.
+  Widget _weatherCard() {
+    final t = _wx?.tempC;
+    if (t == null) {
+      return VCard(
+        color: AppColors.surfaceContainerLow,
+        flat: true,
+        child: Row(children: [
+          Icon(Symbols.thermostat_rounded, size: 22, color: AppColors.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(child: Text(_wxLoading ? 'Checking the temperature near you…' : "Couldn't get today's temperature. Pull down to try again.", style: T.bodyMd.c(AppColors.onSurfaceVariant))),
+          if (_wxLoading) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+        ]),
+      );
+    }
+    final hot = t >= 30, warm = t >= 25;
+    final c = hot ? AppColors.activity : (warm ? AppColors.warning : AppColors.water);
+    final icon = hot ? Symbols.sunny_rounded : (warm ? Symbols.partly_cloudy_day_rounded : Symbols.cloud_rounded);
+    final (title, text, tips) = hot
+        ? (
+            'Hot day: drink a little extra',
+            'Your body loses more water in the heat. Aim for about $_heatBonus ml extra today, around ${Fmt.litres(_goal + _heatBonus)} L in total.',
+            ['Carry a full bottle to every lecture', 'Have a glass after walking between faculties', 'King coconut or plain water beats fizzy drinks'],
+          )
+        : warm
+            ? (
+                'Warm day: keep sipping',
+                'Your daily goal of ${Fmt.litres(_goal)} L is about right. Spread it out so you are never very thirsty.',
+                ['A glass with every meal', 'Refill your bottle at lunch', 'Drink more if you play sport today'],
+              )
+            : (
+                'Cool day: your goal is enough',
+                'You may feel less thirsty when it is cool, but your body still needs about ${Fmt.litres(_goal)} L.',
+                ['Warm water or plain tea counts too', 'Set a sip reminder for long study blocks', 'Check your urine is pale yellow'],
+              );
+    final dark = AppColors.isDark;
+    return Container(
+      padding: const EdgeInsets.all(Sp.md),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(Rad.lg),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [
+          Color.alphaBlend(c.withValues(alpha: dark ? 0.26 : 0.16), AppColors.surfaceContainerLowest),
+          Color.alphaBlend(c.withValues(alpha: dark ? 0.08 : 0.04), AppColors.surfaceContainerLowest),
+        ]),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, size: 34, color: c, fill: 1),
+          const SizedBox(width: 10),
+          Text('${t.round()}°C', style: T.metric(32)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '${_wx!.approximate ? 'Near campus' : (_wx!.place ?? 'Near you')} · now',
+                style: T.labelMd.c(AppColors.onSurfaceVariant),
+                maxLines: 2,
+              ),
+            ),
+          ),
+          IconButton(tooltip: 'Refresh temperature', icon: Icon(Symbols.refresh_rounded, size: 20, color: AppColors.onSurfaceVariant), onPressed: () => _loadWeather(force: true)),
+        ]),
+        const SizedBox(height: 8),
+        Text(title, style: T.headlineSm),
+        const SizedBox(height: 2),
+        Text(text, style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+        const SizedBox(height: 10),
+        for (final tip in tips)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              Icon(Symbols.water_drop_rounded, size: 16, color: c, fill: 1),
+              const SizedBox(width: 8),
+              Expanded(child: Text(tip, style: T.bodyMd)),
+            ]),
+          ),
+      ]),
     );
   }
 

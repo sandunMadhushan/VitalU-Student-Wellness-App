@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
@@ -313,11 +312,11 @@ class MeasureGuide extends StatelessWidget {
       Container(
         decoration: BoxDecoration(color: AppColors.isDark ? AppColors.surfaceContainerHigh : const Color(0xFFF3EEFA), borderRadius: BorderRadius.circular(Rad.lg)),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: SizedBox(height: 260, child: SvgPicture.asset('assets/illustrations/measure_waist_hip.svg', fit: BoxFit.contain)),
+        child: SizedBox(height: 280, child: Image.asset('assets/art/measure_guide.webp', fit: BoxFit.contain)),
       ),
       const SizedBox(height: Sp.md),
-      key(waistColor, 'Waist: the narrowest point', 'Wrap the tape around the narrowest part of your middle, usually 2 to 3 cm above your belly button. Breathe out gently, then measure.'),
-      key(hipColor, 'Hips: the widest point', 'Wrap the tape around the widest part of your hips and buttocks.'),
+      key(waistColor, 'Upper tape, waist: the narrowest point', 'Wrap the tape around the narrowest part of your middle, usually 2 to 3 cm above your belly button. Breathe out gently, then measure.'),
+      key(hipColor, 'Lower tape, hips: the widest point', 'Wrap the tape around the widest part of your hips and buttocks.'),
       key(AppColors.onSurfaceVariant, 'Tips for an accurate reading', 'Stand straight with your feet together. Keep the tape level with the floor and snug, but not pressing into the skin. Measure over bare skin or light clothing.'),
     ]);
   }

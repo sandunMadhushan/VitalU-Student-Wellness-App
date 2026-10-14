@@ -45,26 +45,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late String _activity = p.activityLevel;
   bool _saving = false;
 
-  static const _editConds = [
-    'asthma_allergies',
-    'allergies_intolerances',
-    'migraine',
-    'gastritis',
-    'family_heart',
-    'family_diabetes',
-    'family_cholesterol',
-    'family_obesity',
-    'high_bp',
-    'anxiety_sleep',
-    'pcos',
-    'anaemia',
-    'constipation',
-    'skin_disease',
-    'kidney_disease',
-    'liver_disease',
-    'hemorrhoids',
-    'std',
-  ];
 
   Future<void> _save() async {
     final username = _username.text.trim().toLowerCase();
@@ -271,7 +251,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _label('Health conditions'),
           VCard(
             child: Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final k in _editConds)
+              for (final k in personalConditionKeys)
                 VChip(conditionByKey(k)!.label, selected: _conds.contains(k), onTap: () => setState(() => _conds.contains(k) ? _conds.remove(k) : _conds.add(k))),
               for (final c in _custom) VChip(c, icon: Symbols.close_rounded, selected: true, onTap: () => setState(() => _custom.remove(c))),
               VChip('Add other', icon: Symbols.add_rounded, onTap: () async {
@@ -298,7 +278,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           for (final a in _allergies) _removable(Symbols.allergy_rounded, AppColors.error, a, () => setState(() => _allergies.remove(a))),
           _addField(_allergyCtrl, 'For example, penicillin or peanuts', _addAllergy),
         ]),
-        ListGroup(header: 'Family history', children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _label('Family history'),
+          VCard(
+            child: Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final k in familyConditionKeys)
+                VChip(familyConditionLabel(k), selected: _conds.contains(k), selectedColor: AppColors.heart, onTap: () => setState(() => _conds.contains(k) ? _conds.remove(k) : _conds.add(k))),
+            ]),
+          ),
+        ]),
+        ListGroup(header: 'Family records', children: [
           for (final f in _family) _removable(Symbols.family_restroom_rounded, AppColors.heart, '${f['condition']}', subtitle: '${f['relation']}', () => setState(() => _family.remove(f))),
           ListRow(icon: Symbols.add_rounded, color: AppColors.primary, title: 'Add family record', chevron: false, onTap: _addFamilyRecord),
         ]),

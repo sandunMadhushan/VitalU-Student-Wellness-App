@@ -13,6 +13,7 @@ import '../features/diet/meal_counter_screen.dart';
 import '../features/diet/meal_log_screen.dart';
 import '../features/diet/meal_planner_screen.dart';
 import '../features/diet/nutrition_today_screen.dart';
+import '../features/diet/pdqs_screen.dart';
 import '../features/diet/plate_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/home/home_screen.dart';
@@ -26,6 +27,7 @@ import '../features/profile/profile_screen.dart';
 import '../features/progress/milestones_screen.dart';
 import '../features/progress/notifications_screen.dart';
 import '../features/progress/progress_screen.dart';
+import '../features/support/consult_screen.dart';
 import '../features/support/help_screen.dart';
 import '../features/support/professionals_screen.dart';
 import '../features/tools/activity_screen.dart';
@@ -97,6 +99,7 @@ final appRouter = GoRouter(
     _r('/diet/planner', (s) => const MealPlannerScreen()),
     _r('/diet/budget', (s) => const BudgetScreen()),
     _r('/diet/today', (s) => const NutritionTodayScreen()),
+    _r('/diet/pdqs', (s) => const PdqsScreen()),
     _r('/progress', (s) => const ProgressScreen()),
     _r('/milestones', (s) => const MilestonesScreen()),
     _r('/notifications', (s) => const NotificationsScreen()),
@@ -110,5 +113,6 @@ final appRouter = GoRouter(
     _r('/about', (s) => const AboutScreen()),
     _r('/professionals', (s) => const ProfessionalsScreen()),
     _r('/help', (s) => const HelpScreen()),
+    _r('/consult', (s) => const ConsultScreen()),
   ],
 );

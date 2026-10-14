@@ -3,13 +3,14 @@ import 'dart:async';
 import '../data/repo.dart';
 import 'app_state.dart';
 
-/// A three-day streak badge: the goal has to be met on three calendar days
-/// in a row. The server (`refresh_badges`) awards it; the app tracks the
-/// streak locally so it can show stars and "days remaining" as you go.
+/// A streak badge: the goal has to be met on [StreakBadge.length] calendar
+/// days in a row (three for water and food, seven for activity). The server
+/// (`refresh_badges`) awards it; the app tracks the streak locally so it can
+/// show stars and "days remaining" as you go.
 enum StreakKind { water, food, move }
 
 class StreakBadge {
-  const StreakBadge(this.kind, this.code, this.title, this.goal, this.dayDone);
+  const StreakBadge(this.kind, this.code, this.title, this.goal, this.dayDone, {this.length = 3});
   final StreakKind kind;
   final String code;
   final String title;
@@ -20,11 +21,12 @@ class StreakBadge {
   /// Short line used when a day is completed, e.g. "Water goal reached".
   final String dayDone;
 
-  static const length = 3;
+  /// Days in a row needed to earn the badge.
+  final int length;
 
   static const water = StreakBadge(StreakKind.water, 'aqua_achiever', 'Aqua Achiever', 'Reach your daily water goal', 'Water goal reached');
   static const food = StreakBadge(StreakKind.food, 'rainbow_plate', 'Rainbow Plate', 'Eat from 5 or more food groups', 'Five food groups today');
-  static const move = StreakBadge(StreakKind.move, 'move_maker', 'Move Maker', 'Reach your step goal or 30 active minutes', 'Movement goal reached');
+  static const move = StreakBadge(StreakKind.move, 'active_aura', 'Active Aura', 'Reach your step goal or 30 active minutes', 'Movement goal reached', length: 7);
 
   static StreakBadge of(StreakKind k) => switch (k) {
         StreakKind.water => water,
@@ -34,7 +36,7 @@ class StreakBadge {
 }
 
 class StreakInfo {
-  const StreakInfo({required this.streak, required this.todayDone, required this.earned});
+  const StreakInfo({required this.streak, required this.todayDone, required this.earned, this.length = 3});
 
   /// Consecutive days the goal was met, ending today (or yesterday, when
   /// today is still in progress and the streak is alive).
@@ -42,9 +44,12 @@ class StreakInfo {
   final bool todayDone;
   final bool earned;
 
-  /// Stars to light on the 3-star track.
-  int get stars => streak.clamp(0, StreakBadge.length);
-  int get remaining => StreakBadge.length - stars;
+  /// Days needed for the badge, which is also the number of stars.
+  final int length;
+
+  /// Stars to light on the star track.
+  int get stars => streak.clamp(0, length);
+  int get remaining => length - stars;
 }
 
 class Streaks {
@@ -92,7 +97,7 @@ class Streaks {
     try {
       earned = (await Repo.earnedBadges()).containsKey(StreakBadge.of(kind).code);
     } catch (_) {}
-    return StreakInfo(streak: streak, todayDone: todayDone, earned: earned);
+    return StreakInfo(streak: streak, todayDone: todayDone, earned: earned, length: StreakBadge.of(kind).length);
   }
 }
 

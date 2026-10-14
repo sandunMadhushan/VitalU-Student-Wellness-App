@@ -56,6 +56,7 @@ class Profile {
   double? get weightKg => _d(raw['weight_kg']);
   double? get waistCm => _d(raw['waist_cm']);
   double? get hipCm => _d(raw['hip_cm']);
+  String? get bodyShape => raw['body_shape'] as String?;
   List<String> get conditions => _sl(raw['health_conditions']);
   List<String> get customConditions => _sl(raw['custom_conditions']);
   List<String> get allergies => _sl(raw['allergies']);
@@ -133,6 +134,53 @@ class Calc {
     if (tempC >= 32) return 500;
     if (tempC >= 30) return 300;
     return 0;
+  }
+}
+
+/// One lab-type reading and when it was taken. For blood pressure [value]
+/// is systolic and [extra] diastolic.
+class VitalReading {
+  const VitalReading(this.value, this.at, {this.extra, this.source});
+  final double value;
+  final double? extra;
+  final DateTime at;
+
+  /// Where it came from when not logged directly, e.g. "Blood report".
+  final String? source;
+}
+
+class LatestVitals {
+  const LatestVitals({this.bp, this.fastingGlucose, this.triglycerides});
+  final VitalReading? bp;
+  final VitalReading? fastingGlucose;
+  final VitalReading? triglycerides;
+}
+
+/// Plain-language bands for lab-type vitals (adult reference ranges).
+class VitalBands {
+  VitalBands._();
+
+  static (String, int) bp(double sys, double dia) {
+    if (sys < 120 && dia < 80) return ('Normal', 0);
+    if (sys < 130 && dia < 80) return ('Elevated', 1);
+    if (sys < 140 && dia < 90) return ('High (stage 1)', 2);
+    return ('High (stage 2)', 3);
+  }
+
+  /// Fasting blood glucose in mg/dL.
+  static (String, int) fastingGlucose(double v) {
+    if (v < 70) return ('Low', 2);
+    if (v < 100) return ('Normal', 0);
+    if (v < 126) return ('Prediabetes range', 2);
+    return ('Diabetes range', 3);
+  }
+
+  /// Triglycerides in mg/dL.
+  static (String, int) triglycerides(double v) {
+    if (v < 150) return ('Normal', 0);
+    if (v < 200) return ('Borderline high', 1);
+    if (v < 500) return ('High', 2);
+    return ('Very high', 3);
   }
 }
 

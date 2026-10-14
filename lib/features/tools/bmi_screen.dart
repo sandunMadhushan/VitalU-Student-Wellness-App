@@ -212,7 +212,7 @@ class _BmiScreenState extends State<BmiScreen> {
         ]),
       ),
       PlanHero(plan: plan, color: st.$1),
-      for (int i = 0; i < plan.sections.length; i++) PlanSectionCard(section: plan.sections[i], color: st.$1, index: i),
+      for (int i = 0; i < plan.sections.length; i++) PlanSectionCard(section: plan.sections[i], index: i),
       if (notes.isNotEmpty)
         VCard(
           color: AppColors.tint(AppColors.warning),
