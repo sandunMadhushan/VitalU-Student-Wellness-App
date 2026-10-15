@@ -26,6 +26,8 @@
 		<string>mailto</string>
 		<string>https</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>VitalU uses your approximate location to show the local temperature and adjust hydration tips.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>VitalU uses the camera to snap your meals and photograph lab reports.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

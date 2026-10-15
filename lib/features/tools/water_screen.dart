@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_state.dart';
 import '../../core/badges.dart';
@@ -62,18 +63,44 @@ class _WaterScreenState extends State<WaterScreen> {
   void initState() {
     super.initState();
     _load();
-    _loadWeather();
+    _firstWeather();
   }
 
-  Future<void> _loadWeather({bool force = false}) async {
+  /// Asks for location once, the first time the tracker is opened; later
+  /// visits use it silently if allowed and fall back to an estimate if not.
+  Future<void> _firstWeather() async {
+    var ask = false;
+    try {
+      final p = await SharedPreferences.getInstance();
+      ask = !(p.getBool('wx_location_asked') ?? false);
+      if (ask) await p.setBool('wx_location_asked', true);
+    } catch (_) {}
+    await _loadWeather(ask: ask);
+  }
+
+  /// [ask] may show the location prompt; the refresh button always asks, so
+  /// the student can switch from an estimate to their real location.
+  Future<void> _loadWeather({bool force = false, bool ask = false}) async {
     setState(() => _wxLoading = true);
-    final w = await Weather.current(force: force);
-    if (mounted) {
-      setState(() {
-        _wx = w ?? _wx;
-        _wxLoading = false;
-      });
+    final w = await Weather.current(force: force, askPermission: ask);
+    if (!mounted) return;
+    setState(() {
+      _wx = w ?? _wx;
+      _wxLoading = false;
+    });
+    if (ask && force && w != null && w.locationBlocked) {
+      toast(context, 'Location is off for VitalU, so this is an estimate. Allow location in your browser or phone settings for your exact area.');
     }
+  }
+
+  String _wxPlace(WeatherNow w) {
+    final place = switch (w.source) {
+      WeatherSource.device => w.place ?? 'Your location',
+      WeatherSource.network => w.place == null ? 'Approximate area' : 'Around ${w.place}',
+      WeatherSource.campus => 'Kandy area (estimate)',
+    };
+    final mins = DateTime.now().difference(w.at).inMinutes;
+    return '$place · ${mins < 1 ? 'now' : 'updated ${DateFormat.jm().format(w.at)}'}';
   }
 
   Future<void> _load() async {
@@ -277,7 +304,16 @@ class _WaterScreenState extends State<WaterScreen> {
     }
     final hot = t >= 30, warm = t >= 25;
     final c = hot ? AppColors.activity : (warm ? AppColors.warning : AppColors.water);
-    final icon = hot ? Symbols.sunny_rounded : (warm ? Symbols.partly_cloudy_day_rounded : Symbols.cloud_rounded);
+    final wx = _wx!;
+    final icon = switch (wx.code) {
+      0 => wx.isDay ? Symbols.sunny_rounded : Symbols.clear_night_rounded,
+      1 || 2 => wx.isDay ? Symbols.partly_cloudy_day_rounded : Symbols.partly_cloudy_night_rounded,
+      3 || 45 || 48 => Symbols.cloud_rounded,
+      51 || 53 || 55 || 56 || 57 || 61 || 63 || 66 || 80 || 81 => Symbols.rainy_rounded,
+      65 || 67 || 82 => Symbols.rainy_heavy_rounded,
+      95 || 96 || 99 => Symbols.thunderstorm_rounded,
+      _ => hot ? Symbols.sunny_rounded : (warm ? Symbols.partly_cloudy_day_rounded : Symbols.cloud_rounded),
+    };
     final (title, text, tips) = hot
         ? (
             'Hot day: drink a little extra',
@@ -313,15 +349,23 @@ class _WaterScreenState extends State<WaterScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '${_wx!.approximate ? 'Near campus' : (_wx!.place ?? 'Near you')} · now',
-                style: T.labelMd.c(AppColors.onSurfaceVariant),
-                maxLines: 2,
-              ),
+              padding: const EdgeInsets.only(top: 2),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (wx.condition != null) Text(wx.condition!, style: T.labelMd.semi),
+                Row(children: [
+                  if (wx.source == WeatherSource.device) ...[Icon(Symbols.near_me_rounded, size: 13, fill: 1, color: AppColors.onSurfaceVariant), const SizedBox(width: 3)],
+                  Flexible(child: Text(_wxPlace(wx), style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2)),
+                ]),
+              ]),
             ),
           ),
-          IconButton(tooltip: 'Refresh temperature', icon: Icon(Symbols.refresh_rounded, size: 20, color: AppColors.onSurfaceVariant), onPressed: () => _loadWeather(force: true)),
+          _wxLoading
+              ? const Padding(padding: EdgeInsets.all(14), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+              : IconButton(
+                  tooltip: 'Refresh for my current location',
+                  icon: Icon(Symbols.my_location_rounded, size: 20, color: AppColors.onSurfaceVariant),
+                  onPressed: () => _loadWeather(force: true, ask: true),
+                ),
         ]),
         const SizedBox(height: 8),
         Text(title, style: T.headlineSm),
