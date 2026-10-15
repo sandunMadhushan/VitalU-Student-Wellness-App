@@ -11,12 +11,50 @@ import '../../ui/widgets.dart';
 /// Icon and colour for an article category.
 (IconData, Color) articleStyle(String? category) => switch (category) {
       'heart' => (Symbols.cardiology_rounded, AppColors.heart),
-      'nutrition' => (Symbols.nutrition_rounded, AppColors.nutrition),
+      'nutrition' => (Symbols.restaurant_rounded, AppColors.nutrition),
       'sleep' => (Symbols.bedtime_rounded, AppColors.sleep),
       'stress' => (Symbols.self_improvement_rounded, AppColors.mind),
-      'womens' => (Symbols.female_rounded, AppColors.cycle),
-      _ => (Symbols.lightbulb_rounded, AppColors.warning),
+      'womens' => (Symbols.menstrual_health_rounded, AppColors.cycle),
+      _ => (Symbols.healing_rounded, AppColors.body),
     };
+
+/// Cover illustration for an article, bundled under assets/articles by slug.
+/// Articles without one fall back to their category colour and icon.
+class ArticleCover extends StatelessWidget {
+  const ArticleCover(this.article, {super.key, this.width, this.height, this.radius = 0, this.iconSize = 40, this.cacheWidth});
+  final Rec article;
+  final double? width;
+  final double? height;
+  final double radius;
+  final double iconSize;
+
+  /// Decode width in physical pixels; keeps list thumbnails light.
+  final int? cacheWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, c) = articleStyle(article['category']);
+    final fallback = Container(
+      width: width,
+      height: height,
+      color: AppColors.tint(c),
+      alignment: Alignment.center,
+      child: Icon(icon, size: iconSize, color: c, fill: 1),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.asset(
+        'assets/articles/${article['slug']}.webp',
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        cacheWidth: cacheWidth,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => fallback,
+      ),
+    );
+  }
+}
 
 const libraryTopics = [
   ('all', 'All'),
@@ -40,6 +78,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Set<String> _saved = {};
   String _topic = 'all';
   bool _savedOnly = false;
+
+  /// List thumbnail size, and the divider inset that lines up with its text.
+  static const _thumb = 64.0;
+  static const _rowIndent = Sp.md + _thumb + 12;
 
   @override
   void initState() {
@@ -100,9 +142,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 child: hits.isEmpty
                     ? const EmptyState(icon: Symbols.search_off_rounded, title: 'No matches', text: 'Try "sleep", "iron" or "stress".')
                     : SingleChildScrollView(
-                        child: ListGroup(dividerIndent: 64, children: [
+                        child: ListGroup(dividerIndent: _rowIndent, children: [
                           for (final a in hits)
-                            _row(a, onTap: () {
+                            _row(a, hero: false, onTap: () {
                               Navigator.pop(ctx);
                               _open(a);
                             }),
@@ -128,15 +170,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
       onRefresh: _load,
       children: [
         Row(children: [
-          Expanded(child: Text(_savedOnly ? 'Your saved articles' : 'Short reads on health and student life', style: T.bodyMd.c(AppColors.onSurfaceVariant))),
-          IconButton(tooltip: 'Search', icon: const Icon(Symbols.search_rounded), onPressed: _search),
-          IconButton(
-            tooltip: _savedOnly ? 'Show all articles' : 'Show saved',
-            isSelected: _savedOnly,
-            icon: const Icon(Symbols.bookmarks_rounded),
-            selectedIcon: Icon(Symbols.bookmarks_rounded, fill: 1, color: AppColors.primary),
-            onPressed: () => setState(() => _savedOnly = !_savedOnly),
-          ),
+          Expanded(child: _searchField()),
+          const SizedBox(width: Sp.sm),
+          _savedToggle(),
         ]),
         FullBleed(
           child: ChipRow(children: [
@@ -146,18 +182,75 @@ class _LibraryScreenState extends State<LibraryScreen> {
         if (_loading) const Loading(),
         if (!_loading && visible.isEmpty)
           EmptyState(
-            icon: _savedOnly ? Symbols.bookmark_rounded : Symbols.menu_book_rounded,
+            icon: _savedOnly ? Symbols.bookmark_rounded : Symbols.auto_stories_rounded,
             title: _savedOnly ? 'Nothing saved yet' : 'No articles in this topic yet',
             text: _savedOnly ? 'Tap the bookmark on any article to keep it here.' : 'New articles are added regularly.',
           ),
         if (featured != null) _featured(featured),
-        if (rec.isNotEmpty) ListGroup(header: 'Recommended for you', dividerIndent: 64, children: [for (final a in rec) _row(a, onTap: () => _open(a))]),
-        if (explore.isNotEmpty) ListGroup(header: rec.isEmpty && featured == null ? null : 'More articles', dividerIndent: 64, children: [for (final a in explore) _row(a, onTap: () => _open(a))]),
+        if (rec.isNotEmpty) ListGroup(header: 'Recommended for you', dividerIndent: _rowIndent, children: [for (final a in rec) _row(a, onTap: () => _open(a))]),
+        if (explore.isNotEmpty)
+          ListGroup(
+            header: rec.isEmpty && featured == null ? null : 'More articles',
+            dividerIndent: _rowIndent,
+            children: [for (final a in explore) _row(a, onTap: () => _open(a))],
+          ),
         ListGroup(header: 'Get help', children: [
-          ListRow(icon: Symbols.lab_profile_rounded, color: AppColors.heart, title: 'Understand a blood report', subtitle: 'Plain-language notes on common lab values', onTap: () => context.push('/blood-report')),
+          ListRow(icon: Symbols.bloodtype_rounded, color: AppColors.heart, title: 'Understand a blood report', subtitle: 'Plain-language notes on common lab values', onTap: () => context.push('/blood-report')),
           ListRow(icon: Symbols.stethoscope_rounded, color: AppColors.primary, title: 'Talk to a professional', subtitle: 'Campus medical officers and counsellors', onTap: () => context.push('/professionals')),
         ]),
       ],
+    );
+  }
+
+  Widget _searchField() => Semantics(
+        button: true,
+        label: 'Search articles',
+        child: Pressable(
+          onTap: _search,
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(color: AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.full)),
+            child: Row(children: [
+              Icon(Symbols.search_rounded, size: 20, color: AppColors.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ExcludeSemantics(
+                  child: Text('Search sleep, iron, stress…', style: T.bodyMd.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      );
+
+  Widget _savedToggle() {
+    final on = _savedOnly;
+    final fg = on ? AppColors.onPrimary : AppColors.onSurface;
+    return Tooltip(
+      message: on ? 'Show all articles' : 'Show saved',
+      child: Semantics(
+        button: true,
+        selected: on,
+        label: 'Saved articles',
+        child: Pressable(
+          scale: 0.94,
+          onTap: () => setState(() => _savedOnly = !on),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(color: on ? AppColors.primary : AppColors.surfaceContainer, borderRadius: BorderRadius.circular(Rad.full)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Symbols.bookmarks_rounded, size: 20, fill: on ? 1 : 0, color: fg),
+              if (on || _saved.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                ExcludeSemantics(child: Text(on ? 'Saved' : '${_saved.length}', style: T.labelMd.tnum.c(fg))),
+              ],
+            ]),
+          ),
+        ),
+      ),
     );
   }
 
@@ -171,17 +264,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Widget _featured(Rec a) {
-    final (icon, c) = articleStyle(a['category']);
+    final (_, c) = articleStyle(a['category']);
     return VCard(
       onTap: () => _open(a),
       padding: EdgeInsets.zero,
       clip: true,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(
-          height: 112,
-          color: AppColors.tint(c),
-          alignment: Alignment.center,
-          child: Icon(icon, size: 48, color: c, fill: 1),
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Stack(fit: StackFit.expand, children: [
+            Hero(tag: 'article-cover-${a['slug']}', child: ArticleCover(a, iconSize: 48)),
+            if (a['is_featured'] == true)
+              Positioned(
+                left: 12,
+                top: 12,
+                child: TagPill('Featured', icon: Symbols.star_rounded, fill: 1, bg: Colors.white.withValues(alpha: 0.92), fg: const Color(0xFF1D1F23), iconColor: AppColors.warning),
+              ),
+          ]),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(Sp.md, 14, 4, Sp.md),
@@ -206,20 +305,27 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _row(Rec a, {VoidCallback? onTap}) {
+  Widget _row(Rec a, {VoidCallback? onTap, bool hero = true}) {
     final (icon, c) = articleStyle(a['category']);
+    Widget thumb = ArticleCover(a, width: _thumb, height: _thumb, radius: 12, iconSize: 26, cacheWidth: (_thumb * 2 * MediaQuery.devicePixelRatioOf(context)).round());
+    if (hero) thumb = Hero(tag: 'article-cover-${a['slug']}', child: thumb);
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(Sp.md, 12, 4, 12),
         child: Row(children: [
-          IconCircle(icon, size: 36, iconSize: 20, fg: c, radius: 10, fill: 1),
+          thumb,
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(a['title'], style: T.bodyLg, maxLines: 2, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 2),
-              Text('${a['category_label'] ?? ''} · ${a['read_minutes']} min', style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(a['title'], style: T.bodyLg.semi.lh(1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 4),
+              Row(children: [
+                Icon(icon, size: 14, color: c, fill: 1),
+                const SizedBox(width: 4),
+                Flexible(child: Text(a['category_label'] ?? '', style: T.bodySm.semi.c(c), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                Text('  ·  ${a['read_minutes']} min', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              ]),
             ]),
           ),
           _bookmark(a),

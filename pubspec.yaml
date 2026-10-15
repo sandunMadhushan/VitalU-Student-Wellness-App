@@ -42,6 +42,7 @@ flutter:
   assets:
     - assets/images/
     - assets/art/
+    - assets/articles/
     - assets/body_shapes/
     - assets/badges/
     - assets/icons3d/

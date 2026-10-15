@@ -444,6 +444,44 @@ class ChipRow extends StatelessWidget {
       );
 }
 
+/// Little bouncing bars while audio plays.
+class Equalizer extends StatefulWidget {
+  const Equalizer({super.key, required this.color, this.bars = 5, this.height = 14, this.barWidth = 4});
+  final Color color;
+  final int bars;
+  final double height;
+  final double barWidth;
+  @override
+  State<Equalizer> createState() => _EqualizerState();
+}
+
+class _EqualizerState extends State<Equalizer> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        // A fixed-height box, so the moving bars never resize their parent.
+        builder: (_, _) => SizedBox(
+          height: widget.height,
+          child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+            for (int i = 0; i < widget.bars; i++)
+              Container(
+                width: widget.barWidth,
+                height: widget.barWidth + (widget.height - widget.barWidth) * (0.5 + 0.5 * math.sin(_c.value * 2 * math.pi * (1 + i * 0.3) + i)),
+                margin: EdgeInsets.only(right: i == widget.bars - 1 ? 0 : widget.barWidth * 0.75),
+                decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(widget.barWidth / 2)),
+              ),
+          ]),
+        ),
+      );
+}
+
 // ---------------------------------------------------------------------------
 // Progress
 // ---------------------------------------------------------------------------
@@ -569,7 +607,8 @@ class VSlider extends StatelessWidget {
 enum NavTab { home, tools, diet, library, profile }
 
 /// Page shell: an app bar from [header], a padded list of [children], an
-/// optional sticky [bottom] action and the tab bar when [nav] is set.
+/// optional sticky [bottom] action, a [floating] panel that hovers over the
+/// content, and the tab bar when [nav] is set.
 class VPage extends StatelessWidget {
   const VPage({
     super.key,
@@ -578,6 +617,7 @@ class VPage extends StatelessWidget {
     this.nav,
     this.padding = const EdgeInsets.symmetric(horizontal: Sp.margin),
     this.bottom,
+    this.floating,
     this.background,
     this.spacing = Sp.md,
     this.onRefresh,
@@ -590,6 +630,10 @@ class VPage extends StatelessWidget {
   final NavTab? nav;
   final EdgeInsetsGeometry padding;
   final Widget? bottom;
+
+  /// Drawn over the bottom of the content (like the tab bar), which scrolls
+  /// clear of it. Used for the read-aloud player.
+  final Widget? floating;
   final Color? background;
   final double spacing;
   final Future<void> Function()? onRefresh;
@@ -625,8 +669,9 @@ class VPage extends StatelessWidget {
     if (backgroundDecoration != null) body = DecoratedBox(decoration: backgroundDecoration!, child: body);
 
     Widget? bottomBar;
-    if (bottom != null || showNav) {
+    if (bottom != null || showNav || floating != null) {
       bottomBar = Column(mainAxisSize: MainAxisSize.min, children: [
+        ?floating,
         if (bottom != null)
           Container(
             decoration: BoxDecoration(
@@ -639,7 +684,7 @@ class VPage extends StatelessWidget {
         if (showNav) BottomNav(current: nav!),
       ]);
     }
-    return Scaffold(backgroundColor: background ?? AppColors.surface, extendBody: showNav, body: body, bottomNavigationBar: bottomBar);
+    return Scaffold(backgroundColor: background ?? AppColors.surface, extendBody: showNav || floating != null, body: body, bottomNavigationBar: bottomBar);
   }
 }
 
@@ -841,9 +886,9 @@ class BottomNav extends StatelessWidget {
 
   static const _items = <(NavTab, IconData, String, String)>[
     (NavTab.home, Symbols.home_rounded, 'Home', '/home'),
-    (NavTab.tools, Symbols.vital_signs_rounded, 'Tools', '/tools'),
-    (NavTab.diet, Symbols.nutrition_rounded, 'Diet', '/diet'),
-    (NavTab.library, Symbols.menu_book_rounded, 'Learn', '/library'),
+    (NavTab.tools, Symbols.ecg_heart_rounded, 'Tools', '/tools'),
+    (NavTab.diet, Symbols.restaurant_rounded, 'Diet', '/diet'),
+    (NavTab.library, Symbols.auto_stories_rounded, 'Learn', '/library'),
     (NavTab.profile, Symbols.account_circle_rounded, 'Profile', '/profile'),
   ];
 

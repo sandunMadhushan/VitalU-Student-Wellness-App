@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,6 +10,7 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 import 'library_screen.dart';
+import 'read_aloud.dart';
 
 class ArticleScreen extends StatefulWidget {
   const ArticleScreen({super.key, required this.slug});
@@ -24,22 +25,26 @@ class _ArticleScreenState extends State<ArticleScreen> {
   bool _saved = false;
   bool _helpful = false;
   bool _helpfulInitially = false;
-  bool _speaking = false;
-  final _tts = FlutterTts();
+  final _reader = ReadAloud();
 
   @override
   void initState() {
     super.initState();
-    _tts.setCompletionHandler(() {
-      if (mounted) setState(() => _speaking = false);
-    });
+    _reader.addListener(_onReader);
     _load();
   }
 
   @override
   void dispose() {
-    _tts.stop();
+    _reader.removeListener(_onReader);
+    _reader.dispose();
     super.dispose();
+  }
+
+  /// Rebuilds only when the player opens or closes; the player listens itself.
+  bool _playerOpen = false;
+  void _onReader() {
+    if (_reader.open != _playerOpen && mounted) setState(() => _playerOpen = _reader.open);
   }
 
   Future<void> _load() async {
@@ -70,15 +75,9 @@ class _ArticleScreenState extends State<ArticleScreen> {
     ].whereType<String>().join('\n\n');
   }
 
-  Future<void> _toggleSpeak() async {
-    if (_speaking) {
-      await _tts.stop();
-      setState(() => _speaking = false);
-      return;
-    }
-    setState(() => _speaking = true);
-    await _tts.setSpeechRate(0.45);
-    await _tts.speak(_plainText);
+  void _listen() {
+    HapticFeedback.selectionClick();
+    _reader.open ? _reader.toggle() : _reader.start(_plainText);
   }
 
   Future<void> _toggleSave() async {
@@ -119,9 +118,19 @@ class _ArticleScreenState extends State<ArticleScreen> {
   Widget build(BuildContext context) {
     final a = _a;
     return VPage(
+      floating: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 320),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, anim) => SizeTransition(
+          sizeFactor: anim,
+          child: SlideTransition(position: Tween(begin: const Offset(0, 0.4), end: Offset.zero).animate(anim), child: FadeTransition(opacity: anim, child: child)),
+        ),
+        child: _playerOpen && a != null ? ReadAloudPlayer(controller: _reader, article: a) : const SizedBox(width: double.infinity),
+      ),
       header: TitleHeader('', onLeading: () => goBack(context, '/library'), actions: [
         if (a != null) ...[
-          IconButton(tooltip: _speaking ? 'Stop reading' : 'Read aloud', icon: Icon(_speaking ? Symbols.stop_circle_rounded : Symbols.volume_up_rounded), onPressed: _toggleSpeak),
+          IconButton(tooltip: _playerOpen ? 'Play or pause' : 'Listen', icon: Icon(Symbols.headphones_rounded, fill: _playerOpen ? 1 : 0, color: _playerOpen ? AppColors.primary : null), onPressed: _listen),
           IconButton(
             tooltip: _saved ? 'Remove from saved' : 'Save',
             icon: Icon(Symbols.bookmark_rounded, fill: _saved ? 1 : 0, color: _saved ? AppColors.primary : null),
@@ -147,6 +156,10 @@ class _ArticleScreenState extends State<ArticleScreen> {
     final (icon, c) = articleStyle(a['category']);
     final body = T.bodyLg.c(AppColors.onSurface).lh(1.55);
     return [
+      AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Hero(tag: 'article-cover-${a['slug']}', child: ArticleCover(a, radius: Rad.lg, iconSize: 56)),
+      ),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(icon, size: 18, color: c, fill: 1),
@@ -162,6 +175,24 @@ class _ArticleScreenState extends State<ArticleScreen> {
             if (a['author'] != null) 'Reviewed by ${a['author']}',
           ].join(' · '),
           style: T.bodySm.c(AppColors.onSurfaceVariant),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          alignment: Alignment.topLeft,
+          child: _playerOpen
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(top: Sp.md),
+                  child: SoftButton(
+                    'Listen to this article',
+                    icon: Symbols.headphones_rounded,
+                    expand: false,
+                    height: 40,
+                    color: AppColors.tint(AppColors.primary),
+                    fg: AppColors.primary,
+                    onTap: _listen,
+                  ),
+                ),
         ),
         if (b['intro'] != null) ...[
           const SizedBox(height: Sp.lg),

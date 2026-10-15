@@ -618,7 +618,7 @@ class CalmMusicCard extends StatelessWidget {
                   Text(playing ? 'Peaceful spa bells, playing on a loop' : 'Soft, peaceful bells to help you relax', style: T.bodySm.c(AppColors.onSurfaceVariant)),
                   // Space is kept for the bars even when paused, so play/pause doesn't shift the page.
                   const SizedBox(height: 6),
-                  SizedBox(height: 14, child: playing ? _Equalizer(color: c) : null),
+                  SizedBox(height: 14, child: playing ? Equalizer(color: c) : null),
                 ]),
               ),
               const SizedBox(width: 8),
@@ -635,39 +635,4 @@ class CalmMusicCard extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Little bouncing bars while music plays.
-class _Equalizer extends StatefulWidget {
-  const _Equalizer({required this.color});
-  final Color color;
-  @override
-  State<_Equalizer> createState() => _EqualizerState();
-}
-
-class _EqualizerState extends State<_Equalizer> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _c,
-        // A fixed-height box, so the moving bars never resize the card.
-        builder: (_, _) => SizedBox(
-          height: 14,
-          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            for (int i = 0; i < 5; i++)
-              Container(
-                width: 4,
-                height: 4 + 10 * (0.5 + 0.5 * math.sin(_c.value * 2 * math.pi * (1 + i * 0.3) + i)),
-                margin: const EdgeInsets.only(right: 3),
-                decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(2)),
-              ),
-          ]),
-        ),
-      );
 }
