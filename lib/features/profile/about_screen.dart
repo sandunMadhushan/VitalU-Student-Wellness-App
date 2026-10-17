@@ -57,17 +57,11 @@ class _AboutScreenState extends State<AboutScreen> {
             TextSpan(children: [
               const TextSpan(text: 'This application is being developed as part of the research project titled '),
               TextSpan(text: '"${ResearchTeam.title}."', style: const TextStyle(fontStyle: FontStyle.italic)),
+              const TextSpan(
+                  text: ' The platform aims to support the cardiometabolic health and overall well-being of university undergraduates through personalised nutrition guidance, dietary assessment, health monitoring and evidence-based lifestyle recommendations. It is designed to help students better understand their health, develop healthier dietary behaviours and monitor their progress.'),
             ]),
-            style: T.bodyMd.c(AppColors.onSurfaceVariant),
+            style: T.bodyMd.c(AppColors.onSurfaceVariant).lh(1.5),
           ),
-          const SizedBox(height: 8),
-          Text(
-              'The platform aims to support the cardiometabolic health and overall well-being of university undergraduates through personalised nutrition guidance, dietary assessment, health monitoring and evidence-based lifestyle recommendations. It is designed to help students better understand their health, develop healthier dietary behaviours and monitor their progress.',
-              style: T.bodyMd.c(AppColors.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Text(
-              'Most guidance in the app is personalised with transparent rules built on validated tools, such as BMI, the waist-to-hip ratio, DASS-21, IPAQ and the Prime Diet Quality Score. AI is used in two places only: reading uploaded blood reports and estimating the food in a meal photo. Both give educational estimates that the student can correct, never a diagnosis.',
-              style: T.bodyMd.c(AppColors.onSurfaceVariant)),
         ]),
         _card(Symbols.science_rounded, AppColors.water, 'Research and development', [
           Text('This application is being developed as a student research project by:', style: T.bodyMd.c(AppColors.onSurfaceVariant)),

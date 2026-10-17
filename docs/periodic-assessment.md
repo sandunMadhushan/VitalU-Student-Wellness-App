@@ -12,14 +12,36 @@ done from the admin dashboard (`<site>/admin/`).
 
 ## 1. The idea in one paragraph
 
-Twice a year, each faculty's students are asked to complete a short (about
-6 minutes) health questionnaire in the app. The form is not hard-coded: it is
+Twice a year (a **Mid Year Assessment** and a **Year End Assessment**), each
+faculty's students are asked to complete a short (about 7 minutes)
+health questionnaire in the app. It covers the ten health domains plus an
+optional **clinical measurements** section. The form is not hard-coded: it is
 stored in the database as **domains** (topic areas) and **questions**, so the
 administration can edit wording, answers and scoring without releasing a new
 app version. Each round of the assessment is a **window** that opens for a
 faculty on a chosen date and stays open for a set number of days. Results are
 only ever shown to the administration as **pooled totals**, never per
 student, and nothing at all is shown for a group of fewer than five students.
+
+What the student sees:
+
+- **Home alert.** While a window is open, the assessment pops up once on Home
+  as an important notice ("Open from 12 Jan to 19 Jan"), and a card stays on
+  Home until it is done.
+- **Introduction before starting.** It says the assessment comes from the
+  university health administration. It explains why it matters: the risk
+  picture for young adults in Sri Lanka, citing STEPS 2021 and a Peradeniya
+  student study. It promises that answers are used only as a pooled overall
+  picture with no personal identifiers, to plan future health and nutrition
+  interventions.
+- **A light, visual form.** It shows one question per screen with tap-to-answer
+  cards. Food questions show a photo, define one serving and use a 7-day
+  days picker. There are mood faces and an illustrated activity slider.
+  Answers animate as they are picked, and progress is saved after every
+  answer.
+
+The full question list, with every answer option, is in
+[assessment-questionnaire.md](assessment-questionnaire.md).
 
 ---
 
@@ -28,13 +50,16 @@ student, and nothing at all is shown for a group of fewer than five students.
 ```
 Assessment form
 ├── Domain 1  Physical and cardiometabolic health
-│   ├── Question p_height   (number, cm, prefilled from profile)
-│   ├── Question p_weight   (number, kg, prefilled)
+│   ├── Question p_profile  (profile check: confirm details already given)
 │   ├── Question p_general  (1 to 5 scale, scored)
 │   └── ...
 ├── Domain 2  Dietary behaviours and food security
 │   └── ...
-└── Domain 10 Student voice and institutional priorities
+├── Domain 10 Student voice and institutional priorities
+└── Domain 11 Clinical measurements (can be hidden by the admin)
+    ├── Question k_source   (were they measured at the health centre?)
+    ├── Question k_height   (number, cm, prefilled, asked only if measured)
+    └── ...
 ```
 
 ### 2.1 Domains
@@ -49,8 +74,9 @@ and each domain gets its own score out of 100.
 | `blurb`    | One line shown under the heading                     |
 | `icon`     | Material Symbols icon name, e.g. `restaurant`        |
 | `position` | Order in the form                                    |
+| `active`   | Hidden sections are skipped by the app (see 4)       |
 
-The ten default domains:
+The default domains:
 
 1. Physical and cardiometabolic health
 2. Dietary behaviours and food security
@@ -62,6 +88,11 @@ The ten default domains:
 8. Social environment and personal support
 9. Campus environment and access to services
 10. Student voice and institutional priorities
+11. Clinical measurements (height, weight, waist, hip, blood pressure,
+    fasting glucose, triglycerides, cholesterol). Students enter their own
+    values. The first question asks whether they were measured at the
+    university health centre (or elsewhere, or by themselves). Students who
+    answer "I don't have recent measurements" skip the rest of the section.
 
 ### 2.2 Questions
 
@@ -72,13 +103,16 @@ Each question belongs to one domain.
 | `id`          | Short unique code, e.g. `d_breakfast`. **Never reuse or rename an id once students have answered it**, because past answers are stored against it. |
 | `domain_id`   | Which domain it belongs to |
 | `position`    | Order inside the domain |
-| `kind`        | `single`, `multi`, `scale`, `number` or `text` (see 2.3) |
+| `kind`        | `single`, `multi`, `scale`, `number`, `text` or `profile` (see 2.3) |
+| `style`       | How a `single` question is drawn: `days`, `faces`, `slider` or empty for cards (see 2.3) |
+| `image`       | Optional picture above the question, a path under `assets/` (e.g. `food_groups/fruit.webp`) |
+| `show_if`     | Ask only when an earlier answer allows it, e.g. `{"q": "k_source", "not_in": ["none"]}` |
 | `text`        | The question as students see it |
 | `help`        | Optional hint under the question |
 | `options`     | The answer choices (for `single`, `multi`, `scale`) |
 | `unit`, `min_value`, `max_value` | For `number` questions, e.g. `cm`, 100 to 230 |
 | `max_choices` | For `multi`, the most a student may pick (e.g. "pick up to three") |
-| `prefill`     | Fills the answer from the profile: `height_cm`, `weight_kg`, `waist_cm` or `hip_cm`. The profile is updated with the new value when the student finishes. |
+| `prefill`     | Fills the answer from the profile or latest logged vitals: `height_cm`, `weight_kg`, `waist_cm`, `hip_cm`, `sbp`, `dbp`, `fbg`, `tg`, `chol`, `accommodation`. Measured values update the profile when the student finishes. |
 | `optional`    | Students may skip it |
 | `active`      | Retired questions are kept (for past results) but no longer asked |
 
@@ -91,10 +125,21 @@ Each question belongs to one domain.
 | `multi`  | Tick several answers | a list, e.g. `["hours","privacy"]` | No (described only) |
 | `number` | Number field with unit and range check | a number, e.g. `162.5` | No (used for BMI and WHR) |
 | `text`   | Short free-text box | text | No |
+| `profile`| A summary of the student's profile (age, sex, faculty, family history, medicines, allergies) to confirm or update, so these are not asked again | `"same"` or `"updated"` | No |
+
+Styles for `single` questions:
+
+| Style    | Looks like | Used for |
+|----------|------------|----------|
+| (empty)  | Large answer cards, with an icon or picture if the option has one | Most questions |
+| `days`   | Food photo, a "one serving is…" line and a 0 to 7 days picker | 7-day food recall |
+| `faces`  | A row of animated faces from sad to happy | Mood, sleep quality |
+| `slider` | Illustrated slider; the picture changes as it moves (option `image`) | Active days |
 
 ### 2.4 Answer options and scores
 
-Options are a list of `value`, `label`, optional `hint` and optional `score`:
+Options are a list of `value`, `label`, and optional `hint`, `score`,
+`icon` (a Material Symbols name) and `image` (a path under `assets/`):
 
 ```json
 [
@@ -139,10 +184,14 @@ Scoring happens in the app when a student finishes
    | below 35  | Needs attention |
 
 5. **Extra measures** worked out from specific questions:
-   - **BMI** from `p_height` and `p_weight`
-   - **Waist-to-hip ratio** from `p_waist` and `p_hip`
-   - **Perceived Stress Scale (PSS-4)** from `e_pss1` to `e_pss4`, 0 to 16
-     (items 2 and 3 are reverse-scored). Higher means more perceived stress.
+   - **BMI** from `k_height` and `k_weight`, or from the profile when the
+     clinical section is hidden or skipped (`bmi_source` records which:
+     `health_centre`, `clinic`, `self` or `profile`)
+   - **Waist-to-hip ratio** from `k_waist` and `k_hip` (or the profile)
+   - **PHQ-2** from `e_phq1` and `e_phq2`, 0 to 6 (Kroenke et al., 2003).
+     A total of **3 or more** is a positive screen for low mood
+     (`phq2_positive`). It is a screen, not a diagnosis, and students with a
+     positive screen are shown where to get support.
 
 The answers and scores are saved together in the student's `assessments` row.
 Progress is saved after each answer, so a student can close the app and
@@ -168,7 +217,7 @@ Open the dashboard, sign in with an admin account and go to **Questionnaire**.
 1. Click **Add question** in the domain.
 2. Choose the kind, write the question and give it a short unique id with
    the domain's prefix (`p_`, `d_`, `a_`, `e_`, `s_`, `m_`, `f_`, `o_`, `c_`,
-   `v_`), e.g. `d_water`.
+   `v_`, `k_`), e.g. `d_water`.
 3. Add options and scores (higher = healthier), or leave scores empty.
 4. Save, then use the ↑ and ↓ buttons to put it in the right place.
 
@@ -179,21 +228,34 @@ answers stay in the reports. **Restore** brings it back.
 ### Rename a domain
 Click **Rename area** next to the domain heading.
 
+### Show or hide a whole section
+Click **Hide section** next to the domain heading (and **Show section** to
+bring it back). Use this for **Clinical measurements** when the health centre
+has not measured the students in a round. The app then skips the section and
+uses the profile values for BMI and waist-to-hip ratio.
+
 ### Good practice for wording
 - One idea per question, in plain English (and keep a Sinhala/Tamil
   translation if one is used in the study).
 - Give a time frame: "in the past month", "on a typical day".
 - Make answer options cover every case and not overlap
   (e.g. "0 to 1", "2 to 4", "5 to 7").
-- Use validated items unchanged where possible (the PSS-4 items are taken
-  from the Perceived Stress Scale; do not reword them).
+- Use validated items unchanged where possible (the PHQ-2 items are taken
+  from the Patient Health Questionnaire; do not reword them).
+- For food questions, say what one serving is and ask about the last 7 days.
 - Free-text questions should say "please do not include names".
 
 ### The app's built-in copy
 The app ships with the same default questionnaire
-(`defaultQuestions` in `assessment_data.dart`). It is only used if the
-database cannot be reached. Once the database has questions, the database
-version is always used.
+(`assets/assessment/questionnaire.json`). It is only used if the database
+cannot be reached. Once the database has questions, the database version is
+always used.
+
+The default questionnaire is kept in one file,
+`supabase/seed/assessment_questionnaire.json`. After changing it, run
+`python supabase/seed/build_questionnaire.py`. This regenerates three files:
+the app's copy, the seed SQL and the readable
+[assessment-questionnaire.md](assessment-questionnaire.md).
 
 ---
 
@@ -201,19 +263,23 @@ version is always used.
 
 Go to **Schedule** in the dashboard.
 
-1. Enter a **title** (e.g. "Periodic health assessment") and a **term**
-   (e.g. "2026 Semester 2"). The term is how rounds are grouped in reports.
+1. Pick the **round** (**Mid Year Assessment** or **Year End Assessment**)
+   and the **year**. Together they name the round (e.g. "Mid Year Assessment
+   2027"), which is how rounds are grouped in reports.
 2. Pick the **faculties**. Leave all unticked to open it for everyone.
    Each faculty gets its own window, so faculties can have different dates.
-3. Pick the **opening date** and how many **days** it stays open (1 to 31,
-   7 by default). The next suggested date is six months after the last round.
+3. Pick the **opening date and time** (Sri Lanka time) and how many **days**
+   it stays open (1 to 31, 7 by default). The next suggested date is six
+   months after the last round.
 4. Save.
 
 What happens next, automatically:
 
 - Every eligible student gets a **"coming up"** notification three days
   before opening and a **"now open"** notification on the day.
-- The assessment card appears on the student's Home screen while it is open.
+- While it is open, the assessment pops up on the student's Home screen as an
+  important alert with its open and close dates, and a card stays on Home
+  until it is completed.
 - Students who registered after a window opened can still complete it while
   it is open.
 
@@ -249,6 +315,8 @@ only the data listed above.
      analytics, consultations, default questionnaire)
    - `20261015120000_diet_profile_completion_email_domains.sql` (Completion
      tab, faculty email domains)
+   - `20261016120000_assessment_v2_badges_learn_admin.sql` (this version of
+     the questionnaire, section hide switch, Mid Year / Year End rounds)
 2. **Create the admin's account** (sign up in the app, or add the user under
    Authentication in Supabase).
 3. **Grant admin access** in the SQL editor:
@@ -282,7 +350,7 @@ only the data listed above.
 `scores` looks like:
 
 ```json
-{"domains": {"1": 72, "2": 58, "...": 0}, "overall": 66, "bmi": 22.4, "whr": 0.81, "stress": 6}
+{"domains": {"1": 72, "2": 58, "...": 0}, "overall": 66, "bmi": 22.4, "bmi_source": "health_centre", "whr": 0.81, "phq2": 1, "phq2_positive": false}
 ```
 
 ---

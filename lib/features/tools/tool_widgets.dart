@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
@@ -346,4 +347,39 @@ Future<void> showInfoSheet(BuildContext context, {required String title, require
         const SizedBox(height: Sp.sm),
         PrimaryButton('Done', onTap: () => Navigator.pop(ctx)),
       ]));
+}
+
+/// The validated tool a screen is based on, with its citation and a link.
+class ToolReference extends StatelessWidget {
+  const ToolReference({super.key, required this.tool, required this.citation, this.url, this.note});
+  final String tool;
+  final String citation;
+  final String? url;
+  final String? note;
+
+  @override
+  Widget build(BuildContext context) => VCard(
+        color: AppColors.surfaceContainerLow,
+        flat: true,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Symbols.menu_book_rounded, size: 20, color: AppColors.primary, fill: 1),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Based on $tool', style: T.labelLg.semi),
+              const SizedBox(height: 2),
+              Text(citation, style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.4)),
+              if (note != null) ...[
+                const SizedBox(height: 4),
+                Text(note!, style: T.bodySm.c(AppColors.onSurfaceVariant).lh(1.4)),
+              ],
+              if (url != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: TextLinkButton('View reference', icon: Symbols.open_in_new_rounded, onTap: () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication)),
+                ),
+            ]),
+          ),
+        ]),
+      );
 }

@@ -10,44 +10,83 @@ import '../../ui/widgets.dart';
 import 'diet_science.dart' show LoggedDietQuality, loggedDietQuality;
 
 /// One PDQS food group. Healthy groups score more the more often they are
-/// eaten; the others score more the less often they are eaten.
+/// eaten; the others score more the less often they are eaten. [serving]
+/// says what one serving is, in the same hand measures used across the Diet
+/// section (cupped hand = ½ cup, fist = 1 cup, palm, thumb = 1 tablespoon).
 class PdqsGroup {
-  const PdqsGroup(this.key, this.label, this.examples, this.icon, {required this.healthy});
+  const PdqsGroup(this.key, this.label, this.examples, this.icon, {required this.healthy, required this.image, required this.serving, this.hand = 'cupped'});
   final String key;
   final String label;
   final String examples;
   final IconData icon;
   final bool healthy;
+
+  /// Food photo under `assets/food_groups/`.
+  final String image;
+  final String serving;
+
+  /// Hand picture for the serving: cupped, fist, palm or thumb.
+  final String hand;
 }
 
 /// Prime Diet Quality Score: 21 food groups (14 healthy, 7 less healthy),
 /// each scored 0, 1 or 2 by servings in the past week, for a total of 0 to 42.
 const pdqsGroups = <PdqsGroup>[
-  PdqsGroup('dark_leafy', 'Dark green leafy vegetables', 'Gotukola, mukunuwenna, kankun, spinach', Symbols.eco_rounded, healthy: true),
-  PdqsGroup('cruciferous', 'Cabbage-family vegetables', 'Cabbage, cauliflower, broccoli, knol-khol', Symbols.spa_rounded, healthy: true),
-  PdqsGroup('carrots', 'Carrots', 'Raw, in salads or in curries', Symbols.nutrition_rounded, healthy: true),
-  PdqsGroup('other_veg', 'Other vegetables', 'Beans, brinjal, okra, pumpkin, gourds, tomato', Symbols.grass_rounded, healthy: true),
-  PdqsGroup('citrus', 'Whole citrus fruits', 'Orange, mandarin, lime, grapefruit (not juice)', Symbols.brightness_7_rounded, healthy: true),
-  PdqsGroup('other_fruit', 'Other whole fruits', 'Banana, papaya, guava, mango, pineapple', Symbols.nutrition_rounded, healthy: true),
-  PdqsGroup('legumes', 'Pulses and legumes', 'Dhal, chickpeas (kadala), green gram, cowpea', Symbols.grain_rounded, healthy: true),
-  PdqsGroup('nuts', 'Nuts and seeds', 'Peanuts, cashews, sesame', Symbols.psychiatry_rounded, healthy: true),
-  PdqsGroup('poultry', 'Poultry', 'Chicken', Symbols.egg_alt_rounded, healthy: true),
-  PdqsGroup('fish', 'Fish', 'Fresh fish, sprats, tinned fish', Symbols.set_meal_rounded, healthy: true),
-  PdqsGroup('eggs', 'Eggs', 'Boiled, curried or in an omelette', Symbols.egg_rounded, healthy: true),
-  PdqsGroup('whole_grains', 'Whole grains', 'Red rice, kurakkan, oats, atta flour', Symbols.rice_bowl_rounded, healthy: true),
-  PdqsGroup('veg_oils', 'Liquid vegetable oils', 'Sunflower, soybean, gingelly or olive oil', Symbols.water_drop_rounded, healthy: true),
-  PdqsGroup('low_fat_dairy', 'Low-fat dairy', 'Low-fat milk, curd, yoghurt', Symbols.local_cafe_rounded, healthy: true),
-  PdqsGroup('red_meat', 'Red meat', 'Beef, pork, mutton', Symbols.kebab_dining_rounded, healthy: false),
-  PdqsGroup('processed_meat', 'Processed meat', 'Sausages, meatballs, ham, nuggets', Symbols.lunch_dining_rounded, healthy: false),
-  PdqsGroup('refined_grains', 'Refined grains and baked goods', 'White bread, buns, biscuits, pastries', Symbols.bakery_dining_rounded, healthy: false),
-  PdqsGroup('ssb', 'Sugar-sweetened drinks', 'Soft drinks, sweet milk tea, packet juice', Symbols.local_drink_rounded, healthy: false),
-  PdqsGroup('sweets', 'Desserts and ice cream', 'Cake, kavum, chocolate, ice cream, sweets', Symbols.icecream_rounded, healthy: false),
-  PdqsGroup('fried_out', 'Fried food from outside', 'Short eats, rolls, fried rice, kottu, chips', Symbols.fastfood_rounded, healthy: false),
-  PdqsGroup('potatoes', 'Potatoes', 'Potato curry, chips, fries', Symbols.restaurant_rounded, healthy: false),
+  PdqsGroup('dark_leafy', 'Dark green leafy vegetables', 'Gotukola, mukunuwenna, kankun, spinach', Symbols.eco_rounded, healthy: true, image: 'dark_leafy', serving: '½ cup cooked or as mallum'),
+  PdqsGroup('cruciferous', 'Cabbage-family vegetables', 'Cabbage, cauliflower, broccoli, knol-khol', Symbols.spa_rounded, healthy: true, image: 'cruciferous', serving: '½ cup cooked, or 1 cup raw', hand: 'cupped'),
+  PdqsGroup('carrots', 'Carrots', 'Raw, in salads or in curries', Symbols.nutrition_rounded, healthy: true, image: 'carrots', serving: '½ cup chopped, or 1 medium carrot'),
+  PdqsGroup('other_veg', 'Other vegetables', 'Beans, brinjal, okra, pumpkin, gourds, tomato', Symbols.grass_rounded, healthy: true, image: 'other_veg', serving: '½ cup cooked'),
+  PdqsGroup('citrus', 'Whole citrus fruits', 'Orange, mandarin, lime, grapefruit (not juice)', Symbols.brightness_7_rounded, healthy: true, image: 'citrus', serving: '1 orange, or 2 small mandarins', hand: 'fist'),
+  PdqsGroup('other_fruit', 'Other whole fruits', 'Banana, papaya, guava, mango, pineapple', Symbols.nutrition_rounded, healthy: true, image: 'other_fruit', serving: '1 medium fruit, or ½ cup cut fruit'),
+  PdqsGroup('legumes', 'Pulses and legumes', 'Dhal, chickpeas (kadala), green gram, cowpea', Symbols.grain_rounded, healthy: true, image: 'pulses', serving: '½ cup cooked'),
+  PdqsGroup('nuts', 'Nuts and seeds', 'Peanuts, cashews, sesame', Symbols.psychiatry_rounded, healthy: true, image: 'nuts_seeds', serving: '2 tablespoons, a small handful', hand: 'thumb'),
+  PdqsGroup('poultry', 'Poultry', 'Chicken', Symbols.egg_alt_rounded, healthy: true, image: 'poultry', serving: 'A palm-sized piece', hand: 'palm'),
+  PdqsGroup('fish', 'Fish', 'Fresh fish, sprats, tinned fish', Symbols.set_meal_rounded, healthy: true, image: 'meat_fish', serving: 'A palm-sized piece', hand: 'palm'),
+  PdqsGroup('eggs', 'Eggs', 'Boiled, curried or in an omelette', Symbols.egg_rounded, healthy: true, image: 'eggs', serving: '1 egg', hand: 'palm'),
+  PdqsGroup('whole_grains', 'Whole grains', 'Red rice, kurakkan, oats, atta flour', Symbols.rice_bowl_rounded, healthy: true, image: 'grains', serving: '1 cup cooked rice, or 1 roti', hand: 'fist'),
+  PdqsGroup('veg_oils', 'Liquid vegetable oils', 'Sunflower, soybean, gingelly or olive oil', Symbols.water_drop_rounded, healthy: true, image: 'veg_oils', serving: '1 tablespoon', hand: 'thumb'),
+  PdqsGroup('low_fat_dairy', 'Low-fat dairy', 'Low-fat milk, curd, yoghurt', Symbols.local_cafe_rounded, healthy: true, image: 'dairy', serving: '1 glass of milk (200 ml) or 1 small cup of curd', hand: 'fist'),
+  PdqsGroup('red_meat', 'Red meat', 'Beef, pork, mutton', Symbols.kebab_dining_rounded, healthy: false, image: 'red_meat', serving: 'A palm-sized piece', hand: 'palm'),
+  PdqsGroup('processed_meat', 'Processed meat', 'Sausages, meatballs, ham, nuggets', Symbols.lunch_dining_rounded, healthy: false, image: 'processed_meat', serving: '1 sausage, 2 slices of ham, or 3 nuggets', hand: 'palm'),
+  PdqsGroup('refined_grains', 'Refined grains and baked goods', 'White rice, white bread, buns, biscuits, pastries', Symbols.bakery_dining_rounded, healthy: false, image: 'refined_grains', serving: '1 cup cooked white rice, 2 slices of bread, or 1 bun', hand: 'fist'),
+  PdqsGroup('ssb', 'Sugar-sweetened drinks', 'Soft drinks, sweet milk tea, packet juice', Symbols.local_drink_rounded, healthy: false, image: 'ssb', serving: '1 glass or small bottle (200 ml)', hand: 'fist'),
+  PdqsGroup('sweets', 'Desserts and ice cream', 'Cake, kavum, chocolate, ice cream, sweets', Symbols.icecream_rounded, healthy: false, image: 'sweets', serving: '1 piece, or 1 scoop of ice cream'),
+  PdqsGroup('fried_out', 'Fried food from outside', 'Short eats, rolls, fried rice, kottu, chips', Symbols.fastfood_rounded, healthy: false, image: 'fried_out', serving: '1 short eat, or 1 plate', hand: 'fist'),
+  PdqsGroup('potatoes', 'Potatoes', 'Potato curry, chips, fries', Symbols.restaurant_rounded, healthy: false, image: 'potatoes', serving: '½ cup potato curry or chips'),
 ];
 
 /// Servings in the past week: 0 to 1, 2 to 3, or 4 or more.
 const pdqsFrequencies = ['0 to 1', '2 to 3', '4 or more'];
+
+/// The hand measures used for every serving, shown above the check-in.
+class _ServingGuide extends StatelessWidget {
+  const _ServingGuide();
+  @override
+  Widget build(BuildContext context) {
+    Widget hand(String img, String name, String size) => Expanded(
+          child: Column(children: [
+            Image.asset('assets/plate/hand_$img.webp', width: 44, height: 44),
+            const SizedBox(height: 4),
+            Text(name, style: T.labelSm.w(FontWeight.w700), textAlign: TextAlign.center),
+            Text(size, style: T.labelSm.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+          ]),
+        );
+    return VCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text('What counts as one serving', style: T.headlineSm),
+        const SizedBox(height: 2),
+        Text('Use your own hand. Count servings, not plates: 1 cup of rice is 1 serving, a big plate may be 2 or 3.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+        const SizedBox(height: 12),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          hand('cupped', 'Cupped hand', '½ cup'),
+          hand('fist', 'Fist', '1 cup or 1 fruit'),
+          hand('palm', 'Palm', 'meat, fish, egg'),
+          hand('thumb', 'Thumb', '1 tablespoon'),
+        ]),
+      ]),
+    );
+  }
+}
 
 int pdqsPoints(PdqsGroup g, int frequency) => g.healthy ? frequency : 2 - frequency;
 
@@ -123,7 +162,7 @@ class _PdqsScreenState extends State<PdqsScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Your past 7 days', style: T.headlineSm),
                 const SizedBox(height: 4),
-                Text('For each food group, how many servings did you have this week? This is the Prime Diet Quality Score (PDQS), scored out of 42.',
+                Text('For each food group, how many servings did you have in the past 7 days? Each card says what one serving is. This is the Prime Diet Quality Score (PDQS), out of 42.',
                     style: T.bodyMd.c(AppColors.onSurfaceVariant)),
                 if (_last != null) ...[
                   const SizedBox(height: 6),
@@ -134,6 +173,7 @@ class _PdqsScreenState extends State<PdqsScreen> {
             ),
           ]),
         ),
+        const _ServingGuide(),
         if (_logged != null && _logged!.daysLogged > 0) _loggedCard(_logged!),
         const SectionHeader('Foods to enjoy often', subtitle: 'More servings score higher'),
         for (final g in pdqsGroups.where((g) => g.healthy)) _row(g),
@@ -177,12 +217,18 @@ class _PdqsScreenState extends State<PdqsScreen> {
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
-          IconCircle(g.icon, size: 34, iconSize: 18, fg: c, radius: 10, fill: 1),
-          const SizedBox(width: 10),
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.asset('assets/food_groups/${g.image}.webp', width: 56, height: 56, fit: BoxFit.cover, cacheWidth: 168)),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(g.label, style: T.labelLg.w(FontWeight.w700)),
               Text(g.examples, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              const SizedBox(height: 4),
+              Row(children: [
+                Image.asset('assets/plate/hand_${g.hand}.webp', width: 18, height: 18),
+                const SizedBox(width: 4),
+                Flexible(child: Text('1 serving = ${g.serving}', style: T.labelSm.c(c).w(FontWeight.w700))),
+              ]),
             ]),
           ),
           if (v != null) Icon(Symbols.check_circle_rounded, color: c, fill: 1, size: 20),

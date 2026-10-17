@@ -18,6 +18,7 @@ import '../../ui/charts.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
+import 'tool_widgets.dart';
 
 /// MET values (Compendium of Physical Activities, approximate).
 const activityTypes = <(String, IconData, double)>[
@@ -107,7 +108,7 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
                 IconButton.outlined(icon: const Icon(Symbols.add_rounded), onPressed: value >= max ? null : () => set(() => onChanged(value + 1))),
               ]);
           Widget minutes(int value, ValueChanged<int> onChanged) => Row(children: [
-                Expanded(child: Text('Minutes per day', style: T.bodySm.c(AppColors.onSurfaceVariant))),
+                Expanded(child: Text('Usual minutes on one of those days', style: T.bodySm.c(AppColors.onSurfaceVariant))),
                 SizedBox(
                   width: 160,
                   child: VSlider(value: value.toDouble(), min: 0, max: 180, divisions: 18, color: AppColors.activity, onChanged: (v) => set(() => onChanged(v.round()))),
@@ -117,25 +118,27 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('Weekly activity check-in', style: T.headlineMd),
             const SizedBox(height: 4),
-            Text('The IPAQ short form: a 7-day recall of your physical activity.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
+            Text('The IPAQ short form: think about the last 7 days, and only activities you did for at least 10 minutes at a time.', style: T.bodyMd.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.lg),
-            Text('In the last 7 days, on how many days did you do vigorous activity (heavy lifting, aerobics, fast cycling)?', style: T.labelLg),
+            Text('1. During the last 7 days, on how many days did you do vigorous physical activities like heavy lifting, digging, aerobics or fast cycling?', style: T.labelLg),
             const SizedBox(height: 4),
             stepper('Days', vigDays, (v) => vigDays = v),
             if (vigDays > 0) minutes(vigMin, (v) => vigMin = v),
             const SizedBox(height: Sp.md),
-            Text('On how many days did you do moderate activity (light loads, regular-pace cycling, doubles tennis), not counting walking?', style: T.labelLg),
+            Text('3. On how many days did you do moderate physical activities like carrying light loads, cycling at a regular pace or doubles tennis? Do not include walking.', style: T.labelLg),
             const SizedBox(height: 4),
             stepper('Days', modDays, (v) => modDays = v),
             if (modDays > 0) minutes(modMin, (v) => modMin = v),
             const SizedBox(height: Sp.md),
-            Text('On how many days did you walk for at least 10 minutes at a time?', style: T.labelLg),
+            Text('5. On how many days did you walk for at least 10 minutes at a time?', style: T.labelLg),
             const SizedBox(height: 4),
             stepper('Days', walkDays, (v) => walkDays = v),
             if (walkDays > 0) minutes(walkMin, (v) => walkMin = v),
             const SizedBox(height: Sp.md),
-            Text('On a typical day, how many hours do you spend sitting?', style: T.labelLg),
+            Text('7. How much time did you usually spend sitting on a weekday?', style: T.labelLg),
             stepper('Hours', sitHours, (v) => sitHours = v, max: 18),
+            const SizedBox(height: Sp.md),
+            Text('Questions 2, 4 and 6 are the minutes sliders under each answer.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
             const SizedBox(height: Sp.lg),
             PrimaryButton('See my result', onTap: () async {
               final met = Ipaq.metMinutes(vigDays: vigDays, vigMin: vigMin, modDays: modDays, modMin: modMin, walkDays: walkDays, walkMin: walkMin);
@@ -196,10 +199,12 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
         onError: (_) {
           _webSub?.cancel();
           _webSub = null;
-          if (mounted) setState(() {
-            _webTracking = false;
-            _webUnsupported = true;
-          });
+          if (mounted) {
+            setState(() {
+              _webTracking = false;
+              _webUnsupported = true;
+            });
+          }
         },
         cancelOnError: true,
       );
@@ -363,6 +368,12 @@ class _ActivityScreenState extends State<ActivityScreen> with WidgetsBindingObse
             SoftButton(ipaqCat == null ? 'Start check-in' : 'Retake check-in', icon: Symbols.edit_rounded, onTap: _runIpaq),
           ]),
         ),
+        const ToolReference(
+          tool: 'the IPAQ short form (International Physical Activity Questionnaire)',
+          citation: 'Craig CL, Marshall AL, Sjöström M, et al. International physical activity questionnaire: 12-country reliability and validity. Medicine & Science in Sports & Exercise. 2003;35(8):1381-1395. Scored with the IPAQ Research Committee protocol (2005).',
+          url: 'https://youthrex.com/wp-content/uploads/2019/10/IPAQ-TM.pdf',
+          note: 'MET-minutes a week = 8.0 × vigorous + 4.0 × moderate + 3.3 × walking minutes. Low, Moderate and High follow the IPAQ categories.',
+        ),
         PrimaryButton('Log activity', leadingIcon: Symbols.add_rounded, onTap: _logManual),
         if (!kIsWeb)
           ListGroup(children: [
@@ -456,11 +467,11 @@ class Ipaq {
 
   static String category({required int vigDays, required int vigMin, required int modDays, required int modMin, required int walkDays, required int walkMin}) {
     final total = metMinutes(vigDays: vigDays, vigMin: vigMin, modDays: modDays, modMin: modMin, walkDays: walkDays, walkMin: walkMin);
-    final activeDays = (vigDays > 0 ? 1 : 0) + (modDays > 0 ? 1 : 0) + (walkDays > 0 ? 1 : 0);
-    final anyDaysCombined = [if (vigDays > 0) vigDays, if (modDays > 0) modDays, if (walkDays > 0) walkDays];
-    final combinedDays = anyDaysCombined.isEmpty ? 0 : anyDaysCombined.reduce((a, b) => a > b ? a : b);
-    if ((vigDays >= 3 && total >= 1500) || (activeDays >= 3 && combinedDays >= 7 && total >= 3000)) return 'High';
-    if ((vigDays >= 3 && vigMin >= 20) || (modDays >= 5 && modMin >= 30) || (walkDays >= 5 && walkMin >= 30) || (activeDays >= 1 && combinedDays >= 5 && total >= 600)) return 'Moderate';
+    // "Days of any combination" adds up the days of walking, moderate and
+    // vigorous activity (IPAQ scoring protocol, 2005).
+    final combinedDays = vigDays + modDays + walkDays;
+    if ((vigDays >= 3 && total >= 1500) || (combinedDays >= 7 && total >= 3000)) return 'High';
+    if ((vigDays >= 3 && vigMin >= 20) || ((modDays + walkDays) >= 5 && (modMin >= 30 || walkMin >= 30)) || (combinedDays >= 5 && total >= 600)) return 'Moderate';
     return 'Low';
   }
 }

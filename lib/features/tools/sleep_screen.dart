@@ -2,6 +2,7 @@ import 'dart:async';
 
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -13,6 +14,7 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 import '../home/breathing.dart';
+import 'psqi_screen.dart';
 
 class SleepScreen extends StatefulWidget {
   const SleepScreen({super.key});
@@ -24,6 +26,7 @@ class _SleepScreenState extends State<SleepScreen> {
   bool _loading = true;
   List<Rec> _week = [];
   Rec? _last;
+  Rec? _psqi;
 
   int get _goalMin => ((AppState.instance.profile?.sleepGoalHours ?? 8) * 60).round();
 
@@ -39,6 +42,7 @@ class _SleepScreenState extends State<SleepScreen> {
       final ws = weekStart(now);
       _week = await Repo.sleepBetween(ws, ws.add(const Duration(days: 6)));
       _last = await Repo.sleepLatest();
+      _psqi = await Repo.latestToolResult('psqi');
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
@@ -153,6 +157,7 @@ class _SleepScreenState extends State<SleepScreen> {
                 ]),
               ),
               if (last != null) PrimaryButton('Log sleep', leadingIcon: Symbols.add_rounded, onTap: _logSleep),
+              _psqiCard(),
               ListGroup(children: [
                 ListRow(icon: Symbols.routine_rounded, color: AppColors.sleep, title: 'Wind-down routine', subtitle: 'A 10-minute checklist before bed', onTap: _windDown),
               ]),
@@ -171,6 +176,36 @@ class _SleepScreenState extends State<SleepScreen> {
               ),
               const PrivacyNote('A wellness tracker, not a diagnosis of any sleep disorder. Data stays private to you.'),
             ],
+    );
+  }
+
+  /// Latest sleep quality score (out of 120), or an invitation.
+  Widget _psqiCard() {
+    final score = Psqi.scoreOf(_psqi);
+    final (label, color) = score == null ? ('', AppColors.sleep) : Psqi.band(score);
+    return VCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          if (score != null)
+            Ring(value: score / Psqi.max, size: 58, stroke: 6, color: color, child: Text('$score', style: T.metric(18)))
+          else
+            ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset('assets/icons3d/sleep.jpg', width: 58, height: 58, fit: BoxFit.cover)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              CategoryLabel('Sleep quality (PSQI)', icon: Symbols.bedtime_rounded, color: AppColors.sleep),
+              const SizedBox(height: 2),
+              Text(score == null ? 'Check your sleep quality score' : '$label · $score of ${Psqi.max}', style: T.headlineSm.c(score == null ? AppColors.onSurface : color)),
+              Text(score == null ? '6 questions adapted from the PSQI, about 2 minutes.' : 'Higher is better. 75 or more is good sleep quality.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        SoftButton(score == null ? 'Start sleep quality check' : 'Check again', icon: Symbols.checklist_rounded, onTap: () async {
+          await context.push('/tools/sleep/psqi');
+          _load();
+        }),
+      ]),
     );
   }
 

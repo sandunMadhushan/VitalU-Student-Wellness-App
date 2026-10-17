@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -526,13 +528,14 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
   late double _waist = (p?.waistCm ?? 76).clamp(45, 160).toDouble();
   late double _hip = (p?.hipCm ?? 96).clamp(60, 170).toDouble();
   late String? _shape = p?.bodyShape;
+  late int _activity = math.max(0, activityLevels.indexWhere((a) => a.$1 == p?.activityLevel));
   String _hUnit = 'cm';
   String _wUnit = 'kg';
   String _gUnit = 'cm';
   int _page = 0;
   bool _busy = false;
 
-  static const _titles = ['Height', 'Weight', 'Waist and hip', 'Body shape'];
+  static const _titles = ['Height', 'Weight', 'Waist and hip', 'Body shape', 'Activity level'];
 
   void _back() {
     if (_page > 0) {
@@ -567,6 +570,7 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
       'water_goal_ml': Calc.waterTargetFor(_weight),
       'measured_at': DateTime.now().toUtc().toIso8601String(),
       'body_shape': _shape,
+      'activity_level': activityLevels[_activity].$1,
     };
     try {
       try {
@@ -594,8 +598,8 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
       bottom: _Actions(
         label: last ? 'Finish setup' : 'Next',
         busy: _busy,
-        onContinue: last && _shape == null ? null : _next,
-        note: last && _shape == null ? 'Pick the shape closest to yours' : null,
+        onContinue: _page == 3 && _shape == null ? null : _next,
+        note: _page == 3 && _shape == null ? 'Pick the shape closest to yours' : null,
       ),
       children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -631,8 +635,60 @@ class _RegistrationStep3State extends State<RegistrationStep3> {
         0 => _heightPage(),
         1 => _weightPage(),
         2 => _girthPage(),
-        _ => _shapePage(),
+        3 => _shapePage(),
+        _ => _activityPage(),
       };
+
+  // Activity level: an illustrated slider from mostly sitting to sporty.
+  Widget _activityPage() {
+    final a = activityLevels[_activity];
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const _Intro('How physically active are you?', 'On a typical week. This sets your calorie and step targets, and you can change it later.'),
+      const SizedBox(height: Sp.md),
+      SizedBox(
+        height: 230,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          transitionBuilder: (child, an) => ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(CurvedAnimation(parent: an, curve: Curves.easeOutBack)), child: FadeTransition(opacity: an, child: child)),
+          child: ClipRRect(
+            key: ValueKey(_activity),
+            borderRadius: BorderRadius.circular(Rad.xl),
+            child: Image.asset('assets/activity/level_$_activity.webp', fit: BoxFit.contain),
+          ),
+        ),
+      ),
+      const SizedBox(height: Sp.md),
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Column(key: ValueKey(_activity), children: [
+          Text(a.$2, style: T.headlineMd.c(AppColors.primary), textAlign: TextAlign.center),
+          const SizedBox(height: 4),
+          Text(a.$3, style: T.bodyMd.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+        ]),
+      ),
+      const SizedBox(height: Sp.sm),
+      SliderTheme(
+        data: SliderTheme.of(context).copyWith(trackHeight: 6, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 13)),
+        child: Slider(
+          value: _activity.toDouble(),
+          min: 0,
+          max: (activityLevels.length - 1).toDouble(),
+          divisions: activityLevels.length - 1,
+          onChanged: (v) {
+            HapticFeedback.selectionClick();
+            setState(() => _activity = v.round());
+          },
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(children: [
+          Expanded(child: Text('Not active', style: T.labelSm.c(AppColors.onSurfaceVariant))),
+          Text('Very active', style: T.labelSm.c(AppColors.onSurfaceVariant)),
+        ]),
+      ),
+    ]);
+  }
 
   Widget _unitToggle(List<String> units, String value, ValueChanged<String> onChanged) =>
       Center(child: Segmented(options: units, value: value, onChanged: (u) => setState(() => onChanged(u))));
@@ -864,3 +920,12 @@ class RegistrationComplete extends StatelessWidget {
     );
   }
 }
+
+/// Activity levels: the stored value (matched by the calorie maths), a short
+/// name and what a typical week looks like.
+const activityLevels = <(String, String, String)>[
+  ('Mostly sitting', 'Mostly sitting', 'Lectures, study and screens, with little walking.'),
+  ('Light Walking (Campus)', 'Lightly active', 'Walking between lectures and around campus.'),
+  ('Moderate Walking (Campus)', 'Fairly active', 'Brisk walks most days, or exercise 2 to 3 times a week.'),
+  ('Active / Sports', 'Very active', 'Sport, gym, running or dancing 4 or more times a week.'),
+];

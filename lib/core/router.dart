@@ -35,6 +35,7 @@ import '../features/tools/activity_screen.dart';
 import '../features/tools/bmi_screen.dart';
 import '../features/tools/cycle_screen.dart';
 import '../features/tools/heart_risk_screen.dart';
+import '../features/tools/psqi_screen.dart';
 import '../features/tools/sleep_screen.dart';
 import '../features/tools/stress_screen.dart';
 import '../features/tools/tools_screen.dart';
@@ -91,6 +92,7 @@ final appRouter = GoRouter(
     _r('/tools/stress', (s) => const StressScreen()),
     _r('/tools/activity', (s) => const ActivityScreen()),
     _r('/tools/sleep', (s) => const SleepScreen()),
+    _r('/tools/sleep/psqi', (s) => const PsqiScreen()),
     _r('/tools/cycle', (s) => const CycleScreen()),
     _r('/diet', (s) => const DietHubScreen(), tab: true),
     _r('/diet/log', (s) => MealLogScreen(initialType: s.uri.queryParameters['type'])),
@@ -105,6 +107,7 @@ final appRouter = GoRouter(
     _r('/notifications', (s) => const NotificationsScreen()),
     _r('/library', (s) => const LibraryScreen(), tab: true),
     _r('/library/article/:slug', (s) => ArticleScreen(slug: s.pathParameters['slug']!)),
+    _r('/library/topic/:key', (s) => LearnTopicScreen(topicKey: s.pathParameters['key']!)),
     _r('/blood-report', (s) => const BloodUploadScreen()),
     _r('/blood-report/:id', (s) => ReportExplainedScreen(id: s.pathParameters['id']!)),
     _r('/profile', (s) => const ProfileScreen(), tab: true),

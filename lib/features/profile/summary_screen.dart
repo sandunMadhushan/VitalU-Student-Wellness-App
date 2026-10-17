@@ -4,12 +4,15 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/app_state.dart';
+import '../../data/catalog.dart' show minDietaryDiversity;
 import '../../data/repo.dart';
 import '../../ui/badge_ui.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 import '../diet/pdqs_screen.dart' show pdqsBand;
+import '../../core/health_report.dart';
+import '../diet/diet_science.dart' show diversityByDay;
 
 Future<R> _safe<R>(Future<R> f, R fallback) async {
   try {
@@ -106,15 +109,41 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final next = mine.where((w) => DateTime.parse(w['opens_at']).toLocal().isAfter(now)).toList()..sort((a, b) => (a['opens_at'] as String).compareTo(b['opens_at'] as String));
     final latest = completed.isEmpty ? null : DateTime.parse(completed.first['completed_at']).toLocal();
 
-    final varietyDays = <String, Set<String>>{};
-    for (final d in _diversityWeek) {
-      varietyDays.putIfAbsent(d['log_date'] as String, () => {}).add(d['food_group'] as String);
-    }
-    final goodDays = varietyDays.values.where((g) => g.length >= 5).length;
+    final goodDays = diversityByDay(_diversityWeek).values.where((g) => g.length >= minDietaryDiversity).length;
     final pdqsScore = (_pdqs?['score'] as num?)?.round();
 
     return [
       Text('Your activity in VitalU, from your own records.', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
+      Container(
+        padding: const EdgeInsets.all(Sp.md),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(Rad.xl),
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [
+            Color.alphaBlend(AppColors.heart.withValues(alpha: AppColors.isDark ? 0.24 : 0.12), AppColors.surfaceContainerLowest),
+            Color.alphaBlend(AppColors.primary.withValues(alpha: AppColors.isDark ? 0.12 : 0.05), AppColors.surfaceContainerLowest),
+          ]),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            IconCircle(Symbols.picture_as_pdf_rounded, size: 48, iconSize: 26, fg: AppColors.heart, fill: 1),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Personal Health Report', style: T.headlineSm),
+                Text('Your measurements against healthy ranges, heart risk, diet, stress, sleep and activity, with simple recommendations.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          PrimaryButton('Download my report (PDF)', leadingIcon: Symbols.download_rounded, onTap: () async {
+            try {
+              await HealthReport.share();
+            } catch (_) {
+              if (mounted) toast(context, 'Could not create the report. Please try again.', error: true);
+            }
+          }),
+        ]),
+      ),
       const SectionHeader('Periodic health assessments'),
       VCard(
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

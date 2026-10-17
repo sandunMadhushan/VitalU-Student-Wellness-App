@@ -150,6 +150,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               subtitle: _phoneOn! ? 'On. Tap to send a test notification' : 'Off. Tap to turn on reminders on your phone',
               onTap: _phone,
             ),
+          ValueListenableBuilder<bool>(
+            valueListenable: Push.dailyCheckIns,
+            builder: (_, on, _) => ListRow(
+              icon: Symbols.wb_twilight_rounded,
+              color: AppColors.warning,
+              title: 'Morning and evening check-ins',
+              subtitle: 'A friendly reminder at 7:30 AM and 7:30 PM',
+              trailing: Switch(value: on, onChanged: Push.setDailyCheckIns),
+            ),
+          ),
           ListRow(icon: Symbols.do_not_disturb_on_rounded, color: AppColors.sleep, title: 'Quiet hours', subtitle: 'No reminders while you sleep or study', onTap: _quietHours),
         ]),
       ],

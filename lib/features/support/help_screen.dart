@@ -12,9 +12,20 @@ import 'professionals_screen.dart';
 /// Fallback list in case the device is offline, Sri Lankan national lines.
 const _fallback = <Rec>[
   {'title': 'Emergency Ambulance', 'badge': 'Highest Priority', 'description': '1990 Suwa Seriya • Free national pre-hospital ambulance', 'phone': '1990', 'action_label': 'Tap to Call', 'icon': 'call', 'tone': 'error'},
+  _healthCentre,
   {'title': 'National Mental Health Helpline', 'badge': 'Toll-Free', 'description': 'Confidential emotional support 24/7 • NIMH Sri Lanka', 'phone': '1926', 'action_label': 'Call 1926', 'icon': 'volunteer_activism', 'tone': 'secondary'},
   {'title': 'CCCline Crisis Support', 'badge': 'Confidential', 'description': 'Talk to a trained listener when things feel heavy', 'phone': '1333', 'action_label': 'Call 1333', 'icon': 'chat', 'tone': 'tertiary'},
 ];
+
+const _healthCentre = <String, dynamic>{
+  'title': 'University Health Centre',
+  'badge': 'Open 24/7',
+  'description': 'Medical care any time, day or night • University of Peradeniya',
+  'phone': healthCentrePhone,
+  'action_label': 'Call 081 239 2022',
+  'icon': 'local_hospital',
+  'tone': 'primary',
+};
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -29,7 +40,8 @@ class _HelpScreenState extends State<HelpScreen> {
   void initState() {
     super.initState();
     Repo.emergencyContacts().then((v) {
-      if (mounted && v.isNotEmpty) setState(() => _contacts = v);
+      // The health centre is open 24/7 on 081 239 2022.
+      if (mounted && v.isNotEmpty) setState(() => _contacts = [for (final c in v) c['icon'] == 'local_hospital' ? {...c, ..._healthCentre} : c]);
     }).catchError((_) {});
   }
 

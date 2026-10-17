@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_state.dart';
 import '../../core/push.dart';
@@ -160,7 +161,101 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       cycleLogs: r[16] as List<Rec>,
     ));
     await _safe(AppState.instance.refreshUnread(), null);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _healthPromptDismissed = prefs.getBool('health_background_done') ?? false;
+    } catch (_) {}
     if (mounted) setState(() => _loading = false);
+    _maybeShowAssessmentAlert();
+    _maybeNotifyProfile();
+  }
+
+  bool _healthPromptDismissed = true;
+
+  /// Medications, allergies and vaccinations are not asked at sign-up, so
+  /// students are invited to add them from Home until they have.
+  bool get _needsHealthBackground {
+    final p = AppState.instance.profile;
+    if (p == null || _healthPromptDismissed) return false;
+    return p.medications.isEmpty && p.allergies.isEmpty && (p.immunizations ?? '').isEmpty;
+  }
+
+  Future<void> _maybeNotifyProfile() async {
+    if (!_needsHealthBackground) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('health_background_notified') ?? false) return;
+      await prefs.setBool('health_background_notified', true);
+      await Repo.schedule(
+        title: 'Finish setting up your health profile',
+        body: 'Add any medications, allergies, family health history and vaccinations so VitalU can give safer, more personal advice.',
+        category: 'care',
+        label: 'Profile',
+        icon: 'person_check',
+        route: '/profile/edit',
+        at: DateTime.now(),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _dismissHealthPrompt() async {
+    setState(() => _healthPromptDismissed = true);
+    try {
+      (await SharedPreferences.getInstance()).setBool('health_background_done', true);
+    } catch (_) {}
+  }
+
+  /// While the periodic assessment is open, it pops up as an important
+  /// alert once a day until it is completed.
+  Future<void> _maybeShowAssessmentAlert() async {
+    if (!_windowActive || !mounted) return;
+    final key = 'assessment_alert_${_openWindow!['id']}';
+    final today = isoDate(DateTime.now());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getString(key) == today) return;
+      await prefs.setString(key, today);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    final w = _openWindow!;
+    final f = DateFormat('d MMM');
+    final opens = DateTime.parse(w['opens_at']).toLocal(), closes = DateTime.parse(w['closes_at']).toLocal();
+    final daysLeft = DateTime(closes.year, closes.month, closes.day).difference(dayStart(DateTime.now())).inDays;
+    await showVSheet(context, builder: (ctx) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Center(child: ClipRRect(borderRadius: BorderRadius.circular(22), child: Image.asset('assets/icons3d/assessment.jpg', width: 96, height: 96, fit: BoxFit.cover))),
+          const SizedBox(height: Sp.md),
+          Center(child: TagPill('Important', icon: Symbols.priority_high_rounded, fill: 1, bg: AppColors.tint(AppColors.error), fg: AppColors.error)),
+          const SizedBox(height: 8),
+          Text('Your periodic health assessment is open', style: T.headlineMd, textAlign: TextAlign.center),
+          const SizedBox(height: 6),
+          Text('${w['term'] ?? w['title']}', style: T.labelLg.c(AppColors.primary), textAlign: TextAlign.center),
+          const SizedBox(height: Sp.md),
+          VCard(
+            color: AppColors.surfaceContainer,
+            flat: true,
+            child: Row(children: [
+              Icon(Symbols.date_range_rounded, color: AppColors.primary, fill: 1),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Open ${f.format(opens)} to ${f.format(closes)}', style: T.labelLg.semi),
+                  Text(daysLeft <= 0 ? 'Closes today' : (daysLeft == 1 ? '1 day left' : '$daysLeft days left'), style: T.bodySm.c(AppColors.onSurfaceVariant)),
+                ]),
+              ),
+            ]),
+          ),
+          const SizedBox(height: Sp.sm),
+          Text('About 7 minutes. Your answers are pooled anonymously to help the university plan health and nutrition support.', style: T.bodyMd.c(AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+          const SizedBox(height: Sp.md),
+          PrimaryButton(_assessment != null ? 'Continue now' : 'Start now', onTap: () {
+            Navigator.pop(ctx);
+            _go('/assessments/run');
+          }),
+          const SizedBox(height: 6),
+          Center(child: TextLinkButton('Later', color: AppColors.onSurfaceVariant, onTap: () => Navigator.pop(ctx))),
+        ]));
   }
 
   /// "Good Morning", "Good Afternoon" or "Good Evening", always title case.
@@ -183,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return ListenableBuilder(
       listenable: AppState.instance,
       builder: (context, _) => VPage(
-        header: _HomeHeader(greeting: _greeting, name: AppState.instance.profile?.firstName),
+        header: MainHeader(AppState.instance.profile?.firstName == null ? _greeting : '$_greeting, ${AppState.instance.profile!.firstName}'),
         nav: NavTab.home,
         onRefresh: _load,
         topPadding: Sp.xs,
@@ -199,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return [
       _hero(),
       if (_windowActive) _assessmentOpenCard() else if (soon) _assessmentSoonCard(upcoming),
+      if (_needsHealthBackground) _healthBackgroundCard(),
       SectionHeader('Daily health updates', subtitle: DateFormat('EEEE, d MMMM').format(DateTime.now())),
       TileGrid(gap: 10, children: _indicatorTiles(p)),
       const SectionHeader('Your key habits', subtitle: 'From your recent logs and health assessments'),
@@ -267,7 +363,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ]),
           ),
         ),
-        SizedBox(height: 168, width: 128, child: Image.asset('assets/images/hero_doctor.webp', fit: BoxFit.contain, alignment: Alignment.bottomCenter)),
+        SizedBox(
+          height: 168,
+          width: 128,
+          child: Image.asset(
+            'assets/images/${AppState.instance.profile?.sex == 'male' ? 'hero_male' : 'hero_female'}.webp',
+            fit: BoxFit.contain,
+            alignment: Alignment.bottomCenter,
+          ),
+        ),
       ]),
     );
   }
@@ -277,14 +381,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _assessmentOpenCard() {
     final w = _openWindow!;
+    final opens = DateTime.parse(w['opens_at']).toLocal();
     final closes = DateTime.parse(w['closes_at']).toLocal();
     final started = _assessment != null;
     return _AlertCard(
       image: 'assessment',
       color: AppColors.primary,
-      kicker: 'Open until ${DateFormat('d MMM').format(closes)}',
+      kicker: 'Important · open ${DateFormat('d MMM').format(opens)} to ${DateFormat('d MMM').format(closes)}',
       title: 'Your periodic health assessment is open',
-      text: 'About ${w['estimated_minutes'] ?? 6} minutes. Answers are pooled anonymously to plan campus health support.',
+      text: 'About ${w['estimated_minutes'] ?? 7} minutes. Answers are pooled anonymously to plan campus health support.',
       action: started ? 'Continue' : 'Start now',
       onTap: () => _go('/assessments/run'),
     );
@@ -297,12 +402,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       color: AppColors.warning,
       kicker: days <= 0 ? 'Opens today' : (days == 1 ? 'Opens tomorrow' : 'Opens in $days days'),
       title: 'Get ready: your next health assessment is coming up',
-      text: 'It opens on ${DateFormat('EEEE, d MMMM').format(opens)}. Have your latest height, weight and waist measurements handy.',
+      text: 'Open from ${DateFormat('d MMM').format(opens)} to ${DateFormat('d MMM').format(DateTime.parse(_nextWindow!['closes_at']).toLocal())}. If the health centre has measured your height, weight, waist, hip or blood pressure, have the numbers handy.',
       action: 'Remind me',
       onTap: () async {
         await Repo.schedule(
           title: 'Health assessment now open',
-          body: 'Your ${_nextWindow!['term']} assessment is open. It takes about 6 minutes.',
+          body: 'Your ${_nextWindow!['term']} is now open. It takes about 7 minutes.',
           category: 'milestone',
           label: 'Assessment',
           icon: 'event_upcoming',
@@ -510,6 +615,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ]);
   }
 
+  Widget _healthBackgroundCard() => VCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Avatar(size: 48, ring: false, onTap: () => _go('/profile/account')),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Finish your health profile', style: T.headlineSm),
+                const SizedBox(height: 2),
+                Text('Add medications, allergies, family health history and vaccinations. It helps VitalU give safer, more personal advice.',
+                    style: T.bodySm.c(AppColors.onSurfaceVariant)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: PrimaryButton('Add details', height: 44, onTap: () => _go('/profile/edit'))),
+            const SizedBox(width: 8),
+            Expanded(child: SoftButton('Nothing to add', height: 44, onTap: _dismissHealthPrompt)),
+          ]),
+        ]),
+      );
+
   Widget _consultCard() {
     final dark = AppColors.isDark;
     final c = AppColors.primary;
@@ -604,29 +732,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ]),
           ),
           Icon(Symbols.chevron_right_rounded, color: AppColors.outline),
-        ]),
-      );
-}
-
-/// Greeting on the left, notifications and avatar on the same row.
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.greeting, this.name});
-  final String greeting;
-  final String? name;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(Sp.margin, 10, 10, 6),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Text(name == null ? greeting : '$greeting,', style: T.bodyLg.c(AppColors.onSurfaceVariant)),
-              if (name != null) Text(name!, style: T.headlineLg, maxLines: 1, overflow: TextOverflow.ellipsis),
-            ]),
-          ),
-          CircleButton(Symbols.notifications_rounded, onTap: () => context.push('/notifications'), badge: AppState.instance.unreadCount > 0),
-          const SizedBox(width: 4),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Avatar(size: 40, ring: false, onTap: () => context.go('/profile'))),
         ]),
       );
 }

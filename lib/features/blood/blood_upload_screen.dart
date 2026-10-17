@@ -155,7 +155,7 @@ class _BloodUploadScreenState extends State<BloodUploadScreen> {
           ]),
         ),
         ListGroup(header: 'Works well with', dividerIndent: 16, children: [
-          for (final t in const [('Full blood count (CBC)', 'Haemoglobin, white cells, platelets'), ('Iron studies', 'Serum iron and ferritin'), ('Vitamin D', '25-hydroxy vitamin D'), ('Thyroid', 'TSH, free T4')])
+          for (final t in const [('Full blood count (FBC)', 'Haemoglobin, white cells, platelets'), ('Iron studies', 'Serum iron and ferritin'), ('Vitamin D', '25-hydroxy vitamin D'), ('Thyroid', 'TSH, free T4')])
             ListRow(title: t.$1, subtitle: t.$2),
         ]),
         VCard(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +30,10 @@ class _CycleExplainerState extends State<CycleExplainer> {
   static const _order = [CyclePhase.menstrual, CyclePhase.follicular, CyclePhase.ovulation, CyclePhase.luteal];
   late CyclePhase _phase = widget.current == null ? CyclePhase.menstrual : diagramPhase(widget.current!);
   Timer? _auto;
+
+  /// The animated womb wall shows the lining changing; the illustration is
+  /// the detailed picture of each phase.
+  bool _animated = true;
 
   @override
   void initState() {
@@ -99,9 +104,28 @@ class _CycleExplainerState extends State<CycleExplainer> {
         ]),
       ),
       const SizedBox(height: Sp.sm),
-      Container(
-        decoration: BoxDecoration(color: const Color(0xFFFBE3E6), borderRadius: BorderRadius.circular(Rad.lg)),
-        child: AspectRatio(aspectRatio: 3 / 2, child: UterusDiagram(phase: _phase)),
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _animated
+            ? Container(
+                key: const ValueKey('wall'),
+                decoration: BoxDecoration(color: AppColors.isDark ? AppColors.surfaceContainerHigh : const Color(0xFFFFF5F8), borderRadius: BorderRadius.circular(Rad.lg)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: AspectRatio(aspectRatio: 300 / 205, child: WombWallDiagram(phase: _phase)),
+              )
+            : Container(
+                key: const ValueKey('art'),
+                decoration: BoxDecoration(color: const Color(0xFFFBE3E6), borderRadius: BorderRadius.circular(Rad.lg)),
+                child: AspectRatio(aspectRatio: 3 / 2, child: UterusDiagram(phase: _phase)),
+              ),
+      ),
+      const SizedBox(height: 8),
+      Center(
+        child: Segmented(
+          options: const ['Womb lining', 'Illustration'],
+          value: _animated ? 'Womb lining' : 'Illustration',
+          onChanged: (v) => setState(() => _animated = v == 'Womb lining'),
+        ),
       ),
       const SizedBox(height: Sp.sm),
       AnimatedSwitcher(
@@ -303,6 +327,253 @@ class _PhasePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PhasePainter old) => old.t != t || old.phase != phase;
+}
+
+/// How thick the womb lining is drawn in each phase (0..1).
+double _liningFor(CyclePhase p) => switch (diagramPhase(p)) {
+      CyclePhase.menstrual => 0.12,
+      CyclePhase.follicular => 0.5,
+      CyclePhase.ovulation => 0.85,
+      _ => 1.0,
+    };
+
+/// The animated womb wall: a cross-section in which the lining thickens and thins between phases,
+/// follicles grow, an egg is released and travels down the tube, and the
+/// lining sheds during a period.
+class WombWallDiagram extends StatefulWidget {
+  const WombWallDiagram({super.key, required this.phase});
+  final CyclePhase phase;
+  @override
+  State<WombWallDiagram> createState() => _WombWallDiagramState();
+}
+
+class _WombWallDiagramState extends State<WombWallDiagram> with SingleTickerProviderStateMixin {
+  late final _loop = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat();
+
+  @override
+  void dispose() {
+    _loop.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = diagramPhase(widget.phase);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: _liningFor(p)),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeInOutCubic,
+      builder: (_, lining, _) => AnimatedBuilder(
+        animation: _loop,
+        builder: (_, _) => CustomPaint(painter: _WombWallPainter(phase: p, lining: lining, t: _loop.value, label: AppColors.onSurfaceVariant, dark: AppColors.isDark)),
+      ),
+    );
+  }
+}
+
+class _WombWallPainter extends CustomPainter {
+  _WombWallPainter({required this.phase, required this.lining, required this.t, required this.label, required this.dark});
+  final CyclePhase phase;
+  final double lining;
+  final double t;
+  final Color label;
+  final bool dark;
+
+  static const muscle = Color(0xFFF6B5C6);
+  static const muscleEdge = Color(0xFFE28AA4);
+  static const liningColor = Color(0xFFC72C66);
+  static const cavity = Color(0xFFFFF0F5);
+  static const tube = Color(0xFFF3A3BA);
+  static const ovary = Color(0xFFF9CAD7);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width / 300;
+    canvas.save();
+    canvas.scale(s);
+
+    final body = Path()
+      ..moveTo(95, 72)
+      ..cubicTo(95, 40, 205, 40, 205, 72)
+      ..cubicTo(205, 108, 182, 132, 170, 150)
+      ..cubicTo(164, 160, 162, 168, 162, 184)
+      ..lineTo(138, 184)
+      ..cubicTo(138, 168, 136, 160, 130, 150)
+      ..cubicTo(118, 132, 95, 108, 95, 72)
+      ..close();
+
+    // Tubes and fimbriae.
+    final tubePaint = Paint()
+      ..color = tube
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+    final leftTube = Path()
+      ..moveTo(99, 64)
+      ..cubicTo(78, 46, 56, 50, 44, 74);
+    final rightTube = Path()
+      ..moveTo(256, 74)
+      ..cubicTo(244, 50, 222, 46, 201, 64);
+    canvas.drawPath(leftTube, tubePaint);
+    canvas.drawPath(rightTube, tubePaint);
+    final fimb = Paint()
+      ..color = tube
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    for (final d in const [(-10.0, 6.0), (-8.0, 12.0), (-2.0, 15.0)]) {
+      canvas.drawLine(const Offset(44, 74), Offset(44 + d.$1, 74 + d.$2), fimb);
+      canvas.drawLine(const Offset(256, 74), Offset(256 - d.$1, 74 + d.$2), fimb);
+    }
+
+    // Ligaments and ovaries.
+    final lig = Paint()
+      ..color = muscleEdge.withValues(alpha: 0.6)
+      ..strokeWidth = 2.5;
+    canvas.drawLine(const Offset(72, 98), const Offset(100, 90), lig);
+    canvas.drawLine(const Offset(228, 98), const Offset(200, 90), lig);
+    final ovPaint = Paint()..color = ovary;
+    final ovEdge = Paint()
+      ..color = muscleEdge
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    for (final cx in const [56.0, 244.0]) {
+      final r = Rect.fromCenter(center: Offset(cx, 100), width: 36, height: 26);
+      canvas.drawOval(r, ovPaint);
+      canvas.drawOval(r, ovEdge);
+    }
+    _drawOvaryActivity(canvas, rightTube);
+
+    // Womb wall.
+    canvas.drawPath(body, Paint()..color = muscle);
+    canvas.drawPath(body, Paint()
+      ..color = muscleEdge
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5);
+
+    // Lining: the band between the cavity outline and a shrunken copy of it.
+    final outer = Path()
+      ..moveTo(112, 74)
+      ..cubicTo(125, 64, 175, 64, 188, 74)
+      ..cubicTo(182, 100, 166, 126, 153, 148)
+      ..lineTo(147, 148)
+      ..cubicTo(134, 126, 118, 100, 112, 74)
+      ..close();
+    const centre = Offset(150, 92);
+    final inScale = 1 - 0.62 * lining;
+    Path scaled(Path p, double k) => p.transform((Matrix4.identity()
+          ..translateByDouble(centre.dx, centre.dy, 0, 1)
+          ..scaleByDouble(k, k, 1, 1)
+          ..translateByDouble(-centre.dx, -centre.dy, 0, 1))
+        .storage);
+    canvas.drawPath(outer, Paint()..color = Color.lerp(const Color(0xFFE9849F), liningColor, lining)!);
+    // Little glands and blood vessels once the lining is thick.
+    if (lining > 0.35) {
+      final dot = Paint()..color = const Color(0xFF8E1240).withValues(alpha: (lining - 0.35) * 0.9);
+      for (final m in outer.computeMetrics()) {
+        for (double d = 0; d < m.length; d += 7) {
+          final pos = m.getTangentForOffset(d)!.position;
+          final mid = centre + (pos - centre) * (1 - (1 - inScale) * 0.5);
+          canvas.drawCircle(mid + Offset(math.sin(d) * 1.5, math.cos(d) * 1.5), 1.3, dot);
+        }
+      }
+    }
+    canvas.drawPath(scaled(outer, inScale), Paint()..color = cavity);
+    // Cervical canal.
+    canvas.drawLine(const Offset(150, 146), const Offset(150, 184), Paint()
+      ..color = cavity
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round);
+
+    if (phase == CyclePhase.menstrual) _drawShedding(canvas);
+
+    canvas.restore();
+    _drawLabels(canvas, s);
+  }
+
+  void _drawOvaryActivity(Canvas canvas, Path rightTube) {
+    const ov = Offset(244, 100);
+    final follicle = Paint()..color = Colors.white;
+    final ring = Paint()
+      ..color = const Color(0xFFF2C94C)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    switch (phase) {
+      case CyclePhase.menstrual:
+        for (final o in const [Offset(-8, -3), Offset(2, 4), Offset(8, -4)]) {
+          canvas.drawCircle(ov + o, 2.2, follicle);
+          canvas.drawCircle(ov + o, 2.2, ring);
+        }
+      case CyclePhase.follicular:
+        final grow = 3 + 3.5 * t;
+        canvas.drawCircle(ov + const Offset(4, 0), grow, follicle);
+        canvas.drawCircle(ov + const Offset(4, 0), grow, ring);
+        canvas.drawCircle(ov + const Offset(-9, 3), 2.2, follicle);
+        canvas.drawCircle(ov + const Offset(-6, -5), 2, follicle);
+      case CyclePhase.ovulation:
+        // The follicle bursts and the egg drifts out to the tube's end.
+        canvas.drawCircle(ov + const Offset(4, -6), 6, Paint()..color = const Color(0xFFF2C94C).withValues(alpha: 0.6));
+        final e = Curves.easeOut.transform(t);
+        _egg(canvas, Offset.lerp(ov + const Offset(4, -8), const Offset(256, 76), e)!);
+      default:
+        // Corpus luteum, and the egg travelling down the tube.
+        canvas.drawCircle(ov + const Offset(4, -2), 6.5, Paint()..color = const Color(0xFFF5C542));
+        final m = rightTube.computeMetrics().first;
+        final pos = m.getTangentForOffset(m.length * (0.15 + 0.8 * t))!.position;
+        _egg(canvas, pos);
+    }
+  }
+
+  void _egg(Canvas canvas, Offset at) {
+    canvas.drawCircle(at, 7, Paint()..color = const Color(0xFFFFE9A8).withValues(alpha: 0.8));
+    canvas.drawCircle(at, 4.5, Paint()..color = Colors.white);
+    canvas.drawCircle(at, 1.6, Paint()..color = const Color(0xFFF2C94C));
+  }
+
+  void _drawShedding(Canvas canvas) {
+    final blood = Paint()..color = liningColor;
+    // Flecks of lining loosening inside the womb.
+    for (int i = 0; i < 6; i++) {
+      final ph = (t + i / 6) % 1;
+      final x = 136 + (i * 29 % 28).toDouble();
+      final y = 92 + ph * 50;
+      canvas.drawOval(Rect.fromCenter(center: Offset(x + (150 - x) * ph, y), width: 5, height: 3.5), blood..color = liningColor.withValues(alpha: 1 - ph * 0.5));
+    }
+    // Drops leaving through the cervix.
+    for (int i = 0; i < 3; i++) {
+      final ph = (t + i / 3) % 1;
+      final y = 178 + ph * 22;
+      final drop = Path()
+        ..moveTo(150, y - 5)
+        ..quadraticBezierTo(155, y + 1, 150, y + 4)
+        ..quadraticBezierTo(145, y + 1, 150, y - 5);
+      canvas.drawPath(drop, Paint()..color = liningColor.withValues(alpha: 1 - ph));
+    }
+  }
+
+  void _drawLabels(Canvas canvas, double s) {
+    void text(String t, Offset at, {TextAlign align = TextAlign.left}) {
+      final tp = TextPainter(
+        text: TextSpan(text: t, style: TextStyle(fontFamily: T.family, fontSize: 10.5 * s.clamp(0.9, 1.4), fontWeight: FontWeight.w600, color: label)),
+        textDirection: ui.TextDirection.ltr,
+      )..layout();
+      final dx = align == TextAlign.right ? at.dx * s - tp.width : (align == TextAlign.center ? at.dx * s - tp.width / 2 : at.dx * s);
+      tp.paint(canvas, Offset(dx, at.dy * s));
+    }
+
+    final lead = Paint()
+      ..color = label.withValues(alpha: 0.6)
+      ..strokeWidth = 1;
+    text('Ovary', const Offset(244, 116), align: TextAlign.center);
+    text('Fallopian tube', const Offset(226, 30), align: TextAlign.center);
+    text('Lining', const Offset(16, 132));
+    canvas.drawLine(Offset(50 * s, 139 * s), Offset(128 * s, 112 * s), lead);
+    text('Womb wall', const Offset(16, 160));
+    canvas.drawLine(Offset(70 * s, 167 * s), Offset(118 * s, 130 * s), lead);
+    text('Cervix', const Offset(172, 176));
+  }
+
+  @override
+  bool shouldRepaint(covariant _WombWallPainter old) => true;
 }
 
 // -----------------------------------------------------------------------------

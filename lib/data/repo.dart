@@ -282,14 +282,17 @@ class Repo {
   }
 
   /// Logs blood pressure, fasting blood glucose and/or triglycerides, as
-  /// measured at a clinic or from a lab report.
-  static Future<void> saveVitals({int? systolic, int? diastolic, double? fastingGlucose, double? triglycerides, required DateTime measuredOn}) =>
+  /// measured at a clinic or from a lab report. [source] records where they
+  /// were measured (e.g. `health_centre`, `clinic`, `self`).
+  static Future<void> saveVitals({int? systolic, int? diastolic, double? fastingGlucose, double? triglycerides, double? cholesterol, required DateTime measuredOn, String? source}) =>
       saveToolResult('vitals', data: {
         'systolic': ?systolic,
         'diastolic': ?diastolic,
         'fasting_glucose': ?fastingGlucose,
         'triglycerides': ?triglycerides,
+        'total_cholesterol': ?cholesterol,
         'measured_on': isoDate(measuredOn),
+        'source': ?source,
       });
 
   /// The most recent reading of each lab-type vital, from the student's own
@@ -569,7 +572,29 @@ class Repo {
   }
 
   // ---------------- Badges ----------------
-  static Future<List<Rec>> badges() async => List<Rec>.from(await db.from('badges').select().order('sort_order'));
+  /// The five VitalU badges, in their display order. They are defined in the
+  /// app, so they show even offline or before the database is updated.
+  static Future<List<Rec>> badges() async => [for (final b in badgeDefinitions) Map<String, dynamic>.of(b)];
+
+  /// Records that the student finished an article (for Curious Learner).
+  static Future<void> markArticleRead(String articleId) async {
+    try {
+      await db.from('article_reads').upsert({'user_id': _uid, 'article_id': articleId}, onConflict: 'user_id,article_id', ignoreDuplicates: true);
+      await refreshBadges();
+    } catch (_) {
+      // The article_reads table arrives with a database migration.
+    }
+  }
+
+  /// Articles the student has finished, with each article's topic.
+  static Future<List<(String, String?)>> articleReads() async {
+    try {
+      final rows = await db.from('article_reads').select('article_id, education_articles(category)').eq('user_id', _uid);
+      return [for (final r in rows) (r['article_id'] as String, (r['education_articles'] as Map?)?['category'] as String?)];
+    } catch (_) {
+      return const [];
+    }
+  }
 
   static Future<Map<String, DateTime>> earnedBadges() async {
     final rows = await db.from('user_badges').select().eq('user_id', _uid);

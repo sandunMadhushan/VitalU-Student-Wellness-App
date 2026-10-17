@@ -24,7 +24,8 @@ class _Section {
   final String why;
   final List<String> examples;
 
-  /// MDD-W groups that count toward this part today.
+  /// Dietary diversity groups that count toward this part today. Fats have
+  /// none: oils and fats are not a dietary diversity group.
   final Set<String> groups;
   final Color Function() color;
 }
@@ -40,7 +41,7 @@ final _sections = [
     'Fill both cupped hands with vegetables at lunch and at dinner.',
     'Vegetables and leafy greens bring fibre, vitamins and minerals for very few calories. They keep you full and your energy steady through afternoon lectures.',
     ['Gotukola or mukunuwenna mallung', 'Bean, cabbage or carrot curry', 'Brinjal moju or wambatu curry', 'Cucumber and tomato salad', 'Pumpkin or ash plantain curry'],
-    {'dark_leafy', 'vita_veg_fruit', 'other_veg'},
+    {'dark_leafy', 'other_veg'},
     () => AppColors.nutrition,
   ),
   _Section(
@@ -53,8 +54,8 @@ final _sections = [
     'A portion of cooked rice, noodles or roti is about the size of your closed fist.',
     'Rice, roti, hoppers and bread are your main energy source. Choose whole grains like red rice, kurakkan or atta roti more often: they release energy slowly and add fibre.',
     ['Red or brown rice', 'String hoppers (about 5)', 'Kurakkan or atta roti', 'Boiled manioc or sweet potato', 'Pittu or oats'],
-    {'grains'},
-    () => AppColors.warning,
+    {'cereals', 'starchy'},
+    () => AppColors.body,
   ),
   _Section(
     'protein',
@@ -66,21 +67,47 @@ final _sections = [
     'A portion of fish, chicken or meat is about the size and thickness of your palm. For dhal, that is about half a cup.',
     'Protein keeps you full for longer and repairs muscle. Fish, eggs, chicken, dhal, chickpeas and soya are all good choices; mix plant and animal sources across the week.',
     ['Dhal curry (parippu)', 'Fish or sprats curry', 'Boiled egg or egg curry', 'Chicken curry', 'Chickpeas, green gram or soya'],
-    {'pulses', 'meat_fish', 'eggs', 'nuts_seeds'},
+    {'pulses', 'meat', 'fish', 'eggs'},
     () => AppColors.heart,
   ),
   _Section(
-    'extras',
-    'Fats & fruit',
-    'Oils, fruit and dairy',
-    'On the side',
+    'fruit',
+    'Fruit',
+    'Whole fruit',
+    'Two a day, on the side',
+    'One fist',
+    'hand_fist',
+    'One serving is a medium fruit, or a fist-sized portion of cut fruit. Aim for two servings a day.',
+    'Fruit brings vitamin C, fibre and natural sweetness. Whole fresh fruit is always a good choice, so enjoy it freely between meals or after lunch. Choose whole fruit over juice.',
+    ['Banana', 'Papaya', 'Guava', 'Mango', 'Pineapple', 'Orange or mandarin', 'Wood apple'],
+    {'fruits'},
+    () => AppColors.activity,
+  ),
+  _Section(
+    'dairy',
+    'Dairy',
+    'Milk, curd and yoghurt',
+    'Once or twice a day',
+    'One fist',
+    'hand_fist',
+    'One serving is a glass of milk (200 ml) or a small cup of curd or yoghurt (about 100 g).',
+    'Dairy gives calcium for strong bones and good-quality protein. Plain curd or yoghurt is a great dessert; choose low-fat milk when you can.',
+    ['A glass of milk', 'Curd (meekiri)', 'Plain yoghurt', 'Milk tea with little sugar'],
+    {'dairy'},
+    () => AppColors.water,
+  ),
+  _Section(
+    'fats',
+    'Fats',
+    'Oils, coconut, nuts and seeds',
+    'A little at each meal',
     'One thumb',
     'hand_thumb',
-    'A portion of oil, butter or coconut is about the size of your thumb. Fruit is about one fist, two times a day.',
-    'A little fat helps you absorb vitamins, so cook with a thumb-sized amount of oil and go easy on deep-fried foods. Add a fruit and a cup of curd or milk across the day.',
-    ['Banana, papaya or guava', 'Mango or pineapple', 'Curd or yoghurt', 'A glass of milk', 'A spoon of scraped coconut'],
-    {'dairy', 'other_fruit'},
-    () => AppColors.mind,
+    'A portion of oil, butter or scraped coconut is about the size of your thumb, about 1 tablespoon.',
+    'A little fat helps your body absorb vitamins A, D, E and K. Cook with a thumb of oil, enjoy a few peanuts or sesame seeds, and keep deep-fried foods for now and then.',
+    ['A tablespoon of coconut or gingelly oil', 'Scraped coconut in mallung', 'Peanuts or cashews', 'Sesame (thala) seeds'],
+    <String>{},
+    () => AppColors.warning,
   ),
 ];
 
@@ -142,12 +169,13 @@ class _PlateScreenState extends State<PlateScreen> {
         ),
         VCard(
           child: Column(children: [
-            SizedBox(height: 220, child: Center(child: AnimatedPlate(selected: _sel.key))),
+            Text('Tap a part of the plate', style: T.labelMd.c(AppColors.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            AnimatedPlate(selected: _sel.key, onSelect: (k) => setState(() => _sel = _sections.firstWhere((s) => s.key == k))),
             const SizedBox(height: Sp.md),
-            SizedBox(
-              width: double.infinity,
-              child: Segmented(small: false, options: [for (final s in _sections) s.tab], value: _sel.tab, onChanged: (v) => setState(() => _sel = _sections.firstWhere((s) => s.tab == v))),
-            ),
+            Wrap(spacing: 8, runSpacing: 8, alignment: WrapAlignment.center, children: [
+              for (final s in _sections) VChip(s.tab, dense: true, selected: s.key == _sel.key, selectedColor: s.color(), onTap: () => setState(() => _sel = s)),
+            ]),
           ]),
         ),
         AnimatedSwitcher(
@@ -185,6 +213,7 @@ class _PlateScreenState extends State<PlateScreen> {
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   for (final e in _sel.examples) TagPill(e, bg: c.withValues(alpha: 0.12), fg: AppColors.onSurface),
                 ]),
+                if (_sel.groups.isNotEmpty) ...[
                 const SizedBox(height: Sp.md),
                 Row(children: [
                   Icon(hit.isEmpty ? Symbols.radio_button_unchecked_rounded : Symbols.check_circle_rounded, size: 18, color: hit.isEmpty ? AppColors.outline : c, fill: 1),
@@ -193,6 +222,7 @@ class _PlateScreenState extends State<PlateScreen> {
                     child: Text(hit.isEmpty ? 'Not in your meal logs yet today' : 'Already on your plate today', style: T.labelMd.c(hit.isEmpty ? AppColors.onSurfaceVariant : c)),
                   ),
                 ]),
+                ],
               ]),
             ),
           ]),
@@ -224,7 +254,7 @@ class _PlateScreenState extends State<PlateScreen> {
         ),
         Center(
           child: TextLinkButton('About the healthy plate', leading: Symbols.info_rounded, onTap: () => showInfoSheet(context, title: 'The healthy plate', paragraphs: const [
-                'Based on the food-based dietary guidelines for Sri Lanka and the healthy-plate model used internationally: half the plate vegetables, a quarter starchy foods (preferably whole grain), a quarter protein, with fruit, a little dairy and water.',
+                'Based on the food-based dietary guidelines for Sri Lanka and the healthy-plate model used internationally: half the plate vegetables, a quarter starchy foods (preferably whole grain), a quarter protein, with fruit, dairy, a little healthy fat and water on the side.',
                 'Hand portions are a practical guide, not an exact measure. Students who are very active may need a little more of each part; students aiming to lose weight can keep the grain portion to one fist.',
               ])),
         ),
@@ -260,18 +290,21 @@ class _PlateScreenState extends State<PlateScreen> {
   }
 }
 
-/// The plate diagram. Sections sweep in when the screen opens, and the
-/// selected part lifts out of the plate.
+/// A realistic plate: food photos fill exact half and quarter sections of a
+/// shaded ceramic plate, with fruit, curd and a little fat in side dishes.
+/// Parts sweep in when the screen opens; the selected one lifts out and the
+/// rest soften. Every part can be tapped.
 class AnimatedPlate extends StatefulWidget {
-  const AnimatedPlate({super.key, required this.selected});
+  const AnimatedPlate({super.key, required this.selected, required this.onSelect});
   final String selected;
+  final ValueChanged<String> onSelect;
   @override
   State<AnimatedPlate> createState() => _AnimatedPlateState();
 }
 
 class _AnimatedPlateState extends State<AnimatedPlate> with TickerProviderStateMixin {
-  late final _intro = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..forward();
-  late final _pop = AnimationController(vsync: this, duration: const Duration(milliseconds: 380))..forward();
+  late final _intro = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..forward();
+  late final _pop = AnimationController(vsync: this, duration: const Duration(milliseconds: 520))..forward();
 
   @override
   void didUpdateWidget(covariant AnimatedPlate old) {
@@ -286,78 +319,231 @@ class _AnimatedPlateState extends State<AnimatedPlate> with TickerProviderStateM
     super.dispose();
   }
 
+  static const _plate = 206.0;
+  static const _food = 170.0;
+
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: Listenable.merge([_intro, _pop]),
-        builder: (_, _) => SizedBox(
-          width: 280,
-          height: 210,
-          child: CustomPaint(
-            painter: _PlatePainter(
-              widget.selected,
-              Curves.easeOutCubic.transform(_intro.value),
-              Curves.elasticOut.transform(_pop.value),
-              AppColors.surfaceContainerHigh,
-              AppColors.outlineVariant,
+  Widget build(BuildContext context) {
+    final dark = AppColors.isDark;
+    return AnimatedBuilder(
+      animation: Listenable.merge([_intro, _pop]),
+      builder: (_, _) {
+        final intro = Curves.easeOutCubic.transform(_intro.value);
+        final pop = Curves.elasticOut.transform(_pop.value);
+        Widget sector(String key, String img, double start, double sweep, int order) {
+          final on = widget.selected == key;
+          final mid = start + sweep / 2;
+          final lift = on ? 9 * pop : 0.0;
+          final appear = Curves.easeOutBack.transform(((intro - order * 0.18) / 0.6).clamp(0.0, 1.0));
+          return Transform.translate(
+            offset: Offset(math.cos(mid) * lift, math.sin(mid) * lift),
+            child: Transform.scale(
+              scale: 0.6 + 0.4 * appear,
+              child: Opacity(
+                opacity: appear.clamp(0.0, 1.0),
+                child: GestureDetector(
+                  onTap: () => widget.onSelect(key),
+                  child: ClipPath(
+                    clipper: _Sector(start, sweep),
+                    child: Stack(fit: StackFit.expand, children: [
+                      Image.asset('assets/plate/$img.webp', fit: BoxFit.cover),
+                      AnimatedContainer(duration: const Duration(milliseconds: 220), color: Colors.white.withValues(alpha: on ? 0 : 0.42)),
+                    ]),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      );
+          );
+        }
+
+        Widget label(String key, double start, double sweep, String text, double reach) {
+          final on = widget.selected == key;
+          final mid = start + sweep / 2;
+          final lift = on ? 9 * pop : 0.0;
+          return IgnorePointer(
+            child: Opacity(
+              opacity: intro.clamp(0.0, 1.0),
+              child: Align(
+                alignment: Alignment(math.cos(mid) * reach, math.sin(mid) * reach),
+                child: Transform.translate(offset: Offset(math.cos(mid) * lift, math.sin(mid) * lift), child: _Label(text, on: on)),
+              ),
+            ),
+          );
+        }
+
+        Widget side(String key, String img, String label, double size, {bool cup = false}) {
+          final on = widget.selected == key;
+          final s = on ? 1 + 0.1 * pop : 1.0;
+          return GestureDetector(
+            onTap: () => widget.onSelect(key),
+            child: Transform.scale(
+              scale: s * (0.7 + 0.3 * intro),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                _Dish(size: size, cup: cup, dark: dark, child: Stack(fit: StackFit.expand, children: [
+                  Image.asset('assets/plate/$img.webp', fit: BoxFit.cover),
+                  AnimatedContainer(duration: const Duration(milliseconds: 220), color: Colors.white.withValues(alpha: on ? 0 : 0.42)),
+                ])),
+                const SizedBox(height: 4),
+                Text(label, style: T.labelSm.w(on ? FontWeight.w800 : FontWeight.w600).c(on ? AppColors.onSurface : AppColors.onSurfaceVariant)),
+              ]),
+            ),
+          );
+        }
+
+        return SizedBox(
+          height: 236,
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            SizedBox(
+              width: _plate,
+              height: _plate,
+              child: Stack(alignment: Alignment.center, children: [
+                // Ceramic plate: a soft drop shadow, a glazed rim and a recessed well.
+                Container(
+                  width: _plate,
+                  height: _plate,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.35, -0.4),
+                      radius: 1.05,
+                      colors: dark ? const [Color(0xFF4A4D55), Color(0xFF2C2F35)] : const [Colors.white, Color(0xFFE4E6EA)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.5 : 0.16), blurRadius: 22, offset: const Offset(0, 12), spreadRadius: -4),
+                      BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.3 : 0.06), blurRadius: 4, offset: const Offset(0, 2)),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: _food + 10,
+                  height: _food + 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: dark ? const [Color(0xFF34373D), Color(0xFF26282D)] : const [Color(0xFFF7F8FA), Color(0xFFDCDFE4)],
+                      stops: const [0.82, 1],
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: _food,
+                  height: _food,
+                  child: Stack(fit: StackFit.expand, children: [
+                    sector('veg', 'tex_veg', math.pi / 2, math.pi, 0),
+                    sector('grains', 'tex_grains', -math.pi / 2, math.pi / 2, 1),
+                    sector('protein', 'tex_protein', 0, math.pi / 2, 2),
+                    label('veg', math.pi / 2, math.pi, '½ Veg', 0.55),
+                    label('grains', -math.pi / 2, math.pi / 2, '¼ Grains', 0.62),
+                    label('protein', 0, math.pi / 2, '¼ Protein', 0.62),
+                  ]),
+                ),
+                // Glaze highlight across the rim.
+                IgnorePointer(
+                  child: Container(
+                    width: _plate,
+                    height: _plate,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.white.withValues(alpha: dark ? 0.08 : 0.35), Colors.transparent, Colors.transparent],
+                        stops: const [0, 0.35, 1],
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(width: 14),
+            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              side('fruit', 'tex_fruit', 'Fruit', 62),
+              const SizedBox(height: 6),
+              side('dairy', 'tex_dairy', 'Dairy', 52, cup: true),
+              const SizedBox(height: 6),
+              side('fats', 'tex_fats', 'Fats', 40),
+            ]),
+          ]),
+        );
+      },
+    );
+  }
 }
 
-class _PlatePainter extends CustomPainter {
-  _PlatePainter(this.selected, this.sweep, this.pop, this.rim, this.line);
-  final String selected;
+/// A pie slice of the circle, with a small gap between slices.
+class _Sector extends CustomClipper<Path> {
+  const _Sector(this.start, this.sweep);
+  final double start;
   final double sweep;
-  final double pop;
-  final Color rim;
-  final Color line;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final r = size.height / 2 - 6;
-    final c = Offset(r + 6, size.height / 2);
-    canvas.drawCircle(c + const Offset(0, 4), r, Paint()..color = Colors.black.withValues(alpha: 0.06));
-    canvas.drawCircle(c, r, Paint()..color = rim);
-    final ri = r - 12;
-    const gap = 0.035;
-
-    void part(String key, double start, double extent, Color color, String label) {
-      final on = key == selected;
-      final mid = start + extent / 2;
-      final lift = on ? 8 * pop : 0.0;
-      final o = c + Offset(math.cos(mid) * lift, math.sin(mid) * lift);
-      final rect = Rect.fromCircle(center: o, radius: ri);
-      final paint = Paint()..color = on || selected == 'extras' ? color : color.withValues(alpha: 0.32);
-      canvas.drawArc(rect, start + gap, (extent - 2 * gap) * sweep, true, paint);
-      if (sweep > 0.8) {
-        final tp = TextPainter(
-          text: TextSpan(text: label, style: TextStyle(fontFamily: T.family, fontSize: on ? 15 : 13, fontWeight: FontWeight.w700, color: Colors.white)),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        final at = o + Offset(math.cos(mid) * ri * 0.5, math.sin(mid) * ri * 0.5);
-        tp.paint(canvas, at - Offset(tp.width / 2, tp.height / 2));
-      }
-    }
-
-    part('veg', math.pi / 2, math.pi, AppColors.nutrition, '½ veg');
-    part('grains', -math.pi / 2, math.pi / 2, AppColors.warning, '¼ grains');
-    part('protein', 0, math.pi / 2, AppColors.heart, '¼ protein');
-
-    // Fruit and a cup of curd on the side.
-    final on = selected == 'extras';
-    final s = on ? 1 + 0.12 * pop : 1.0;
-    final side = Offset(c.dx + r + 44, c.dy - 34);
-    canvas.drawCircle(side, 26 * s, Paint()..color = rim);
-    canvas.drawCircle(side, 19 * s, Paint()..color = on ? AppColors.mind : AppColors.mind.withValues(alpha: 0.32));
-    final cup = Offset(c.dx + r + 44, c.dy + 40);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: cup, width: 40 * s, height: 34 * s), const Radius.circular(10)), Paint()..color = rim);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromCenter(center: cup + const Offset(0, -4), width: 30 * s, height: 16 * s), const Radius.circular(8)),
-      Paint()..color = on ? Colors.white : Colors.white.withValues(alpha: 0.6),
-    );
+  Path getClip(Size size) {
+    const gap = 0.03;
+    final c = size.center(Offset.zero);
+    final r = size.shortestSide / 2;
+    final g = Offset(math.cos(start + sweep / 2), math.sin(start + sweep / 2)) * 2.5;
+    return Path()
+      ..moveTo(c.dx + g.dx, c.dy + g.dy)
+      ..arcTo(Rect.fromCircle(center: c + g, radius: r), start + gap, sweep - 2 * gap, false)
+      ..close();
   }
 
   @override
-  bool shouldRepaint(covariant _PlatePainter old) => old.selected != selected || old.sweep != sweep || old.pop != pop || old.rim != rim;
+  bool shouldReclip(covariant _Sector old) => old.start != start || old.sweep != sweep;
+}
+
+/// A small ceramic bowl (or cup, with a handle) holding a food photo.
+class _Dish extends StatelessWidget {
+  const _Dish({required this.size, required this.child, required this.dark, this.cup = false});
+  final double size;
+  final Widget child;
+  final bool dark;
+  final bool cup;
+
+  @override
+  Widget build(BuildContext context) {
+    final rim = size * 0.12;
+    final bowl = Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(rim),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(center: const Alignment(-0.4, -0.4), colors: dark ? const [Color(0xFF55585F), Color(0xFF2E3136)] : const [Colors.white, Color(0xFFDDE0E5)]),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.45 : 0.14), blurRadius: 10, offset: const Offset(0, 5), spreadRadius: -2)],
+      ),
+      child: ClipOval(child: child),
+    );
+    if (!cup) return bowl;
+    return SizedBox(
+      width: size + 12,
+      height: size,
+      child: Stack(clipBehavior: Clip.none, children: [
+        Positioned(
+          right: 0,
+          top: size * 0.3,
+          child: Container(
+            width: 16,
+            height: size * 0.4,
+            decoration: BoxDecoration(border: Border.all(color: dark ? const Color(0xFF55585F) : const Color(0xFFE2E4E8), width: 4), borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+        bowl,
+      ]),
+    );
+  }
+}
+
+/// Section name on the plate, on a frosted pill.
+class _Label extends StatelessWidget {
+  const _Label(this.text, {required this.on});
+  final String text;
+  final bool on;
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: on ? 0.62 : 0.38), borderRadius: BorderRadius.circular(Rad.full)),
+        child: Text(text, style: TextStyle(fontFamily: T.family, fontSize: on ? 12.5 : 11, fontWeight: FontWeight.w800, color: Colors.white)),
+      );
 }

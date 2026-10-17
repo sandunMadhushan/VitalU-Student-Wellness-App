@@ -168,7 +168,7 @@ class _ConsultScreenState extends State<ConsultScreen> {
               Icon(Symbols.warning_rounded, color: AppColors.onErrorContainer, fill: 1),
               const SizedBox(width: 10),
               Expanded(
-                child: Text('Messages are read during health centre hours. If you are unwell right now, injured, or thinking of harming yourself, call 1990 or 1926, or go to the nearest hospital.',
+                child: Text('If you are unwell right now, injured, or thinking of harming yourself, do not wait for a reply: call the University Health Centre on 081 239 2022 (open 24/7), 1990 for an ambulance or 1926, or go to the nearest hospital.',
                     style: T.bodyMd.c(AppColors.onErrorContainer)),
               ),
             ]),

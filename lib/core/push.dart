@@ -211,6 +211,73 @@ class Push {
         payload: jsonEncode({'id': r['id'], 'route': r['route']}),
       );
     }
+    await _scheduleDailyCheckIns(now);
+  }
+
+  // --- Morning and evening check-ins -----------------------------------------
+
+  /// Whether the friendly morning and evening reminders are on (default on).
+  static final dailyCheckIns = ValueNotifier<bool>(true);
+
+  static Future<void> loadPreferences() async {
+    try {
+      dailyCheckIns.value = (await SharedPreferences.getInstance()).getBool('daily_checkins') ?? true;
+    } catch (_) {}
+  }
+
+  static Future<void> setDailyCheckIns(bool on) async {
+    dailyCheckIns.value = on;
+    try {
+      await (await SharedPreferences.getInstance()).setBool('daily_checkins', on);
+    } catch (_) {}
+    await sync();
+  }
+
+  static const _morning = [
+    'Start with a glass of water and a proper breakfast. Your brain will thank you in that first lecture.',
+    'Try walking to your first class today. Every step counts.',
+    'Fill your water bottle before you head out. Small sips all day keep you fresh.',
+    'Pop a fruit in your bag today. It makes a great snack between lectures.',
+    'Take one slow, deep breath. You have got this today.',
+    'A breakfast with some protein, like eggs, dhal or milk, keeps you full until lunch.',
+    'Plan a short walk or stretch break today. Your body will love it.',
+  ];
+
+  static const _evening = [
+    'How did today go? Take a minute to log your meals and water.',
+    'Time to wind down. Putting screens away 30 minutes before bed helps you sleep better.',
+    'Did you reach your water goal? One more glass now still counts.',
+    'Well done today. A light dinner with vegetables helps you sleep well.',
+    'Take two minutes to check in on your mood. Be kind to yourself.',
+    'Aim for 7 to 8 hours of sleep tonight. You have earned it.',
+    'A short evening walk or stretch can melt the day\'s stress away.',
+  ];
+
+  /// Schedules a friendly reminder at 7:30 and 19:30 for the next seven
+  /// days, addressed to the student by first name. Refreshed on every sync.
+  static Future<void> _scheduleDailyCheckIns(DateTime now) async {
+    if (!dailyCheckIns.value) return;
+    final name = AppState.instance.profile?.firstName;
+    for (int d = 0; d < 7; d++) {
+      final day = DateTime(now.year, now.month, now.day).add(Duration(days: d));
+      final i = (day.difference(DateTime(2026)).inDays) % 7;
+      for (final (slot, hour, minute, greeting, lines, route) in [
+        (0, 7, 30, 'Good morning', _morning, '/home'),
+        (1, 19, 30, 'Good evening', _evening, '/diet/diary'),
+      ]) {
+        final at = DateTime(day.year, day.month, day.day, hour, minute);
+        if (!at.isAfter(now)) continue;
+        await _plugin.zonedSchedule(
+          id: 900000 + d * 2 + slot,
+          scheduledDate: tz.TZDateTime.from(_afterQuietHours(at), tz.local),
+          title: name == null ? '$greeting!' : '$greeting, $name!',
+          body: lines[i],
+          notificationDetails: _details('reminders', lines[i]),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: jsonEncode({'route': route}),
+        );
+      }
+    }
   }
 
   static String _channelFor(Map<String, dynamic> r) => switch (r['route']) {

@@ -11,11 +11,29 @@ import '../../ui/widgets.dart';
 
 const _cats = [
   ('all', 'All'),
+  ('medical', 'Doctors'),
+  ('std', 'Sexual health'),
+  ('nursing', 'Nursing'),
   ('mental', 'Mental health'),
-  ('nutrition', 'Nutritionists'),
-  ('cardiology', 'Cardiologists'),
-  ('sleep', 'Sleep coaches'),
-  ('peer', 'Peer support'),
+  ('nutrition', 'Nutrition'),
+  ('physio', 'Physiotherapy'),
+];
+
+/// The University Health Centre, open 24 hours.
+const healthCentrePhone = '0812392022';
+
+/// The consultation services, by designation. Names and direct numbers are
+/// added in the database (`professionals`) as they are confirmed.
+const consultationRoles = <Map<String, dynamic>>[
+  {'name': 'Chief Medical Officer', 'specialty': 'Leads the University Health Centre. Medical concerns, referrals and certificates.', 'category': 'medical', 'availability': 'University Health Centre', 'mode': 'campus', 'phone': healthCentrePhone},
+  {'name': 'Medical Doctors', 'specialty': 'Illness, injuries, check-ups and follow-up care.', 'category': 'medical', 'availability': 'University Health Centre · open 24/7', 'mode': 'campus', 'phone': healthCentrePhone},
+  {'name': 'Medical Doctor, STD Division', 'specialty': 'Confidential sexual health advice, testing and treatment.', 'category': 'std', 'availability': 'STD Clinic, National Hospital Kandy', 'mode': 'campus'},
+  {'name': 'Head Nurse', 'specialty': 'Nursing care, dressings, vaccinations and first aid.', 'category': 'nursing', 'availability': 'University Health Centre · open 24/7', 'mode': 'campus', 'phone': healthCentrePhone},
+  {'name': 'Psychologist', 'specialty': 'Assessment and therapy for stress, anxiety and low mood.', 'category': 'mental', 'availability': 'By appointment', 'mode': 'campus'},
+  {'name': 'Counsellor', 'specialty': 'A confidential space to talk through personal and study worries.', 'category': 'mental', 'availability': 'By appointment or drop-in', 'mode': 'campus'},
+  {'name': 'Nutritionist', 'specialty': 'Healthy eating, weight goals and budget-friendly meal planning.', 'category': 'nutrition', 'availability': 'By appointment', 'mode': 'campus'},
+  {'name': 'Dietitian', 'specialty': 'Diets for conditions such as diabetes, PCOS, anaemia or high cholesterol.', 'category': 'nutrition', 'availability': 'By appointment', 'mode': 'campus'},
+  {'name': 'Physiotherapist', 'specialty': 'Sports injuries, back and neck pain, posture and rehabilitation.', 'category': 'physio', 'availability': 'By appointment', 'mode': 'campus'},
 ];
 
 Future<void> callNumber(BuildContext context, String? phone) async {
@@ -50,16 +68,14 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
     try {
       final r = await Future.wait([Repo.professionals(), Repo.appointments(), Repo.emergencyContacts()]);
       _pros = r[0];
+      // Until the directory is updated in the database, show the designations.
+      if (!_pros.any((p) => const {'medical', 'std', 'nursing', 'physio'}.contains(p['category']))) _pros = consultationRoles;
       _appts = r[1];
       _clinic = r[2].where((e) => e['icon'] == 'local_hospital').firstOrNull;
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
 
-  bool get _clinicOpen {
-    final n = DateTime.now();
-    return n.weekday <= DateTime.friday && n.hour >= 8 && n.hour < 18;
-  }
 
   Future<void> _request({Rec? pro, required String service, bool chat = false}) async {
     final note = TextEditingController();
@@ -155,9 +171,9 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
                   Text('Main campus · free for students', style: T.bodySm.c(AppColors.onSurfaceVariant)),
                   const SizedBox(height: 6),
                   Row(children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: _clinicOpen ? AppColors.tertiary : AppColors.outline, shape: BoxShape.circle)),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.tertiary, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    Text(_clinicOpen ? 'Open until 6:00 PM' : 'Closed · opens weekdays at 8:00 AM', style: T.labelMd.c(_clinicOpen ? AppColors.tertiary : AppColors.onSurfaceVariant)),
+                    Text('Open 24/7 · 081 239 2022', style: T.labelMd.c(AppColors.tertiary)),
                   ]),
                 ]),
               ),
@@ -168,7 +184,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
               const SizedBox(width: 8),
               Expanded(child: OutlinedButton(onPressed: () => _request(service: 'Nurse chat', chat: true), child: const Text('Message'))),
               const SizedBox(width: 8),
-              IconButton.filledTonal(tooltip: 'Call the health centre', style: IconButton.styleFrom(minimumSize: const Size(52, 52)), icon: const Icon(Symbols.call_rounded), onPressed: () => callNumber(context, _clinic?['phone'])),
+              IconButton.filledTonal(tooltip: 'Call the health centre', style: IconButton.styleFrom(minimumSize: const Size(52, 52)), icon: const Icon(Symbols.call_rounded), onPressed: () => callNumber(context, (_clinic?['phone'] as String?)?.isNotEmpty == true ? _clinic!['phone'] : healthCentrePhone)),
             ]),
           ]),
         ),
@@ -179,6 +195,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
         ),
         if (_loading) const Loading(),
         if (!_loading && shown.isEmpty) const EmptyState(icon: Symbols.person_search_rounded, title: 'No one listed here yet', text: 'Try another category or book the health centre.'),
+        Text('Names and direct contacts for each service will be added soon.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
         for (final p in shown) _proCard(p),
         if (upcoming.isNotEmpty)
           ListGroup(header: 'Your requests', children: [
@@ -210,13 +227,14 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
       _ => Symbols.location_on_rounded,
     };
     final name = p['credentials'] == null ? p['name'] as String : '${p['name']}, ${p['credentials']}';
-    final initials = (p['name'] as String).replaceAll(RegExp(r'^(Dr|Mr|Ms|Mrs)\.?\s+'), '').split(RegExp(r'\s+')).where((w) => w.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join();
-    final c = switch (p['category']) {
-      'mental' => AppColors.mind,
-      'nutrition' => AppColors.nutrition,
-      'cardiology' => AppColors.heart,
-      'sleep' => AppColors.sleep,
-      _ => AppColors.primary,
+    final (roleIcon, c) = switch (p['category']) {
+      'mental' => (Symbols.psychology_rounded, AppColors.mind),
+      'nutrition' => (Symbols.restaurant_rounded, AppColors.nutrition),
+      'std' => (Symbols.health_and_safety_rounded, AppColors.cycle),
+      'nursing' => (Symbols.vaccines_rounded, AppColors.water),
+      'physio' => (Symbols.physical_therapy_rounded, AppColors.activity),
+      'cardiology' => (Symbols.cardiology_rounded, AppColors.heart),
+      _ => (Symbols.stethoscope_rounded, AppColors.primary),
     };
     return VCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -226,7 +244,7 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(color: AppColors.tint(c), shape: BoxShape.circle),
-            child: chatOnly ? Icon(Symbols.groups_rounded, color: c, fill: 1) : Text(initials, style: T.labelLg.semi.c(c)),
+            child: Icon(chatOnly ? Symbols.groups_rounded : roleIcon, color: c, fill: 1),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -254,6 +272,10 @@ class _ProfessionalsScreenState extends State<ProfessionalsScreen> {
               label: const Text('Message'),
             ),
           ),
+          if ((p['phone'] as String?)?.isNotEmpty == true) ...[
+            const SizedBox(width: 8),
+            IconButton.filledTonal(tooltip: 'Call', style: IconButton.styleFrom(minimumSize: const Size(44, 44)), icon: const Icon(Symbols.call_rounded, size: 20), onPressed: () => callNumber(context, p['phone'])),
+          ],
           if (!chatOnly) ...[
             const SizedBox(width: 8),
             Expanded(

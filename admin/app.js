@@ -21,7 +21,26 @@ const FACULTIES = [
   'Faculty of Science',
   'Faculty of Veterinary Medicine and Animal Science',
 ];
-const KINDS = { single: 'Single choice', multi: 'Multiple choice', scale: '1 to 5 scale', number: 'Number', text: 'Free text' };
+const KINDS = { single: 'Single choice', multi: 'Multiple choice', scale: '1 to 5 scale', number: 'Number', text: 'Free text', profile: 'Confirm profile details' };
+const STYLES = { '': 'Answer cards', days: 'Days of the week (with food photo)', faces: 'Faces', slider: 'Illustrated slider' };
+const ROUNDS = ['Mid Year Assessment', 'Year End Assessment'];
+
+// Learn topics, the same as the app (lib/features/library/learn_data.dart).
+const LEARN_TOPICS = {
+  body: 'Body Confidence & Healthy Fitness',
+  womens: "Women's Health & Hormonal Balance",
+  cravings: 'Food Cravings & Eating Habits',
+  heart: 'Heart Health & Disease Prevention',
+  smoking: 'Smoking, Alcohol & Breaking Habits',
+  signs: 'Know the Signs: Health Conditions',
+  skin: 'Skin, Hair & Personal Care',
+  mind: 'Mind, Mood & Emotional Well-being',
+  sleep: 'Sleep, Energy & Recovery',
+  presence: 'Personal Presence & Career Confidence',
+  essentials: 'Everyday Health Essentials',
+  habits: 'Your Habits, Your Health',
+  sexual: 'Sexual Health & STIs',
+};
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -117,7 +136,7 @@ $('#logout').addEventListener('click', async () => {
 // Tabs
 // ---------------------------------------------------------------------------
 
-const renderers = { overview: renderOverview, analytics: renderAnalytics, completion: renderCompletion, schedule: renderSchedule, questions: renderQuestions, consults: renderConsults };
+const renderers = { overview: renderOverview, analytics: renderAnalytics, completion: renderCompletion, schedule: renderSchedule, questions: renderQuestions, learn: renderLearn, consults: renderConsults };
 
 function openTab(name) {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
@@ -188,24 +207,63 @@ async function renderOverview() {
 // Analytics
 // ---------------------------------------------------------------------------
 
-const analytics = { window: '', faculty: '' };
+const analytics = { window: '', faculty: '', view: 'overall', question: '' };
+
+// Pooled health indicators (from the report's `indicators`), with the cut-off
+// each one uses. `n` is how many students had the measurement.
+const INDICATORS = [
+  { key: 'overweight_obese', n: 'bmi_n', label: 'Overweight or obese', note: 'BMI 25 or more', bad: true },
+  { key: 'underweight', n: 'bmi_n', label: 'Underweight', note: 'BMI below 18.5', bad: true },
+  { key: 'whr_high', n: 'whr_n', label: 'High waist-to-hip ratio', note: '0.90+ men, 0.85+ women (WHO)', bad: true },
+  { key: 'bp_raised', n: 'bp_n', label: 'Raised blood pressure', note: '140/90 mmHg or more', bad: true },
+  { key: 'fbg_raised', n: 'fbg_n', label: 'Raised fasting glucose', note: '126 mg/dL or more', bad: true },
+  { key: 'tg_high', n: 'tg_n', label: 'High triglycerides', note: '150 mg/dL or more', bad: true },
+  { key: 'chol_high', n: 'chol_n', label: 'High total cholesterol', note: '190 mg/dL or more', bad: true },
+  { key: 'phq2_positive', n: 'phq2_n', label: 'Low mood screen positive', note: 'PHQ-2 score 3 or more', bad: true },
+];
+
+const shortFaculty = (f) => f.replace('Faculty of ', '');
+
+function indicatorRows(ind) {
+  if (!ind) return [];
+  return INDICATORS.filter((i) => (ind[i.n] || 0) > 0).map((i) => {
+    const p = pct(ind[i.key] || 0, ind[i.n]);
+    return { label: i.label, value: p, display: `${p}% of ${ind[i.n]}`, color: p >= 30 ? 'var(--bad)' : p >= 15 ? 'var(--warn)' : 'var(--good)', note: i.note };
+  });
+}
+
+function healthCard(data) {
+  const rows = indicatorRows(data.indicators);
+  if (!data.indicators) return '<div class="card"><h3>Health indicators</h3><p class="muted">Apply the latest database migration to see pooled health indicators.</p></div>';
+  return `<div class="card"><h3>Health indicators</h3><p class="fine">Share of students with each measurement who are outside the healthy range. Clinical values come from the clinical measurements section, so they are missing when that section is hidden.</p>
+    ${rows.length ? bars(rows, { max: 100 }) + `<p class="fine">${rows.map((r) => `${esc(r.label)}: ${esc(r.note)}`).join(' · ')}</p>` : '<p class="muted">No measurements yet.</p>'}</div>`;
+}
 
 async function renderAnalytics() {
   const el = $('#tab-analytics');
   const windows = state.overview?.windows || [];
+  const byFaculty = analytics.view === 'faculty';
   el.innerHTML = `
-    <div class="head"><div><h1>Analytics</h1><p class="muted">Pooled results. Nothing is shown for groups smaller than five students.</p></div>
+    <div class="head"><div><h1>Analytics</h1><p class="muted">Pooled results, overall and by faculty. Nothing is shown for groups smaller than five students.</p></div>
       <button class="btn" id="csv">Download CSV</button></div>
     <div class="card filters">
+      <div class="seg" role="tablist">
+        <button class="${byFaculty ? '' : 'on'}" data-view="overall">Overall</button>
+        <button class="${byFaculty ? 'on' : ''}" data-view="faculty">By faculty</button>
+      </div>
       <label>Assessment window<select id="f-window"><option value="">All windows</option>
         ${windows.map((w) => `<option value="${esc(w.id)}" ${analytics.window === w.id ? 'selected' : ''}>${esc(w.term)} · ${esc(w.faculty || 'All faculties')}</option>`).join('')}</select></label>
-      <label>Faculty<select id="f-faculty"><option value="">All faculties</option>
-        ${FACULTIES.map((f) => `<option ${analytics.faculty === f ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select></label>
+      ${byFaculty ? '' : `<label>Faculty<select id="f-faculty"><option value="">All faculties</option>
+        ${FACULTIES.map((f) => `<option ${analytics.faculty === f ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select></label>`}
     </div>
     <div id="report"><p class="muted">Loading…</p></div>`;
+  el.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => ((analytics.view = b.dataset.view), renderAnalytics())));
   $('#f-window').onchange = (e) => ((analytics.window = e.target.value), renderAnalytics());
-  $('#f-faculty').onchange = (e) => ((analytics.faculty = e.target.value), renderAnalytics());
+  if (!byFaculty) $('#f-faculty').onchange = (e) => ((analytics.faculty = e.target.value), renderAnalytics());
+  return byFaculty ? renderFacultyComparison() : renderOverall();
+}
 
+async function renderOverall() {
   const { data, error } = await sb.rpc('admin_assessment_report', { p_window: analytics.window || null, p_faculty: analytics.faculty || null, p_term: null });
   const box = $('#report');
   if (error) return (box.innerHTML = `<div class="notice">Could not load results: ${esc(error.message)}</div>`);
@@ -222,22 +280,142 @@ async function renderAnalytics() {
     .map((d) => ({ label: d.title, value: Number(data.domains[d.id]), color: scoreColor(Number(data.domains[d.id])) }));
   const bmi = ['Underweight', 'Normal', 'Overweight', 'Obesity'].map((c) => ({ label: c, value: data.bmi_categories?.[c] || 0 }));
   const bmiTotal = bmi.reduce((a, b) => a + b.value, 0);
-  const groupRows = (obj) =>
-    Object.entries(obj || {}).map(([k, v]) => ({ label: k.replace('Faculty of ', ''), value: v ?? 0, display: v == null ? 'fewer than 5' : v }));
+  const groupRows = (obj) => Object.entries(obj || {}).map(([k, v]) => ({ label: shortFaculty(k), value: v ?? 0, display: v == null ? 'fewer than 5' : v }));
+  const ind = data.indicators;
 
   box.innerHTML = `
     <div class="grid k4">
-      <div class="card kpi"><div class="label">Completed responses</div><div class="value">${data.n}</div></div>
+      <div class="card kpi"><div class="label">Completed responses</div><div class="value">${data.n}</div><div class="fine">${esc(analytics.faculty || 'All faculties')}</div></div>
       <div class="card kpi"><div class="label">Overall well-being</div><div class="value" style="color:${scoreColor(data.overall ?? 0)}">${data.overall ?? '–'}</div><div class="fine">out of 100, higher is healthier</div></div>
       <div class="card kpi"><div class="label">Healthy BMI</div><div class="value">${pct(data.bmi_categories?.Normal || 0, bmiTotal)}%</div><div class="fine">of ${bmiTotal} with measurements</div></div>
+      <div class="card kpi"><div class="label">Low mood screen positive</div><div class="value">${ind?.phq2_n ? `${pct(ind.phq2_positive, ind.phq2_n)}%` : '–'}</div><div class="fine">PHQ-2 score 3 or more</div></div>
     </div>
     <div class="grid k2">
       <div class="card"><h3>Well-being by area</h3><p class="fine">Average score out of 100 for each area. Below 55 suggests a priority for support.</p>${domainRows.length ? bars(domainRows, { max: 100 }) : '<p class="muted">No scored answers yet.</p>'}</div>
-      <div class="card"><h3>BMI categories</h3>${bars(bmi.map((r) => ({ ...r, display: `${r.value} (${pct(r.value, bmiTotal)}%)` })))}
-        <h3 style="margin-top:18px">Responses by faculty</h3>${bars(groupRows(data.by_faculty))}
+      ${healthCard(data)}
+    </div>
+    <div class="grid k2">
+      <div class="card"><h3>BMI categories</h3>${bars(bmi.map((r) => ({ ...r, display: `${r.value} (${pct(r.value, bmiTotal)}%)` })))}</div>
+      <div class="card"><h3>Responses by faculty</h3>${bars(groupRows(data.by_faculty))}
         <h3 style="margin-top:18px">Responses by sex</h3>${bars(groupRows(data.by_sex))}</div>
     </div>
     ${state.domains.map((d) => domainCard(d, data)).join('')}`;
+}
+
+// One report for all faculties together and one per faculty, side by side.
+async function renderFacultyComparison() {
+  const box = $('#report');
+  const call = (f) => sb.rpc('admin_assessment_report', { p_window: analytics.window || null, p_faculty: f, p_term: null });
+  const results = await Promise.all([call(null), ...FACULTIES.map(call)]);
+  const failed = results.find((r) => r.error);
+  if (failed) return (box.innerHTML = `<div class="notice">Could not load results: ${esc(failed.error.message)}</div>`);
+  const all = results[0].data;
+  const groups = [{ name: 'All faculties', data: all, total: true }, ...FACULTIES.map((f, i) => ({ name: shortFaculty(f), data: results[i + 1].data }))];
+  const shown = groups.filter((g) => !g.data.suppressed);
+  if (all.suppressed) {
+    box.innerHTML = `<div class="notice">${all.n} completed ${all.n === 1 ? 'response' : 'responses'} so far. Faculty results appear once at least ${all.min_group} students in a faculty have completed the assessment.</div>`;
+    $('#csv').disabled = true;
+    return;
+  }
+
+  const bmiPct = (d, cats) => {
+    const total = ['Underweight', 'Normal', 'Overweight', 'Obesity'].reduce((a, c) => a + (d.bmi_categories?.[c] || 0), 0);
+    return total ? pct(cats.reduce((a, c) => a + (d.bmi_categories?.[c] || 0), 0), total) : null;
+  };
+  const indPct = (d, key, n) => (d.indicators?.[n] ? pct(d.indicators[key] || 0, d.indicators[n]) : null);
+  const metrics = [
+    { label: 'Overall well-being', fmt: (d) => d.overall, score: true },
+    { label: 'Healthy BMI', fmt: (d) => bmiPct(d, ['Normal']), unit: '%', good: true },
+    ...INDICATORS.map((i) => ({ label: i.label, fmt: (d) => indPct(d, i.key, i.n), unit: '%' })),
+  ];
+  const cellColor = (m, v) => {
+    if (v == null) return '';
+    if (m.score) return `color:${scoreColor(v)}`;
+    if (m.good) return `color:${v >= 70 ? 'var(--good)' : v >= 50 ? 'var(--warn)' : 'var(--bad)'}`;
+    return `color:${v >= 30 ? 'var(--bad)' : v >= 15 ? 'var(--warn)' : 'var(--good)'}`;
+  };
+  const cell = (m, g) => {
+    if (g.data.suppressed) return '<td class="muted">–</td>';
+    const v = m.fmt(g.data);
+    return `<td class="num" style="${cellColor(m, v)}">${v == null ? '–' : `${v}${m.unit || ''}`}</td>`;
+  };
+  const head = `<tr><th></th>${groups.map((g) => `<th class="num">${esc(g.name)}</th>`).join('')}</tr>`;
+  const respRow = `<tr><td><strong>Completed responses</strong></td>${groups.map((g) => `<td class="num">${g.data.suppressed ? `<span class="fine">${g.data.n} (under 5)</span>` : g.data.n}</td>`).join('')}</tr>`;
+  const domainRows = state.domains
+    .filter((d) => shown.some((g) => g.data.domains?.[d.id] != null))
+    .map((d) => `<tr><td>${esc(d.title)}</td>${groups.map((g) => {
+      const v = g.data.suppressed ? null : g.data.domains?.[d.id];
+      return `<td class="num heat" style="${v == null ? '' : `background:color-mix(in srgb, ${scoreColor(Number(v))} 16%, transparent);color:${scoreColor(Number(v))}`}">${v == null ? '–' : Math.round(Number(v))}</td>`;
+    }).join('')}</tr>`)
+    .join('');
+
+  const comparable = state.questions.filter((q) => ['single', 'scale'].includes(q.kind) && (q.options || []).length && all.questions?.[q.id]?.answered);
+  if (!comparable.some((q) => q.id === analytics.question)) analytics.question = comparable[0]?.id || '';
+  const q = comparable.find((x) => x.id === analytics.question);
+
+  box.innerHTML = `
+    <div class="card"><h3>Faculty comparison</h3><p class="fine">Each column is one faculty's pooled result. Faculties with fewer than five completed responses are hidden. Health indicators show the share of students with that measurement who are outside the healthy range.</p>
+      <div class="table-wrap"><table class="compare"><thead>${head}</thead><tbody>${respRow}
+        ${metrics.map((m) => `<tr><td>${esc(m.label)}</td>${groups.map((g) => cell(m, g)).join('')}</tr>`).join('')}
+      </tbody></table></div></div>
+    <div class="card"><h3>Well-being by area and faculty</h3><p class="fine">Average score out of 100, higher is healthier. Below 55 suggests a priority for support.</p>
+      <div class="table-wrap"><table class="compare"><thead>${head}</thead><tbody>${domainRows || `<tr><td colspan="${groups.length + 1}" class="muted">No scored answers yet.</td></tr>`}</tbody></table></div></div>
+    <div class="card"><h3>Compare a question across faculties</h3>
+      ${comparable.length ? `<label>Question<select id="f-question">${comparable.map((x) => `<option value="${esc(x.id)}" ${x.id === analytics.question ? 'selected' : ''}>${esc(x.text)}</option>`).join('')}</select></label>
+      <div id="q-compare" style="margin-top:14px">${questionByFaculty(q, shown)}</div>` : '<p class="muted">No answers yet.</p>'}</div>`;
+
+  const sel = $('#f-question');
+  if (sel) sel.onchange = (e) => {
+    analytics.question = e.target.value;
+    $('#q-compare').innerHTML = questionByFaculty(state.questions.find((x) => x.id === analytics.question), shown);
+  };
+  $('#csv').disabled = false;
+  $('#csv').onclick = () => downloadFacultyCsv(groups, metrics);
+}
+
+// Stacked percentage bars: one row per faculty, one colour per answer. Scored
+// answers run from red (least healthy) to green (healthiest).
+const STACK = ['#1a6fe0', '#7b5cc4', '#e0b03a', '#2a9d8f', '#e07a2f', '#8b8699', '#c2185b', '#5fae6e'];
+const RAMP = ['#c62828', '#e07a2f', '#e0b03a', '#7cb860', '#1e8541'];
+function answerColors(opts) {
+  const scores = opts.map((o) => (typeof o.score === 'number' ? o.score : null));
+  if (scores.some((v) => v == null)) return opts.map((_, i) => STACK[i % STACK.length]);
+  const lo = Math.min(...scores), hi = Math.max(...scores);
+  return scores.map((v) => RAMP[hi === lo ? 4 : Math.round(((v - lo) / (hi - lo)) * 4)]);
+}
+function questionByFaculty(q, groups) {
+  if (!q) return '';
+  const opts = q.options || [];
+  const colors = answerColors(opts);
+  const legend = `<div class="legend">${opts.map((o, i) => `<span><i style="background:${colors[i]}"></i>${esc(o.label)}</span>`).join('')}</div>`;
+  const rows = groups
+    .map((g) => {
+      const r = g.data.questions?.[q.id];
+      const counts = r?.counts || {};
+      const base = Object.values(counts).reduce((a, b) => a + b, 0);
+      if (!base) return '';
+      const segs = opts
+        .map((o, i) => {
+          const p = pct(counts[o.value] || 0, base);
+          return p ? `<div title="${esc(o.label)}: ${p}%" style="width:${p}%;background:${colors[i]}">${p >= 8 ? `${p}%` : ''}</div>` : '';
+        })
+        .join('');
+      return `<div class="stack-row"><span>${esc(g.name)}</span><div class="stack">${segs}</div><span class="bar-val">${base}</span></div>`;
+    })
+    .join('');
+  return `${legend}<div class="stacks">${rows}</div><p class="fine">The number on the right is how many answered in that group.</p>`;
+}
+
+function downloadFacultyCsv(groups, metrics) {
+  const lines = [['measure', ...groups.map((g) => g.name)]];
+  lines.push(['Completed responses', ...groups.map((g) => g.data.n)]);
+  for (const m of metrics) lines.push([m.label + (m.unit ? ' (%)' : ''), ...groups.map((g) => (g.data.suppressed ? '' : m.fmt(g.data) ?? ''))]);
+  for (const d of state.domains) lines.push([`${d.title} (0-100)`, ...groups.map((g) => (g.data.suppressed ? '' : g.data.domains?.[d.id] ?? ''))]);
+  const csv = lines.map((l) => l.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `vitalu-assessment-by-faculty-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
 }
 
 function domainCard(d, data) {
@@ -365,13 +543,15 @@ async function renderSchedule() {
   if (last) suggested.setMonth(suggested.getMonth() + 6);
   else suggested.setDate(suggested.getDate() + 14);
   const iso = suggested.toISOString().slice(0, 10);
+  // January to June rounds are mid year; July to December are year end.
+  const suggestedRound = suggested.getMonth() < 6 ? ROUNDS[0] : ROUNDS[1];
 
   el.innerHTML = `
     <div class="head"><div><h1>Schedule an assessment</h1><p class="muted">The assessment runs every six months. Each faculty can have its own dates; windows stay open for a week by default.</p></div></div>
     <form class="card" id="sched" style="display:grid;gap:14px">
       <div class="form-grid">
-        <label>Title<input name="title" required value="Periodic Health Assessment"></label>
-        <label>Term label<input name="term" required placeholder="for example Semester 1, 2027"></label>
+        <label>Round<select name="round" required>${ROUNDS.map((r) => `<option ${r === suggestedRound ? 'selected' : ''}>${r}</option>`).join('')}</select></label>
+        <label>Year<input name="year" type="number" min="2024" max="2100" required value="${suggested.getFullYear()}"></label>
         <label>Opens on<input name="date" type="date" required value="${iso}"></label>
         <label>Opening time<input name="time" type="time" required value="08:00"></label>
         <label>Open for (days)<input name="days" type="number" min="1" max="31" value="7" required></label>
@@ -400,9 +580,10 @@ async function renderSchedule() {
     // Times are entered in Sri Lanka time (UTC+05:30).
     const opens = new Date(`${f.get('date')}T${f.get('time')}:00+05:30`);
     const faculties = f.getAll('faculty');
+    const term = `${f.get('round')} ${f.get('year')}`;
     const { error } = await sb.rpc('admin_schedule_assessment', {
-      p_title: f.get('title'),
-      p_term: f.get('term'),
+      p_title: f.get('round').replace('Assessment', 'Health Assessment'),
+      p_term: term,
       p_faculties: faculties,
       p_opens_at: opens.toISOString(),
       p_days: Number(f.get('days')),
@@ -451,11 +632,14 @@ async function renderQuestions() {
   el.innerHTML = `
     <div class="head"><div><h1>Questionnaire</h1><p class="muted">Edit wording, answers and scoring. Retiring a question hides it from students but keeps past results.</p></div></div>
     <p class="fine">Scoring: give each answer a score where a higher number is the healthier answer (for example 0 to 3). Leave the score empty for descriptive questions. Each area's well-being score is the average of its scored answers, out of 100.</p>
+    <p class="fine">Hide a whole section for a round with <strong>Hide section</strong>, for example Clinical measurements when the health centre has not measured students. Students then skip it; past answers are kept.</p>
     ${state.domains
       .map((d) => {
         const qs = state.questions.filter((q) => q.domain_id === d.id);
         return `<div class="card"><div class="head"><div><h2>${esc(d.position)}. ${esc(d.title)}</h2><p class="fine">${esc(d.blurb || '')}</p></div>
-          <div class="row-actions"><button class="btn small" data-edit-domain="${d.id}">Rename area</button><button class="btn small primary" data-add="${d.id}">Add question</button></div></div>
+          <div class="row-actions">${d.active === false ? '<span class="pill warn">Hidden from students</span>' : '<span class="pill good">Shown to students</span>'}
+            <button class="btn small" data-toggle-domain="${d.id}">${d.active === false ? 'Show section' : 'Hide section'}</button>
+            <button class="btn small" data-edit-domain="${d.id}">Rename area</button><button class="btn small primary" data-add="${d.id}">Add question</button></div></div>
           ${qs
             .map(
               (q, i) => `<div class="qitem ${q.active ? '' : 'inactive'}"><div><strong>${esc(q.text)}</strong>
@@ -491,6 +675,15 @@ async function renderQuestions() {
       [list[i], list[j]] = [list[j], list[i]];
       const results = await Promise.all(list.map((x, k) => sb.from('assessment_questions').update({ position: k + 1 }).eq('id', x.id)));
       if (results.some((r) => r.error)) toast('Could not reorder.');
+      renderQuestions();
+    }),
+  );
+  el.querySelectorAll('[data-toggle-domain]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const d = state.domains.find((x) => x.id === Number(b.dataset.toggleDomain));
+      const { error } = await sb.from('assessment_domains').update({ active: d.active === false }).eq('id', d.id);
+      if (error) return toast(`${error.message}. Has the latest database migration been applied?`);
+      toast(d.active === false ? 'Section shown to students.' : 'Section hidden from students.');
       renderQuestions();
     }),
   );
@@ -530,6 +723,8 @@ function editQuestion(q, domainId) {
       <label>Min<input id="q-min" type="number" value="${q.min_value ?? ''}"></label>
       <label>Max<input id="q-max" type="number" value="${q.max_value ?? ''}"></label>
       <label>Max choices (multiple)<input id="q-maxc" type="number" value="${q.max_choices ?? ''}"></label>
+      <label>Look (single choice)<select id="q-style">${Object.entries(STYLES).map(([k, v]) => `<option value="${k}" ${(q.style || '') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label>Picture (optional)<input id="q-image" placeholder="e.g. food_groups/pulses.webp" value="${esc(q.image || '')}"></label>
     </div>
     <label class="check"><input type="checkbox" id="q-opt" ${q.optional ? 'checked' : ''}> Students may skip this question</label>
     <div id="opts-box"><h3>Answers</h3><p class="fine">Value is stored with each response; label is what students see. For a 1 to 5 scale use values 1 to 5.</p>
@@ -559,6 +754,8 @@ function editQuestion(q, domainId) {
         max_choices: num('#q-maxc'),
         optional: $('#q-opt').checked,
         options: ['number', 'text'].includes(kind) ? [] : options,
+        style: $('#q-style').value || null,
+        image: $('#q-image').value.trim() || null,
       };
       let error;
       if (isNew) {
@@ -577,6 +774,178 @@ function editQuestion(q, domainId) {
   syncKind();
   $('#add-opt').onclick = () => $('#opts').insertAdjacentHTML('beforeend', optionRow());
   $('#opts').addEventListener('click', (e) => e.target.classList.contains('o-del') && e.target.closest('.opt-row').remove());
+}
+
+// ---------------------------------------------------------------------------
+// Learn articles
+// ---------------------------------------------------------------------------
+
+const learnFilter = { topic: '' };
+
+/** Article body <-> simple text the admin can edit. */
+function bodyToText(b = {}) {
+  const sections = (b.sections || [])
+    .map((s) => [`## ${s.heading || ''}`, s.text || '', ...(s.bullets || []).map((x) => `- ${x}`)].filter(Boolean).join('\n'))
+    .join('\n\n');
+  return {
+    hook: b.hook || b.intro || '',
+    sections,
+    key_point: b.key_point || '',
+    myths: (b.myths || []).map((m) => `${m.myth} :: ${m.fact}`).join('\n'),
+    takeaway: b.takeaway || '',
+    try_this: b.try_this || '',
+    seek_help: b.seek_help || '',
+    references: (b.references || []).map((r) => (r.url ? `${r.label} | ${r.url}` : r.label)).join('\n'),
+  };
+}
+
+function textToBody(t, old = {}) {
+  const sections = [];
+  let cur = null;
+  for (const raw of t.sections.split('\n')) {
+    const line = raw.trim();
+    if (line.startsWith('## ')) {
+      cur = { heading: line.slice(3).trim(), text: '', bullets: [] };
+      sections.push(cur);
+    } else if (line.startsWith('- ')) {
+      if (!cur) sections.push((cur = { heading: '', text: '', bullets: [] }));
+      cur.bullets.push(line.slice(2).trim());
+    } else if (line) {
+      if (!cur) sections.push((cur = { heading: '', text: '', bullets: [] }));
+      cur.text = cur.text ? `${cur.text} ${line}` : line;
+    }
+  }
+  sections.forEach((s) => !s.bullets.length && delete s.bullets);
+  const lines = (v) => v.split('\n').map((x) => x.trim()).filter(Boolean);
+  return {
+    ...old,
+    hook: t.hook.trim(),
+    sections,
+    key_point: t.key_point.trim() || undefined,
+    myths: lines(t.myths).map((l) => {
+      const [myth, fact] = l.split('::');
+      return { myth: (myth || '').trim(), fact: (fact || '').trim() };
+    }),
+    takeaway: t.takeaway.trim() || undefined,
+    try_this: t.try_this.trim() || undefined,
+    seek_help: t.seek_help.trim() || undefined,
+    references: lines(t.references).map((l) => {
+      const [label, url] = l.split('|');
+      return url ? { label: label.trim(), url: url.trim() } : { label: label.trim() };
+    }),
+  };
+}
+
+const slugify = (v) => v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+
+async function renderLearn() {
+  const el = $('#tab-learn');
+  const { data, error } = await sb.from('education_articles').select('*').order('category').order('sort_order').order('published_at', { ascending: false });
+  const rows = (data || []).filter((a) => !learnFilter.topic || a.category === learnFilter.topic);
+  el.innerHTML = `
+    <div class="head"><div><h1>Learn articles</h1><p class="muted">Show, hide, edit or add the health articles students read in the app. Hidden articles stay saved but students cannot see them.</p></div>
+      <button class="btn primary" id="l-add">Add article</button></div>
+    <form class="card filters"><label>Topic<select id="l-topic"><option value="">All topics</option>
+      ${Object.entries(LEARN_TOPICS).map(([k, v]) => `<option value="${k}" ${learnFilter.topic === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label></form>
+    ${error ? `<div class="notice">${esc(error.message)}</div>` : ''}
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Article</th><th>Topic</th><th>Read</th><th>Status</th><th></th></tr></thead><tbody>
+    ${
+      rows
+        .map(
+          (a) => `<tr><td><strong>${esc(a.title)}</strong><br><span class="fine">${esc(a.subtitle || '')}</span></td>
+            <td>${esc(LEARN_TOPICS[a.category] || a.category_label || a.category || '')}</td><td>${a.read_minutes || ''} min</td>
+            <td>${a.hidden ? '<span class="pill warn">Hidden</span>' : '<span class="pill good">Shown</span>'}${a.is_featured ? ' <span class="pill info">Featured</span>' : ''}</td>
+            <td class="row-actions"><button class="btn small" data-l-toggle="${esc(a.id)}">${a.hidden ? 'Show' : 'Hide'}</button>
+              <button class="btn small" data-l-edit="${esc(a.id)}">Edit</button></td></tr>`,
+        )
+        .join('') || '<tr><td colspan="5" class="muted">No articles here yet.</td></tr>'
+    }
+    </tbody></table></div></div>
+    <p class="fine">Write in plain, kind English. Every article needs at least one reliable reference (WHO, the Ministry of Health, NHS or peer-reviewed research).</p>`;
+  $('#l-topic').onchange = (e) => ((learnFilter.topic = e.target.value), renderLearn());
+  $('#l-add').onclick = () => editArticle(null);
+  el.querySelectorAll('[data-l-toggle]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const a = data.find((x) => x.id === b.dataset.lToggle);
+      const { error: e } = await sb.from('education_articles').update({ hidden: !a.hidden }).eq('id', a.id);
+      if (e) return toast(`${e.message}. Has the latest database migration been applied?`);
+      toast(a.hidden ? 'Article shown to students.' : 'Article hidden from students.');
+      renderLearn();
+    }),
+  );
+  el.querySelectorAll('[data-l-edit]').forEach((b) => b.addEventListener('click', () => editArticle(data.find((x) => x.id === b.dataset.lEdit))));
+}
+
+function editArticle(a) {
+  const isNew = !a;
+  a = a || { title: '', subtitle: '', category: learnFilter.topic || 'essentials', read_minutes: 4, body: {}, hidden: false, is_featured: false };
+  const t = bodyToText(a.body || {});
+  const area = (id, label, value, rows = 3, hint = '') =>
+    `<label>${label}${hint ? ` <span class="fine">${hint}</span>` : ''}<textarea id="${id}" rows="${rows}">${esc(value)}</textarea></label>`;
+  openModal(
+    `<h2>${isNew ? 'Add article' : 'Edit article'}</h2>
+    <label>Title<input id="a-title" required value="${esc(a.title)}"></label>
+    <label>Subtitle<input id="a-subtitle" value="${esc(a.subtitle || '')}"></label>
+    <div class="form-grid">
+      <label>Topic<select id="a-topic">${Object.entries(LEARN_TOPICS).map(([k, v]) => `<option value="${k}" ${a.category === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
+      <label>Reading time (minutes)<input id="a-min" type="number" min="1" max="30" value="${a.read_minutes || 4}"></label>
+      <label>Cover picture<input id="a-cover" type="file" accept="image/*"></label>
+    </div>
+    ${a.cover_url ? `<p class="fine">Current cover: <a href="${esc(a.cover_url)}" target="_blank" rel="noopener">view</a></p>` : ''}
+    ${area('a-hook', 'Opening question or situation', t.hook, 2)}
+    ${area('a-sections', 'Sections', t.sections, 12, 'Start each section with "## Heading". Lines starting with "- " become bullet points.')}
+    ${area('a-key', 'Key point', t.key_point, 2)}
+    ${area('a-myths', 'Myths and facts', t.myths, 3, 'One per line: myth :: fact')}
+    ${area('a-takeaway', 'Key takeaway', t.takeaway, 2)}
+    ${area('a-try', 'Try this', t.try_this, 2)}
+    ${area('a-help', 'When to get help', t.seek_help, 2)}
+    ${area('a-refs', 'References', t.references, 3, 'One per line: label | link')}
+    <label class="check"><input type="checkbox" id="a-featured" ${a.is_featured ? 'checked' : ''}> Featured at the top of Learn</label>
+    <label class="check"><input type="checkbox" id="a-hidden" ${a.hidden ? 'checked' : ''}> Hidden from students</label>
+    <div class="modal-actions"><button class="btn" value="cancel">Cancel</button><button class="btn primary" value="ok">Save</button></div>`,
+    async () => {
+      const title = $('#a-title').value.trim();
+      if (!title) return toast('Give the article a title.') || false;
+      const body = textToBody(
+        {
+          hook: $('#a-hook').value,
+          sections: $('#a-sections').value,
+          key_point: $('#a-key').value,
+          myths: $('#a-myths').value,
+          takeaway: $('#a-takeaway').value,
+          try_this: $('#a-try').value,
+          seek_help: $('#a-help').value,
+          references: $('#a-refs').value,
+        },
+        a.body || {},
+      );
+      if (!body.sections.length) return toast('Add at least one section.') || false;
+      const topic = $('#a-topic').value;
+      const row = {
+        title,
+        subtitle: $('#a-subtitle').value.trim() || null,
+        category: topic,
+        category_label: LEARN_TOPICS[topic],
+        read_minutes: Number($('#a-min').value) || 4,
+        body,
+        is_featured: $('#a-featured').checked,
+        hidden: $('#a-hidden').checked,
+      };
+      const file = $('#a-cover').files[0];
+      if (file) {
+        const path = `${slugify(title)}-${Date.now()}.${(file.name.split('.').pop() || 'jpg').toLowerCase()}`;
+        const up = await sb.storage.from('article-covers').upload(path, file, { contentType: file.type, upsert: true });
+        if (up.error) return toast(`Cover upload failed: ${up.error.message}`) || false;
+        row.cover_url = sb.storage.from('article-covers').getPublicUrl(path).data.publicUrl;
+      }
+      let error;
+      if (isNew) ({ error } = await sb.from('education_articles').insert({ ...row, slug: `${slugify(title)}-${Date.now().toString(36)}`, author: 'VitalU', published_at: new Date().toISOString() }));
+      else ({ error } = await sb.from('education_articles').update(row).eq('id', a.id));
+      if (error) return toast(`${error.message}. Has the latest database migration been applied?`) || false;
+      toast('Article saved.');
+      renderLearn();
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------

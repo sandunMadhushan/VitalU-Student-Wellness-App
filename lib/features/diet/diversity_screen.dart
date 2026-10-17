@@ -11,9 +11,9 @@ import '../../ui/widgets.dart';
 import '../tools/tool_widgets.dart';
 import 'diet_science.dart' show diversityByDay;
 
-/// Dietary diversity guide, built on the FAO Minimum Dietary Diversity for
-/// Women (MDD-W): ten food groups, with 5 or more in a day counted as an
-/// adequately varied diet.
+/// Dietary diversity guide, built on the ten food groups used to measure the
+/// dietary diversity of Sri Lankan men and women, with 5 or more in a day
+/// counted as minimum dietary diversity.
 class DiversityScreen extends StatefulWidget {
   const DiversityScreen({super.key});
   @override
@@ -44,7 +44,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
   String? _foodFor(String group) {
     final today = isoDate(DateTime.now());
     for (final r in _logs) {
-      if (r['log_date'] == today && groupByKey(r['food_group'] as String)?.key == group) return r['food_name'] as String?;
+      if (r['log_date'] == today && groupByKey(r['food_group'] as String, food: r['food_name'] as String?)?.key == group) return r['food_name'] as String?;
     }
     return null;
   }
@@ -87,7 +87,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
   Widget build(BuildContext context) {
     final today = _byDay[isoDate(DateTime.now())] ?? {};
     final n = today.length;
-    final adequate = n >= 5;
+    final adequate = n >= minDietaryDiversity;
     final missing = foodGroups.where((g) => !today.contains(g.key)).toList();
     final c = adequate ? AppColors.tertiary : AppColors.nutrition;
 
@@ -116,7 +116,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 CategoryLabel("Today's score", icon: Symbols.nutrition_rounded, color: c),
                 const SizedBox(height: 6),
-                Text(adequate ? 'A varied day' : (n == 0 ? 'Nothing logged yet' : '${5 - n} more to go'), style: T.headlineSm.c(adequate ? c : AppColors.onSurface)),
+                Text(adequate ? 'A varied day' : (n == 0 ? 'Nothing logged yet' : '${minDietaryDiversity - n} more to go'), style: T.headlineSm.c(adequate ? c : AppColors.onSurface)),
                 const SizedBox(height: 4),
                 Text(
                   adequate
@@ -145,6 +145,13 @@ class _DiversityScreenState extends State<DiversityScreen> {
             childAspectRatio: 0.82,
             children: [for (final g in foodGroups) _groupTile(g, today.contains(g.key))],
           ),
+        const ToolReference(
+          tool: 'a Sri Lankan dietary diversity score',
+          citation:
+              'Abeywickrama HM, et al. Assessment of nutritional status and dietary pattern of a rural adult population in dry zone, Sri Lanka. Int J Environ Res Public Health. 2020;17(1):150.',
+          url: 'https://doi.org/10.3390/ijerph17010150',
+          note: 'Ten food groups adapted from FAO for Sri Lankan adults, men and women. The 5-group cut-off follows FAO and has been shown to work for men as well as women (Gómez et al., 2024).',
+        ),
         const PrivacyNote('Food groups are counted from the meals you log. Only you can see this.'),
       ],
     );
@@ -190,8 +197,9 @@ class _DiversityScreenState extends State<DiversityScreen> {
   }
 
   void _about() => showInfoSheet(context, title: 'About dietary diversity', paragraphs: const [
-        'VitalU uses the Minimum Dietary Diversity for Women (MDD-W), a measure from the Food and Agriculture Organization (FAO). It counts how many of 10 food groups you ate in a day.',
-        'Eating from 5 or more groups is linked with a better chance of getting enough of eleven key vitamins and minerals. The score is the same for everyone; it is validated for women aged 15 to 49 and is a useful guide for anyone.',
+        'VitalU counts how many of 10 food groups you ate in a day. The groups are the ones Sri Lankan researchers use to measure dietary diversity in adult men and women, adapted from the Food and Agriculture Organization (FAO): cereals, tubers and starchy vegetables, root and fruit vegetables, green leafy vegetables, fruits, pulses (with nuts and seeds), meat, eggs, fish, and milk.',
+        'Oils, sugar, sweets, spices and drinks do not count. Almost everyone in Sri Lanka has them every day, so counting them would make a diet look varied without making it healthier.',
+        'Eating from 5 or more groups in a day is called minimum dietary diversity. It is linked with a better chance of getting enough vitamins and minerals, and the same cut-off works for men and women.',
         'A group counts when you eat about a tablespoon (15 g) or more of it. The score shows variety, not quantity or overall diet quality: a day with 6 groups can still include a lot of fried food or sugar. For that, see the Diet quality score.',
       ]);
 }

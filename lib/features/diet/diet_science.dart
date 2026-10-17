@@ -138,11 +138,12 @@ LoggedDietQuality loggedDietQuality(List<Rec> mealsLast7Days) {
   return LoggedDietQuality(score, days.length, servings);
 }
 
-/// MDD-W food groups eaten on each day (old 8-group keys are mapped).
+/// Dietary diversity groups eaten on each day. Keys from earlier versions
+/// of the app are mapped to the current groups.
 Map<String, Set<String>> diversityByDay(List<Rec> diversityLogs) {
   final m = <String, Set<String>>{};
   for (final r in diversityLogs) {
-    final key = legacyGroupKey(r['food_group'] as String);
+    final key = legacyGroupKey(r['food_group'] as String, food: r['food_name'] as String?);
     if (key == null) continue;
     m.putIfAbsent(r['log_date'] as String, () => {}).add(key);
   }

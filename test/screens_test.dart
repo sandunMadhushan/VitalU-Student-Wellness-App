@@ -32,6 +32,8 @@ import 'package:vitalu/features/diet/pdqs_screen.dart';
 import 'package:vitalu/features/diet/plate_screen.dart';
 import 'package:vitalu/features/home/home_screen.dart';
 import 'package:vitalu/features/library/library_screen.dart';
+import 'package:vitalu/features/library/article_screen.dart';
+import 'package:vitalu/features/tools/psqi_screen.dart';
 import 'package:vitalu/features/onboarding/onboarding_screen.dart';
 import 'package:vitalu/features/profile/about_screen.dart';
 import 'package:vitalu/features/profile/account_screen.dart';
@@ -56,6 +58,7 @@ import 'package:vitalu/features/tools/tools_screen.dart';
 import 'package:vitalu/features/tools/water_screen.dart';
 import 'package:vitalu/features/tools/whr_screen.dart';
 import 'package:vitalu/ui/theme.dart';
+import 'package:vitalu/ui/widgets.dart';
 import 'package:vitalu/ui/tokens.dart';
 
 final _sample = <String, dynamic>{
@@ -133,6 +136,11 @@ final _screens = <String, Widget Function()>{
   'help': () => const HelpScreen(),
   'consult': () => const ConsultScreen(),
   'pdqs': () => const PdqsScreen(),
+  'psqi': () => const PsqiScreen(),
+  'learn_topic': () => const LearnTopicScreen(topicKey: 'womens'),
+  'article_smoking': () => const ArticleScreen(slug: 'smoking-lungs'),
+  'article_sti': () => const ArticleScreen(slug: 'sti-basics'),
+  'register_3': () => const RegistrationStep3(),
 };
 
 Future<void> _font(String family, List<String> files) async {
@@ -181,9 +189,11 @@ void main() {
         ));
         // Real time as well as fake time, so network calls (which fail
         // fast against the dummy backend) settle and screens leave loading.
-        for (int i = 0; i < 10; i++) {
+        // Wait until spinners finish (at most about 10 seconds).
+        for (int i = 0; i < 30; i++) {
           await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
           await tester.pump(const Duration(milliseconds: 200));
+          if (i >= 9 && find.byType(Loading).evaluate().isEmpty) break;
         }
         await tester.runAsync(() async {
           final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;

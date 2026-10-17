@@ -30,7 +30,7 @@ const mealTabs = <(String, String, IconData)>[
   ('snack', 'Snack', Symbols.cookie_rounded),
 ];
 
-/// Small coloured dots for a food's MDD-W groups.
+/// Small coloured dots for a food's dietary diversity groups.
 Widget groupDots(List<String> groups, {double size = 8}) => Row(mainAxisSize: MainAxisSize.min, children: [
       for (final g in groups.take(4))
         if (groupByKey(g) != null)
@@ -153,7 +153,7 @@ class _MealLogScreenState extends State<MealLogScreen> {
       final res = await db.functions.invoke('analyze-meal', body: {'image_base64': base64Encode(bytes), 'mime_type': 'image/jpeg'});
       final data = res.data;
       if (data is Map && data['name'] != null) {
-        final groups = {for (final g in List<String>.from(data['food_groups'] ?? const [])) ?legacyGroupKey(g)}.toList();
+        final groups = {for (final g in List<String>.from(data['food_groups'] ?? const [])) ?legacyGroupKey(g, food: '${data['name']}')}.toList();
         setState(() => _detected = LoggedItem('${data['name']}', 1, 'serving', (data['kcal'] as num?)?.round() ?? 0, groups: groups));
       } else {
         throw Exception(data is Map ? data['error'] : 'No result');
@@ -265,9 +265,19 @@ class _MealLogScreenState extends State<MealLogScreen> {
           ]),
         ],
         FullBleed(
-          child: ChipRow(children: [
-            for (final c in ['All', for (final cat in foodDatabase) cat.name]) VChip(c, selected: _cat == c, selectedColor: AppColors.nutrition, onTap: () => setState(() => _cat = c)),
-          ]),
+          child: SizedBox(
+            height: 104,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: Sp.margin),
+              itemCount: foodDatabase.length + 1,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (_, i) {
+                final name = i == 0 ? 'All' : foodDatabase[i - 1].name;
+                return _CategoryTile(name: name, image: i == 0 ? 'food_groups/grains.webp' : foodCategoryImages[name], selected: _cat == name, onTap: () => setState(() => _cat = name));
+              },
+            ),
+          ),
         ),
         ..._foodList(),
         SoftButton('Add a custom food', icon: Symbols.add_rounded, onTap: _custom),
@@ -280,7 +290,13 @@ class _MealLogScreenState extends State<MealLogScreen> {
     if (_q.isEmpty && _cat == 'All') {
       return [
         for (final cat in foodDatabase) ...[
-          SectionHeader(cat.name),
+          Row(children: [
+            if (foodCategoryImages[cat.name] != null) ...[
+              ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/${foodCategoryImages[cat.name]}', width: 36, height: 36, fit: BoxFit.cover, cacheWidth: 108)),
+              const SizedBox(width: 10),
+            ],
+            Expanded(child: Text(cat.name, style: T.headlineSm)),
+          ]),
           ListGroup(children: [for (final f in cat.foods) _foodRow(f)]),
         ],
       ];
@@ -424,7 +440,7 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
   Widget _day(String date, List<Rec> meals, int target) {
     final day = DateTime.parse(date);
     final kcal = meals.fold<int>(0, (a, m) => a + (m['kcal'] as num).toInt());
-    final groups = {for (final m in meals) for (final g in List<String>.from(m['food_groups'] ?? const [])) ?legacyGroupKey(g)};
+    final groups = {for (final m in meals) for (final g in List<String>.from(m['food_groups'] ?? const [])) ?legacyGroupKey(g, food: m['name'] as String?)};
     final today = isoDate(DateTime.now()) == date;
     return VCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -460,5 +476,42 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
     const names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${names[d.weekday - 1]}, ${d.day} ${months[d.month - 1]}';
+  }
+}
+
+/// A food category as a photo tile; the selected one is outlined.
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({required this.name, required this.image, required this.selected, required this.onTap});
+  final String name;
+  final String? image;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.nutrition;
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 76,
+        child: Column(children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.all(2.5),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: selected ? c : Colors.transparent, width: 2.5)),
+            child: AnimatedScale(
+              scale: selected ? 1.0 : 0.94,
+              duration: const Duration(milliseconds: 180),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: image == null ? Container(width: 60, height: 60, color: AppColors.tint(c)) : Image.asset('assets/$image', width: 60, height: 60, fit: BoxFit.cover, cacheWidth: 180),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(name.replaceAll(' & ', ' & \n').split('\n').first.trim(), style: T.labelSm.c(selected ? c : AppColors.onSurfaceVariant).w(selected ? FontWeight.w800 : FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+        ]),
+      ),
+    );
   }
 }

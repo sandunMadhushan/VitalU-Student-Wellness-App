@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import 'package:intl/intl.dart';
+
 import '../../core/app_state.dart';
 import '../../data/models.dart';
+import '../../data/repo.dart';
+import '../../ui/badge_ui.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -28,8 +32,11 @@ class ProfileScreen extends StatelessWidget {
             _ProfileHeader(profile: p),
             ListGroup(children: [
               _row(context, Symbols.person_rounded, AppColors.primary, 'Account', 'Your details, health background and measurements', '/profile/account'),
-              _row(context, Symbols.military_tech_rounded, AppColors.warning, 'Achievements', 'Badges and streaks you have earned', '/milestones'),
-              _row(context, Symbols.monitoring_rounded, AppColors.mind, 'Summary', 'How you have been using VitalU', '/profile/summary'),
+            ]),
+            SectionHeader('Achievements', trailing: TextLinkButton('See all', icon: Symbols.chevron_right_rounded, onTap: () => context.push('/milestones'))),
+            const _AchievementsStrip(),
+            ListGroup(children: [
+              _row(context, Symbols.monitoring_rounded, AppColors.mind, 'Summary', 'Your progress and personal health report', '/profile/summary'),
             ]),
             ListGroup(children: [
               _row(context, Symbols.science_rounded, AppColors.water, 'About This Project', 'The research behind VitalU', '/about'),
@@ -104,6 +111,73 @@ class _ProfileHeader extends StatelessWidget {
               Icon(Symbols.chevron_right_rounded, color: AppColors.outline),
             ]),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Earned badges under the Achievements title, newest first, with the date
+/// each was earned. Badges still to earn follow, greyed out.
+class _AchievementsStrip extends StatefulWidget {
+  const _AchievementsStrip();
+  @override
+  State<_AchievementsStrip> createState() => _AchievementsStripState();
+}
+
+class _AchievementsStripState extends State<_AchievementsStrip> {
+  List<Rec>? _badges;
+  Map<String, DateTime> _earned = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    _badges = await Repo.badges();
+    try {
+      _earned = await Repo.earnedBadges();
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final all = _badges;
+    if (all == null) return const SizedBox(height: 132, child: Loading());
+    final earned = all.where((b) => _earned.containsKey(b['code'])).toList()..sort((a, b) => _earned[b['code']]!.compareTo(_earned[a['code']]!));
+    final locked = all.where((b) => !_earned.containsKey(b['code'])).toList();
+    final list = [...earned, ...locked];
+    if (list.isEmpty) return const SizedBox();
+    return FullBleed(
+      child: SizedBox(
+        height: 150,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: Sp.margin),
+          itemCount: list.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 12),
+          itemBuilder: (context, i) {
+            final b = list[i];
+            final at = _earned[b['code']];
+            return SizedBox(
+              width: 92,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(Rad.lg),
+                onTap: () => at == null
+                    ? context.push('/milestones')
+                    : showBadgePopup(context, code: b['code'], title: b['title'], description: b['description'], icon: b['icon'], category: b['category']),
+                child: Column(children: [
+                  BadgeArt(code: b['code'], icon: b['icon'], category: b['category'], size: 76, locked: at == null),
+                  const SizedBox(height: 4),
+                  Text(b['title'], style: T.labelSm.semi.c(at == null ? AppColors.onSurfaceVariant : AppColors.onSurface), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                  Text(at == null ? 'Not yet' : DateFormat('d MMM yyyy').format(at.toLocal()), style: T.labelSm.c(AppColors.outline), maxLines: 1),
+                ]),
+              ),
+            );
+          },
         ),
       ),
     );

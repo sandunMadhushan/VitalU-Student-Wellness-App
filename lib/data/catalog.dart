@@ -138,11 +138,16 @@ const accommodationOptions = <String, String>{
 
 const academicYears = <String>['21/22 Batch', '22/23 Batch', '23/24 Batch', '24/25 Batch', '25/26 Batch'];
 
-/// A food group of the Minimum Dietary Diversity for Women (MDD-W) indicator
-/// (FAO 2021), used here for all students: ten groups, one point each for
-/// any group eaten in a day, and 5 or more groups counts as adequate variety.
+/// A food group of VitalU's dietary diversity score: the ten food groups used
+/// to measure dietary diversity in Sri Lankan men and women (Abeywickrama et
+/// al., 2020), adapted from the FAO and FANTA individual dietary diversity
+/// groups. One point for each group eaten in a day, whatever the amount; 5 or
+/// more of 10 counts as minimum dietary diversity. Oils, sugar, sweets,
+/// condiments and drinks are left out because almost everyone in Sri Lanka
+/// has them every day, so they would raise the score without improving the
+/// diet (Jayawardena et al., 2013).
 class FoodGroup {
-  const FoodGroup(this.key, this.label, this.icon, this.color, this.meaning, this.examples);
+  const FoodGroup(this.key, this.label, this.icon, this.color, this.meaning, this.examples, {this.imageName});
   final String key;
   final String label;
   final IconData icon;
@@ -154,58 +159,80 @@ class FoodGroup {
   /// Familiar Sri Lankan foods in the group.
   final List<String> examples;
 
+  final String? imageName;
+
   /// Realistic food photo in assets/food_groups.
-  String get image => 'assets/food_groups/$key.webp';
+  String get image => 'assets/food_groups/${imageName ?? key}.webp';
 }
 
+/// Minimum dietary diversity: at least this many of the ten groups in a day.
+const minDietaryDiversity = 5;
+
 const foodGroups = <FoodGroup>[
-  FoodGroup('grains', 'Grains, roots and tubers', Symbols.rice_bowl_rounded, 0xFFD4A017, 'Starchy staples that give you energy.',
-      ['Red or white rice', 'String hoppers', 'Roti and bread', 'Pittu', 'Kurakkan', 'Potatoes', 'Manioc (cassava)', 'Noodles']),
-  FoodGroup('pulses', 'Pulses', Symbols.grain_rounded, 0xFF984062, 'Beans, peas and lentils: plant protein and fibre.',
-      ['Dhal (parippu)', 'Chickpeas (kadala)', 'Green gram (mung)', 'Cowpea', 'Soya meat', 'Vadai']),
-  FoodGroup('nuts_seeds', 'Nuts and seeds', Symbols.psychiatry_rounded, 0xFF8B6B2E, 'Small foods rich in healthy fats, protein and minerals.',
-      ['Peanuts', 'Cashew nuts', 'Sesame (thala)', 'Pumpkin seeds', 'Almonds', 'Peanut butter']),
-  FoodGroup('dairy', 'Dairy', Symbols.water_full_rounded, 0xFF4BA3E3, 'Milk and foods made from it: calcium and protein.',
-      ['Milk', 'Curd (meekiri)', 'Yoghurt', 'Cheese', 'Milk tea or Milo made with milk']),
-  FoodGroup('meat_fish', 'Meat, poultry and fish', Symbols.set_meal_rounded, 0xFFD1344E, 'Animal protein with iron, zinc and vitamin B12.',
-      ['Fish curry', 'Chicken', 'Sprats (halmasso)', 'Dried fish', 'Tinned fish', 'Beef or pork']),
+  FoodGroup('cereals', 'Cereals', Symbols.rice_bowl_rounded, 0xFFD4A017, 'Rice and foods made from grains: your main source of energy.',
+      ['Red or white rice', 'String hoppers', 'Roti and bread', 'Pittu', 'Kurakkan', 'Noodles', 'Oats']),
+  FoodGroup('starchy', 'Tubers and starchy vegetables', Symbols.nutrition_rounded, 0xFFB7791F, 'Roots, tubers and starchy vegetables that give energy and fibre.',
+      ['Manioc (cassava)', 'Sweet potato', 'Potatoes', 'Polos (young jackfruit)', 'Breadfruit', 'Yams (kiriala, innala)']),
+  FoodGroup('other_veg', 'Root and fruit vegetables', Symbols.grass_rounded, 0xFF3F9A5B, 'Everyday vegetables for fibre, vitamins and minerals.',
+      ['Carrot', 'Pumpkin', 'Beans', 'Brinjal', 'Cabbage', 'Okra (bandakka)', 'Beetroot', 'Tomato', 'Cucumber', 'Leeks']),
+  FoodGroup('dark_leafy', 'Green leafy vegetables', Symbols.eco_rounded, 0xFF2E8F42, 'Leafy greens rich in iron, folate and vitamin A.',
+      ['Gotukola', 'Mukunuwenna', 'Kankun', 'Spinach', 'Drumstick leaves (murunga)', 'Thampala', 'Green salad']),
+  FoodGroup('fruits', 'Fruits', Symbols.spa_rounded, 0xFFE0567F, 'Fresh fruit for vitamin C, fibre and natural sweetness.',
+      ['Banana', 'Papaya', 'Mango', 'Guava', 'Pineapple', 'Orange', 'Wood apple', 'Rambutan'], imageName: 'other_fruit'),
+  FoodGroup('pulses', 'Pulses, nuts and seeds', Symbols.grain_rounded, 0xFF984062, 'Lentils, beans, nuts and seeds: plant protein and fibre.',
+      ['Dhal (parippu)', 'Chickpeas (kadala)', 'Green gram (mung)', 'Cowpea', 'Soya meat', 'Peanuts', 'Cashew nuts', 'Sesame (thala)']),
+  FoodGroup('meat', 'Meat and poultry', Symbols.kebab_dining_rounded, 0xFFD1344E, 'Animal protein with iron, zinc and vitamin B12.',
+      ['Chicken', 'Beef', 'Pork', 'Mutton', 'Sausages']),
   FoodGroup('eggs', 'Eggs', Symbols.egg_rounded, 0xFFE8A33D, 'A cheap, complete protein that is quick to cook.',
       ['Boiled egg', 'Egg curry', 'Omelette', 'Egg hoppers', 'Egg roti']),
-  FoodGroup('dark_leafy', 'Dark green leafy vegetables', Symbols.eco_rounded, 0xFF2E8F42, 'Leafy greens rich in iron, folate and vitamin A.',
-      ['Gotukola', 'Mukunuwenna', 'Kankun', 'Spinach', 'Drumstick leaves (murunga)', 'Thampala']),
-  FoodGroup('vita_veg_fruit', 'Vitamin A-rich vegetables and fruits', Symbols.nutrition_rounded, 0xFFE0590F, 'Deep orange and yellow foods that protect eyes and immunity.',
-      ['Carrot', 'Pumpkin', 'Ripe papaya', 'Ripe mango', 'Orange sweet potato']),
-  FoodGroup('other_veg', 'Other vegetables', Symbols.grass_rounded, 0xFF3F9A5B, 'Everyday vegetables for fibre and vitamins.',
-      ['Beans', 'Brinjal', 'Cabbage', 'Okra (bandakka)', 'Cucumber', 'Tomato', 'Beetroot', 'Leeks']),
-  FoodGroup('other_fruit', 'Other fruits', Symbols.spa_rounded, 0xFFE0567F, 'Fresh fruit for vitamin C, fibre and natural sweetness.',
-      ['Banana', 'Guava', 'Pineapple', 'Orange', 'Watermelon', 'Rambutan', 'Apple', 'Avocado']),
+  FoodGroup('fish', 'Fish and seafood', Symbols.set_meal_rounded, 0xFF2F7FB5, 'Protein, omega-3 fats, iodine and vitamin D.',
+      ['Fish curry', 'Sprats (halmasso)', 'Dried fish', 'Tinned fish', 'Prawns', 'Cuttlefish']),
+  FoodGroup('dairy', 'Milk and milk products', Symbols.water_full_rounded, 0xFF4BA3E3, 'Milk and foods made from it: calcium and protein.',
+      ['Milk', 'Curd (meekiri)', 'Yoghurt', 'Cheese', 'Milk tea or Milo made with milk']),
 ];
 
-FoodGroup? groupByKey(String k) {
-  final key = legacyGroupKey(k) ?? k;
+FoodGroup? groupByKey(String k, {String? food}) {
+  final key = legacyGroupKey(k, food: food);
   for (final g in foodGroups) {
     if (g.key == key) return g;
   }
   return null;
 }
 
-/// The MDD-W group for keys from the earlier 8-group tracker (and from meal
-/// photo analysis), so older logs still count. Herbs and spices are not an
-/// MDD-W group, so they map to nothing.
-String? legacyGroupKey(String k) => switch (k) {
-      'fruits' => 'other_fruit',
-      'greens' => 'dark_leafy',
-      'fats_seeds' => 'nuts_seeds',
-      'probiotics' => 'dairy',
-      'legumes_nuts' => 'pulses',
-      'protein' => 'meat_fish',
-      'herbs_spices' => null,
-      _ => foodGroups.any((g) => g.key == k) ? k : null,
-    };
+/// The dietary diversity group for keys from earlier versions of the app
+/// (the MDD-W groups and the first 8-group tracker) and from meal photo
+/// analysis, so older logs still count. Where an old group was split, the
+/// food's name decides (for example "meat and fish" becomes fish for a fish
+/// curry). Herbs and spices are not a dietary diversity group.
+String? legacyGroupKey(String k, {String? food}) {
+  final name = (food ?? '').toLowerCase();
+  bool has(String pattern) => RegExp(pattern).hasMatch(name);
+  return switch (k) {
+    'grains' => has('potato|manioc|cassava|yam|kiriala|innala|polos|jackfruit|breadfruit') ? 'starchy' : 'cereals',
+    'meat_fish' || 'protein' => has('fish|sprat|halmasso|prawn|shrimp|cuttle|squid|crab|tuna|seer|seafood|karawala|ambul') ? 'fish' : 'meat',
+    'vita_veg_fruit' => has('papaya|mango|fruit|melon|passion') ? 'fruits' : 'other_veg',
+    'other_fruit' => 'fruits',
+    'greens' => 'dark_leafy',
+    'nuts_seeds' || 'fats_seeds' || 'legumes_nuts' => 'pulses',
+    'probiotics' => 'dairy',
+    'herbs_spices' => null,
+    _ => foodGroups.any((g) => g.key == k) ? k : null,
+  };
+}
 
 /// Maps icon names stored in the database to Material Symbols.
 IconData iconByName(String? name) {
   switch (name) {
+    case 'stethoscope':
+      return Symbols.stethoscope_rounded;
+    case 'bedtime_off':
+      return Symbols.bedtime_off_rounded;
+    case 'nights_stay':
+      return Symbols.nights_stay_rounded;
+    case 'hotel':
+      return Symbols.hotel_rounded;
+    case 'person_check':
+      return Symbols.person_check_rounded;
     case 'water_drop':
       return Symbols.water_drop_rounded;
     case 'menstrual_health':

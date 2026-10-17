@@ -20,6 +20,7 @@ Future<void> main() async {
   await AppState.instance.init();
   await AppState.instance.loadThemeMode();
   await Sfx.load();
+  await Push.loadPreferences();
   await Push.init();
   runApp(const VitalUApp());
 }

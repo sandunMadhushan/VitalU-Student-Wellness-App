@@ -12,6 +12,7 @@ import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
 import '../home/breathing.dart';
+import 'tool_widgets.dart';
 
 /// DASS-21 (Lovibond & Lovibond, 1995). D = depression, A = anxiety,
 /// S = stress. The item order and scoring are the standard ones; the
@@ -178,6 +179,12 @@ class _StressScreenState extends State<StressScreen> {
         const CalmMusicCard(compact: true),
         PrimaryButton('Start', color: AppColors.mind, onTap: () => setState(() => _i = 0)),
         Center(child: TextLinkButton('Do a breathing exercise first', leading: Symbols.air_rounded, onTap: () => showBreathing(context))),
+        const ToolReference(
+          tool: 'the DASS-21 (Depression Anxiety Stress Scales)',
+          citation: 'Lovibond SH, Lovibond PF. Manual for the Depression Anxiety Stress Scales. 2nd ed. Sydney: Psychology Foundation; 1995.',
+          url: 'https://www2.psy.unsw.edu.au/dass/',
+          note: 'Scores are doubled to match the full 42-item scale, as the DASS-21 instructions describe.',
+        ),
       ];
 
   // ---------------------------------------------------------------------------
@@ -312,6 +319,12 @@ class _StressScreenState extends State<StressScreen> {
       const CalmMusicCard(),
       if (maxLevel >= 2) PrimaryButton('Talk to a professional', color: AppColors.mind, onTap: () => context.push('/professionals')),
       SoftButton('Retake assessment', icon: Symbols.refresh_rounded, onTap: _restart),
+const ToolReference(
+          tool: 'the DASS-21 (Depression Anxiety Stress Scales)',
+          citation: 'Lovibond SH, Lovibond PF. Manual for the Depression Anxiety Stress Scales. 2nd ed. Sydney: Psychology Foundation; 1995.',
+          url: 'https://www2.psy.unsw.edu.au/dass/',
+          note: 'Scores are doubled to match the full 42-item scale, as the DASS-21 instructions describe.',
+        ),
       const PrivacyNote('The DASS-21 is a screening tool. It does not diagnose depression, anxiety or any other condition. Only a qualified professional can do that.'),
       Center(child: TextLinkButton('Done', color: AppColors.onSurfaceVariant, onTap: () => goBack(context, '/tools'))),
     ];

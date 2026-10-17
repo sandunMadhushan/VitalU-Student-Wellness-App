@@ -238,6 +238,23 @@ Each group is scored by servings in the week:
 lower risk of cardiometabolic disease and to nutrient adequacy, and unlike
 MDD-W it penalises unhealthy foods.
 
+### Why VitalU uses PDQS
+
+- **It measures quality, not just variety.** MDD-W shows whether a diet is
+  varied. PDQS also shows whether it is healthy, because fried short eats,
+  sweet drinks and refined grains lower the score.
+- **It works for food-based, low-cost assessment.** It needs only "how many
+  servings of each group this week", not weighed food or nutrient tables. It
+  was designed for use across countries, including low- and middle-income
+  settings, and has been validated against nutrient adequacy and
+  cardiometabolic outcomes.
+- **It fits the risks found in Sri Lankan students.** Studies of Sri Lankan
+  undergraduates found low fruit and vegetable intake and frequent fried and
+  sugary snacks. These are exactly the groups PDQS rewards and penalises.
+- **Its groups map onto local foods.** Every PDQS group has Sri Lankan
+  examples (gotukola, kurakkan, kadala, short eats, kavum). That lets the app
+  tag each food in its database and estimate the score from meal logs.
+
 VitalU reading of the score (PDQS has no official cut-offs, so these are
 app bands, not clinical categories): **28 or more** good, **21 to 27** fair,
 **below 21** room to improve.
@@ -269,16 +286,66 @@ app bands, not clinical categories): **28 or more** good, **21 to 27** fair,
 
 ## 5. Smart Eater badge
 
-Awarded for **7 days in a row** on which the student:
+Smart Eater recognises a **health-conscious eater over a whole week**. It is
+awarded when, for **7 days in a row**, the student:
 
-1. logged **breakfast, lunch and dinner**, and
-2. ate from **5 or more MDD-W food groups**.
+1. logged **breakfast, lunch and dinner** (regular meals), and
+2. ate from **5 or more MDD-W food groups** each day (variety), and
+3. over those 7 days, reached a **PDQS of at least 22 out of 42** from the
+   meal logs (quality).
 
-It rewards both regular meals (meal skipping, especially breakfast, is
-common among university students) and a varied diet. The badge is awarded by
-the database (`refresh_badges`), and the Diet home shows progress as stars
-for each day of the current streak. (The 3-day **Rainbow Plate** badge
-rewards 5 or more groups alone.)
+### Why these three rules
+
+- **Regular meals.** Meal skipping, especially breakfast, is common among
+  university students and is linked to poorer diet quality and snacking.
+- **Variety (MDD-W ≥ 5 groups).** Five groups is the validated cut-off for
+  minimum dietary diversity. It means the day's diet is likely to cover the
+  main micronutrients.
+- **Quality (PDQS ≥ 22).** Variety alone can be met with fried snacks and
+  sweet drinks, because MDD-W does not penalise unhealthy foods. PDQS does.
+  It gives up to 2 points for each of 14 healthy groups and takes points
+  away for 7 less healthy ones. A score of 22 is more than half of the
+  possible 42 points. A student reaches it by eating several healthy
+  groups on 2 or more days of the week (2 to 3 servings scores 1 point,
+  4 or more scores 2) while keeping most of the less healthy groups to
+  0 or 1 serving a week. PDQS has no official cut-off, so 22 is a VitalU
+  threshold: more than half the points, and above the bottom of the app's
+  "fair" band (21 to 27), so a borderline week does not earn the badge.
+
+### What counts as one serving
+
+PDQS counts servings, so each group has a defined serving. The app shows it
+with the group's picture and a hand-size guide (cupped hand, fist, palm or
+thumb) on the diet quality check-in. The assessment's 7-day food questions
+use the same definitions.
+
+| PDQS group | Examples | One serving |
+|------------|----------|-------------|
+| Dark green leafy vegetables | Gotukola, mukunuwenna, kankun, spinach | ½ cup cooked or as mallum |
+| Cabbage-family vegetables | Cabbage, cauliflower, broccoli, knol-khol | ½ cup cooked, or 1 cup raw |
+| Carrots | Raw, in salads or curries | ½ cup chopped, or 1 medium carrot |
+| Other vegetables | Beans, brinjal, okra, pumpkin, gourds, tomato | ½ cup cooked |
+| Whole citrus fruits | Orange, mandarin, lime (not juice) | 1 orange, or 2 small mandarins |
+| Other whole fruits | Banana, papaya, guava, mango, pineapple | 1 medium fruit, or ½ cup cut fruit |
+| Pulses and legumes | Dhal, kadala, green gram, cowpea | ½ cup cooked |
+| Nuts and seeds | Peanuts, cashews, sesame | 2 tablespoons, a small handful |
+| Poultry | Chicken | A palm-sized piece |
+| Fish | Fresh fish, sprats, tinned fish | A palm-sized piece |
+| Eggs | Boiled, curried, omelette | 1 egg |
+| Whole grains | Red rice, kurakkan, oats, atta | 1 cup cooked rice, or 1 roti |
+| Liquid vegetable oils | Sunflower, soybean, gingelly, olive | 1 tablespoon |
+| Low-fat dairy | Low-fat milk, curd, yoghurt | 1 glass of milk (200 ml) or 1 small cup of curd |
+| Red meat | Beef, pork, mutton | A palm-sized piece |
+| Processed meat | Sausages, meatballs, ham, nuggets | 1 sausage, 2 slices of ham, or 3 nuggets |
+| Refined grains and baked goods | White rice, white bread, buns, biscuits | 1 cup cooked white rice, 2 slices of bread, or 1 bun |
+| Sugar-sweetened drinks | Soft drinks, sweet milk tea, packet juice | 1 glass or small bottle (200 ml) |
+| Desserts and ice cream | Cake, kavum, chocolate, ice cream | 1 piece, or 1 scoop of ice cream |
+| Fried food from outside | Short eats, rolls, fried rice, kottu | 1 short eat, or 1 plate |
+| Potatoes | Potato curry, chips, fries | ½ cup potato curry or chips |
+
+The badge is awarded by the database (`refresh_badges`), and the Diet home
+and Achievements screens show progress as one star for each day of the
+current streak, with the week's PDQS beside it.
 
 ---
 

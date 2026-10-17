@@ -37,6 +37,23 @@ class AppIconTile extends StatelessWidget {
       );
 }
 
+/// The app icon and name, shown at the top left of the main tabs.
+class BrandMark extends StatelessWidget {
+  const BrandMark({super.key});
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: 'VitalU',
+        child: Padding(
+          padding: const EdgeInsets.only(left: Sp.margin),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.asset(Img.p('app_icon'), width: 30, height: 30, fit: BoxFit.cover)),
+            const SizedBox(width: 8),
+            ExcludeSemantics(child: Text('VitalU', style: T.headlineSm.w(FontWeight.w800).tracking(-0.3))),
+          ]),
+        ),
+      );
+}
+
 /// Circular avatar of the signed-in student: their uploaded photo, or a
 /// head-and-shoulders silhouette until one is uploaded.
 class Avatar extends StatelessWidget {
@@ -714,6 +731,9 @@ abstract class VHeader extends StatelessWidget {
   bool get closeIcon => false;
   VoidCallback? get onLeading => null;
   bool get showLeading => true;
+
+  /// Shows the app icon and name where a back button would be.
+  bool get brand => false;
   List<Widget> actionsFor(BuildContext context) => const [];
 
   Widget? _leading(BuildContext context) => showLeading
@@ -730,6 +750,8 @@ abstract class VHeader extends StatelessWidget {
       return SliverAppBar.large(
         pinned: true,
         automaticallyImplyLeading: false,
+        leading: brand ? const BrandMark() : null,
+        leadingWidth: brand ? 140 : null,
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         title: Text(titleText),
@@ -750,7 +772,8 @@ abstract class VHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AppBar(
         automaticallyImplyLeading: false,
-        leading: large ? null : _leading(context),
+        leading: brand ? const BrandMark() : (large ? null : _leading(context)),
+        leadingWidth: brand ? 140 : null,
         title: Text(titleText, style: large ? T.headlineLg : T.headlineSm),
         actions: actionsFor(context),
       );
@@ -772,6 +795,8 @@ class MainHeader extends VHeader {
   bool get large => true;
   @override
   bool get showLeading => false;
+  @override
+  bool get brand => true;
   @override
   List<Widget> actionsFor(BuildContext context) => _accountActions(context);
 }
@@ -840,6 +865,8 @@ class TwoLineHeader extends VHeader {
   bool get large => true;
   @override
   bool get showLeading => false;
+  @override
+  bool get brand => true;
   @override
   List<Widget> actionsFor(BuildContext context) => _accountActions(context);
 }

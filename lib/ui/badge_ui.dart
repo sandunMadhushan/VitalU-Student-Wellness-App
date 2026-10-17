@@ -18,7 +18,7 @@ import 'widgets.dart';
 /// Streak badges are complete medal illustrations of their own
 /// (`assets/badges/<code>.webp`); [_bySex] ones are drawn for the student's
 /// sex (`assets/badges/<code>_<female|male>.webp`).
-const _illustrated = {'aqua_achiever', 'rainbow_plate', 'active_aura', 'smart_eater'};
+const _illustrated = {'aqua_achiever', 'active_aura', 'smart_eater', 'heart_minded', 'curious_learner'};
 const _bySex = {'active_aura'};
 
 String _illustratedAsset(String code) =>
@@ -34,6 +34,7 @@ Color badgeColor(String code, [String? category]) => switch (code) {
       'restful_sleep' => AppColors.sleep,
       'mindful_breath' || 'exam_refuge' => AppColors.mind,
       'heart_minded' => AppColors.heart,
+      'curious_learner' => AppColors.mind,
       'cycle_harmony' => AppColors.cycle,
       _ => switch (category) {
           'nourish' => AppColors.nutrition,
@@ -247,6 +248,14 @@ class _StreakBadgeCardState extends State<StreakBadgeCard> {
                 Text(line, style: T.bodySm.c(AppColors.onSurfaceVariant)),
                 const SizedBox(height: 8),
                 StreakStars(filled: earned ? b.length : stars, count: b.length, size: b.length > 3 ? 17 : 22),
+                if (info?.weekPdqs != null) ...[
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Icon(info!.weekPdqs! >= smartEaterPdqs ? Symbols.check_circle_rounded : Symbols.restaurant_rounded, size: 16, color: info.weekPdqs! >= smartEaterPdqs ? AppColors.tertiary : c, fill: 1),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text('Diet quality this week: ${info.weekPdqs} of 42 (needs $smartEaterPdqs)', style: T.labelSm.c(AppColors.onSurfaceVariant))),
+                  ]),
+                ],
               ]),
             ),
           ]),
