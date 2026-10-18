@@ -81,7 +81,7 @@ textarea { resize: vertical; min-height: 80px; }
 .tab.active { background: var(--primary-soft); color: var(--primary); }
 .who { display: flex; align-items: center; gap: 8px; }
 .content { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
-.tab-panel { display: grid; gap: 18px; }
+.tab-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .head { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
 
 .card { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); border: 1px solid transparent; }
@@ -111,7 +111,7 @@ th { color: var(--muted); font-size: 12.5px; font-weight: 700; }
 .bar-val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
-.filters label { min-width: 200px; }
+.filters label { min-width: min(200px, 100%); }
 .domain-block { display: grid; gap: 12px; }
 .q { padding: 14px 0; border-top: 1px solid var(--line); display: grid; gap: 8px; }
 .q:first-of-type { border-top: 0; }

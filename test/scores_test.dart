@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vitalu/data/catalog.dart';
+import 'package:vitalu/data/food_db.dart';
 import 'package:vitalu/features/assessments/assessment_data.dart';
+import 'package:vitalu/features/diet/diet_science.dart' show diversityByDay;
 import 'package:vitalu/features/tools/activity_screen.dart' show Ipaq;
 import 'package:vitalu/features/tools/psqi_screen.dart';
 
@@ -42,6 +45,43 @@ void main() {
       expect(scores['phq2'], 3);
       expect(scores['phq2_positive'], isTrue);
       expect(label, isNotEmpty);
+    });
+  });
+
+  group('Sri Lankan dietary diversity score', () {
+    test('has ten groups and a 5-group minimum', () {
+      expect(foodGroups.length, 10);
+      expect(minDietaryDiversity, 5);
+    });
+
+    test('every food in the database uses the current groups', () {
+      for (final c in foodDatabase) {
+        for (final f in c.foods) {
+          for (final g in f.groups) {
+            expect(foodGroups.any((x) => x.key == g), isTrue, reason: '${f.name}: $g');
+          }
+        }
+      }
+    });
+
+    test('old MDD-W keys are mapped by food name', () {
+      expect(legacyGroupKey('meat_fish', food: 'Fish curry'), 'fish');
+      expect(legacyGroupKey('meat_fish', food: 'Chicken curry'), 'meat');
+      expect(legacyGroupKey('grains', food: 'Potato curry'), 'starchy');
+      expect(legacyGroupKey('grains', food: 'Red rice'), 'cereals');
+      expect(legacyGroupKey('vita_veg_fruit', food: 'Papaya'), 'fruits');
+      expect(legacyGroupKey('vita_veg_fruit', food: 'Carrot curry'), 'other_veg');
+      expect(legacyGroupKey('nuts_seeds'), 'pulses');
+      expect(legacyGroupKey('herbs_spices'), isNull);
+    });
+
+    test('a day counts each group once', () {
+      final byDay = diversityByDay([
+        {'log_date': '2026-10-18', 'food_group': 'meat_fish', 'food_name': 'Fish curry'},
+        {'log_date': '2026-10-18', 'food_group': 'fish', 'food_name': 'Sprats'},
+        {'log_date': '2026-10-18', 'food_group': 'cereals', 'food_name': 'Red rice'},
+      ]);
+      expect(byDay['2026-10-18'], {'fish', 'cereals'});
     });
   });
 

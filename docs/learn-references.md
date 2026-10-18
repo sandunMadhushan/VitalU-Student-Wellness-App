@@ -1,6 +1,6 @@
 # VitalU Learn: articles and references
 
-30 articles across 13 topics. Every article is written for undergraduate students in plain English and is based on the sources listed under it. Source file: `supabase/seed/learn_articles.json`.
+32 articles across 13 topics. Every article is written for undergraduate students in plain English and is based on the sources listed under it. Source file: `supabase/seed/learn_articles.json`.
 
 ## Body Confidence & Healthy Fitness
 
@@ -165,6 +165,21 @@ _Presence that doesn't depend on how you look_ · 4 min read
 
 - NHS. Social anxiety (social phobia). <https://www.nhs.uk/mental-health/conditions/social-anxiety/>
 
+### Stand Tall: How Fitness and Posture Shape Your Confidence
+_Body shape, posture and strength for confidence and your career_ · 5 min read
+
+- Willis J, Todorov A. First impressions: making up your mind after a 100-ms exposure to a face. Psychological Science. 2006;17(7):592-598. <https://doi.org/10.1111/j.1467-9280.2006.01750.x>
+- Barrick MR, Shaffer JA, DeGrassi SW. What you see may not be what you get: relationships among self-presentation tactics and ratings of interview and job performance. Journal of Applied Psychology. 2009;94(6):1394-1411. <https://doi.org/10.1037/a0016532>
+- DeGroot T, Gooty J. Can nonverbal cues be used to make meaningful personality attributions in employment interviews? Journal of Business and Psychology. 2009;24(2):179-192. <https://doi.org/10.1007/s10869-009-9098-0>
+- Nair S, Sagar M, Sollers J, Consedine N, Broadbent E. Do slumped and upright postures affect stress responses? A randomized trial. Health Psychology. 2015;34(6):632-641. <https://doi.org/10.1037/hea0000146>
+- Wilkes C, Kydd R, Sagar M, Broadbent E. Upright posture improves affect and fatigue in people with depressive symptoms. Journal of Behavior Therapy and Experimental Psychiatry. 2017;54:143-149. <https://doi.org/10.1016/j.jbtep.2016.07.015>
+- Briñol P, Petty RE, Wagner B. Body posture effects on self-evaluation: a self-validation approach. European Journal of Social Psychology. 2009;39(6):1053-1064. <https://doi.org/10.1002/ejsp.607>
+- Lynch SS, Thigpen CA, Mihalik JP, Prentice WE, Padua D. The effects of an exercise intervention on forward head and rounded shoulder postures in elite swimmers. British Journal of Sports Medicine. 2010;44(5):376-381. <https://doi.org/10.1136/bjsm.2009.066837>
+- Sell A, Lukaszewski AW, Townsley M. Cues of upper body strength account for most of the variance in men's bodily attractiveness. Proceedings of the Royal Society B. 2017;284(1869):20171819. <https://doi.org/10.1098/rspb.2017.1819>
+- Zamani Sani SH, Fathirezaie Z, Brand S, et al. Physical activity and self-esteem: testing direct and indirect relationships associated with psychological and physical mechanisms. Neuropsychiatric Disease and Treatment. 2016;12:2617-2625. <https://doi.org/10.2147/NDT.S116811>
+- American College of Sports Medicine. Progression models in resistance training for healthy adults. Medicine & Science in Sports & Exercise. 2009;41(3):687-708. <https://doi.org/10.1249/MSS.0b013e3181915670>
+- Senanayake HRV, Daundasekara DMSS. Prevalence and predictors of food insecurity among undergraduate students residing on campus: a case study at University of Peradeniya, Sri Lanka. iPURSE 2024 Proceedings, p. 227. <https://ir.lib.pdn.ac.lk/items/b4270390-b4b8-4b0d-bbb4-b8f58bcf9a4b>
+
 ## Everyday Health Essentials
 
 ### Hydration Hacks: Why You Feel Tired at 2 PM in Lecture
@@ -191,6 +206,21 @@ _Balanced Sri Lankan meals that don't cost a lot_ · 4 min read
 
 - Nutrition Division, Ministry of Health Sri Lanka. Food Based Dietary Guidelines for Sri Lankans. 2021. <https://nutrition.health.gov.lk/>
 - World Health Organization. Healthy diet (fact sheet). <https://www.who.int/news-room/fact-sheets/detail/healthy-diet>
+
+### Fruit First: Why Real Food Beats Vitamin Tablets
+_Vitamins, minerals, fibre and antioxidants the natural way_ · 5 min read
+
+- World Health Organization. Healthy diet. Fact sheet, 2020. <https://www.who.int/news-room/fact-sheets/detail/healthy-diet>
+- Aune D, Giovannucci E, Boffetta P, et al. Fruit and vegetable intake and the risk of cardiovascular disease, total cancer and all-cause mortality: a systematic review and dose-response meta-analysis of prospective studies. International Journal of Epidemiology. 2017;46(3):1029-1056. <https://doi.org/10.1093/ije/dyw319>
+- Carr AC, Maggini S. Vitamin C and immune function. Nutrients. 2017;9(11):1211. <https://doi.org/10.3390/nu9111211>
+- Pullar JM, Carr AC, Vissers MCM. The roles of vitamin C in skin health. Nutrients. 2017;9(8):866. <https://doi.org/10.3390/nu9080866>
+- Reynolds A, Mann J, Cummings J, et al. Carbohydrate quality and human health: a series of systematic reviews and meta-analyses. The Lancet. 2019;393(10170):434-445. <https://doi.org/10.1016/S0140-6736(18)31809-9>
+- US Preventive Services Task Force (Mangione CM, et al.). Vitamin, mineral, and multivitamin supplementation to prevent cardiovascular disease and cancer: recommendation statement. JAMA. 2022;327(23):2326-2333. <https://doi.org/10.1001/jama.2022.8970>
+- The Alpha-Tocopherol, Beta Carotene Cancer Prevention Study Group. The effect of vitamin E and beta carotene on the incidence of lung cancer and other cancers in male smokers. New England Journal of Medicine. 1994;330(15):1029-1035. <https://doi.org/10.1056/NEJM199404143301501>
+- Muraki I, Imamura F, Manson JE, et al. Fruit consumption and risk of type 2 diabetes: results from three prospective longitudinal cohort studies. BMJ. 2013;347:f5001. <https://doi.org/10.1136/bmj.f5001>
+- Abeywickrama HM, Wimalasiri KMS, Koyama Y, et al. Assessment of nutritional status and dietary pattern of a rural adult population in dry zone, Sri Lanka. International Journal of Environmental Research and Public Health. 2020;17(1):150. <https://doi.org/10.3390/ijerph17010150>
+- Ralapanawa DMPUK et al. Prevalence of metabolic syndrome and its components among university students at the University of Peradeniya. iPURSE 2023 Proceedings.
+- World Health Organization. WHO recommendations on antenatal care for a positive pregnancy experience. Geneva: WHO; 2016. <https://www.who.int/publications/i/item/9789241549912>
 
 ## Your Habits, Your Health
 

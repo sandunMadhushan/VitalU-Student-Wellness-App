@@ -293,10 +293,38 @@ notifications are deleted with it.
 | Tab | Shows | Does not show |
 |-----|-------|---------------|
 | **Overview** | Number of registered students by faculty; for each window, eligible / in progress / completed counts | Any names or answers |
-| **Analytics** | Pooled results: overall and domain averages, BMI categories, answer percentages per question, number summaries (mean, median, middle half), shuffled free-text comments, CSV download | Results for any group under 5 students (the whole report is hidden until 5 have completed) |
+| **Analytics** | Pooled results in two views. **Overall** (all faculties, or one chosen faculty): well-being and domain averages, health indicators, BMI categories, answer percentages per question, number summaries (mean, median, middle half), shuffled free-text comments. **By faculty**: every faculty side by side (see below). CSV download for both | Results for any group under 5 students (a faculty with fewer than 5 completed responses shows only its count) |
 | **Completion** | Which **registration numbers** have completed, started or not started each window, with the date completed; search by registration number; CSV | Answers, scores, names or emails |
 | **Questionnaire** | The form, for editing | – |
 | **Consultations** | Anonymous questions from students and replies | Who sent them |
+
+**By faculty view.** It has three parts:
+
+1. **Faculty comparison.** One column for all faculties together and one per
+   faculty. It shows the number of completed responses, overall well-being,
+   healthy BMI, and each health indicator.
+2. **Well-being by area and faculty.** A colour-coded table of the ten
+   domain scores for each faculty.
+3. **Compare a question across faculties.** Pick any single-choice
+   question to see each faculty's answers as a bar, coloured from the least
+   to the most healthy answer.
+
+**Health indicators.** Each one is the share of students with that
+measurement who are outside the healthy range:
+
+| Indicator | Cut-off |
+|---|---|
+| Overweight or obese | BMI 25 or more |
+| Underweight | BMI below 18.5 |
+| High waist-to-hip ratio | 0.90 or more for men, 0.85 or more for women (WHO) |
+| Raised blood pressure | 140/90 mmHg or more |
+| Raised fasting glucose | 126 mg/dL or more |
+| High triglycerides | 150 mg/dL or more |
+| High total cholesterol | 190 mg/dL or more |
+| Low mood screen positive | PHQ-2 score 3 or more |
+
+Blood pressure, glucose and lipid values come from the clinical
+measurements section, so they are missing when that section is hidden.
 
 How this is enforced: admins have no direct read access to the
 `assessments` or `profiles` tables. The dashboard can only call database
@@ -317,6 +345,8 @@ only the data listed above.
      tab, faculty email domains)
    - `20261016120000_assessment_v2_badges_learn_admin.sql` (this version of
      the questionnaire, section hide switch, Mid Year / Year End rounds)
+   - `20261018120000_sri_lankan_dds_faculty_analytics.sql` (health
+     indicators for the overall and faculty-wise analytics)
 2. **Create the admin's account** (sign up in the app, or add the user under
    Authentication in Supabase).
 3. **Grant admin access** in the SQL editor:

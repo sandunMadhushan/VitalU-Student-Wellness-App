@@ -45,7 +45,7 @@ final learnTopics = <LearnTopic>[
   LearnTopic('sleep', 'Sleep, Energy & Recovery', 'Sleep, Energy\n& Recovery',
       'Better sleep in a busy hostel, resetting your body clock and beating daytime tiredness.', Symbols.bedtime_rounded, () => AppColors.sleep),
   LearnTopic('presence', 'Personal Presence & Career Confidence', 'Personal Presence\n& Career Confidence',
-      'Interview confidence, communication and body language, built on preparation, not appearance.', Symbols.work_rounded, () => AppColors.primary),
+      'Interview confidence, communication, body language, posture and fitness for your career.', Symbols.work_rounded, () => AppColors.primary),
   LearnTopic('essentials', 'Everyday Health Essentials', 'Everyday Health\nEssentials',
       'Water, fibre, balanced Sri Lankan meals and eating well on a student budget.', Symbols.water_drop_rounded, () => AppColors.nutrition),
   LearnTopic('habits', 'Your Habits, Your Health', 'Your Habits,\nYour Health',

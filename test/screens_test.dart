@@ -140,6 +140,9 @@ final _screens = <String, Widget Function()>{
   'learn_topic': () => const LearnTopicScreen(topicKey: 'womens'),
   'article_smoking': () => const ArticleScreen(slug: 'smoking-lungs'),
   'article_sti': () => const ArticleScreen(slug: 'sti-basics'),
+  'article_posture': () => const ArticleScreen(slug: 'confident-posture'),
+  'article_fruit': () => const ArticleScreen(slug: 'fruits-first'),
+  'learn_presence': () => const LearnTopicScreen(topicKey: 'presence'),
   'register_3': () => const RegistrationStep3(),
 };
 
