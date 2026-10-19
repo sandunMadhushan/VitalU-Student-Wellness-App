@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VitalU feedback form</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body class="form-page">
+  <header class="site-head">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="img/icon.png" alt=""> VitalU</a>
+    </div>
+  </header>
+
+  <main class="form-shell">
+    <div class="progress" id="progress" hidden>
+      <div class="track" role="progressbar" aria-label="Form progress" aria-valuemin="0" aria-valuemax="100"><i id="progress-fill" style="width:0%"></i></div>
+      <span class="count" id="progress-count"></span>
+    </div>
+    <form id="step" class="step" novalidate></form>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="questions.js"></script>
+  <script src="form.js"></script>
+</body>
+</html>
