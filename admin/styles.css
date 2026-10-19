@@ -142,6 +142,18 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 50; max-width: calc(100vw - 32px); }
 
+/* Mobile menu: the tab list does not fit beside the brand, so it folds into
+   a menu button that opens every tab (and Sign out) as a full-width list. */
+.menu-btn { display: none; margin-left: auto; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-weight: 700; padding: 8px 12px; border-radius: 12px; cursor: pointer; }
+@media (max-width: 900px) {
+  .topbar { gap: 10px; padding: 10px 16px; }
+  .menu-btn { display: inline-flex; }
+  .tabs, .who { display: none; flex-basis: 100%; }
+  .topbar.open .tabs { display: flex; flex-direction: column; gap: 2px; overflow: visible; padding-top: 6px; }
+  .topbar.open .tab { text-align: left; padding: 12px 14px; font-size: 15px; }
+  .topbar.open .who { display: flex; justify-content: space-between; padding: 10px 2px 4px; border-top: 1px solid var(--line); }
+}
+
 @media (max-width: 640px) {
   .content { padding: 16px; }
   .bar-row { grid-template-columns: 1fr 64px; }

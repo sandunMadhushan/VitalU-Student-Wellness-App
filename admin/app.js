@@ -138,12 +138,21 @@ $('#logout').addEventListener('click', async () => {
 
 const renderers = { overview: renderOverview, analytics: renderAnalytics, completion: renderCompletion, schedule: renderSchedule, questions: renderQuestions, learn: renderLearn, consults: renderConsults };
 
+function setMenu(open) {
+  $('.topbar').classList.toggle('open', open);
+  $('#menu-btn').setAttribute('aria-expanded', String(open));
+}
+
 function openTab(name) {
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach((p) => (p.hidden = p.id !== `tab-${name}`));
+  const active = document.querySelector(`.tab[data-tab="${name}"]`);
+  $('#menu-current').textContent = active ? active.firstChild.textContent.trim() : '';
+  setMenu(false);
   renderers[name]();
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => openTab(t.dataset.tab)));
+$('#menu-btn').addEventListener('click', () => setMenu(!$('.topbar').classList.contains('open')));
 
 async function loadMeta() {
   const [ov, d, q] = await Promise.all([
@@ -556,6 +565,9 @@ async function renderSchedule() {
         <label>Opening time<input name="time" type="time" required value="08:00"></label>
         <label>Open for (days)<input name="days" type="number" min="1" max="31" value="7" required></label>
       </div>
+      <div><button class="btn small" type="button" id="open-now">Open from right now</button>
+        <span class="fine">Sets today's date and the current time, so it opens as soon as you schedule it.</span></div>
+      <p class="fine" id="sched-preview"></p>
       <div><h3>Faculties</h3><p class="fine">Tick the faculties to schedule now. Each one gets its own window, so you can repeat this with different dates for other faculties. Leave all unticked to open it for every faculty at once.</p>
         <div class="faculty-list">${FACULTIES.map((f) => `<label class="check"><input type="checkbox" name="faculty" value="${esc(f)}"> ${esc(f.replace('Faculty of ', ''))}</label>`).join('')}</div></div>
       <p class="fine">Students in the chosen faculties get a "coming up" notification three days before and a "now open" notification on the day. When they start, they are told the results are used only as a pooled overview, without personal identifiers.</p>
@@ -574,11 +586,47 @@ async function renderSchedule() {
         .join('') || '<tr><td colspan="6" class="muted">Nothing scheduled yet.</td></tr>'}
     </tbody></table></div></div>`;
 
-  $('#sched').onsubmit = async (e) => {
+  const form = $('#sched');
+  // Times are entered in Sri Lanka time (UTC+05:30), whatever the browser's zone.
+  const colomboNow = () => new Date(Date.now() + 330 * 60000).toISOString();
+  const opensOf = () => new Date(`${form.date.value}T${form.time.value}:00+05:30`);
+  // The round and year follow the opening date, so a window can't be labelled
+  // with a different year from the one it actually runs in.
+  const syncRound = () => {
+    const [y, m] = form.date.value.split('-').map(Number);
+    if (!y) return;
+    form.year.value = y;
+    form.round.value = m <= 6 ? ROUNDS[0] : ROUNDS[1];
+  };
+  const preview = () => {
+    const opens = opensOf();
+    if (isNaN(opens)) return ($('#sched-preview').textContent = '');
+    const closes = new Date(opens.getTime() + Number(form.days.value || 0) * 86400000);
+    const now = new Date();
+    $('#sched-preview').textContent =
+      closes <= now
+        ? 'These dates are already over. Pick a date so the window closes in the future.'
+        : `Open ${fmtDateTime(opens.toISOString())} to ${fmtDateTime(closes.toISOString())}${opens <= now ? '. It opens straight away and students are notified now.' : '.'}`;
+  };
+  syncRound();
+  preview();
+  form.date.addEventListener('change', () => (syncRound(), preview()));
+  form.time.addEventListener('change', preview);
+  form.days.addEventListener('input', preview);
+  $('#open-now').onclick = () => {
+    const now = colomboNow();
+    form.date.value = now.slice(0, 10);
+    form.time.value = now.slice(11, 16);
+    syncRound();
+    preview();
+  };
+
+  form.onsubmit = async (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
-    // Times are entered in Sri Lanka time (UTC+05:30).
-    const opens = new Date(`${f.get('date')}T${f.get('time')}:00+05:30`);
+    const opens = opensOf();
+    const closes = new Date(opens.getTime() + Number(f.get('days')) * 86400000);
+    if (closes <= new Date()) return toast('That window would already be closed. Pick a date so it closes in the future.');
     const faculties = f.getAll('faculty');
     const term = `${f.get('round')} ${f.get('year')}`;
     const { error } = await sb.rpc('admin_schedule_assessment', {

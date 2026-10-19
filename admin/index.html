@@ -31,7 +31,11 @@
   <div id="app" class="shell" hidden>
     <header class="topbar">
       <div class="brand"><span class="brand-mark">V</span> VitalU <span class="brand-tag">Admin</span></div>
-      <nav class="tabs" role="tablist">
+      <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="tabs">
+        <span id="menu-current">Overview</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <nav class="tabs" id="tabs" role="tablist">
         <button role="tab" data-tab="overview" class="tab active">Overview</button>
         <button role="tab" data-tab="analytics" class="tab">Analytics</button>
         <button role="tab" data-tab="completion" class="tab">Completion</button>
