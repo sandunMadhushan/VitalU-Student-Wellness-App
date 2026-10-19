@@ -1,6 +1,12 @@
 // The pilot evaluation form, as data. form.js renders it and researcher.js
 // uses the same definitions to build the CSV, so the column names and codes
 // always match docs/pilot-evaluation-form.md.
+//
+// Two forms share one set of base questions:
+//   student  Undergraduates evaluate the student app (how it was for them).
+//   staff    Lecturers, administration, health centre staff and technical
+//            experts evaluate the student app (how useful it will be for
+//            students) and the admin dashboard.
 'use strict';
 
 const AGREE = [
@@ -27,11 +33,21 @@ const LIKELY = [
   [5, 'Very likely'],
 ];
 
-const ROLES = [
-  ['student', 1, 'Undergraduate student'],
-  ['lecturer', 2, 'Lecturer'],
-  ['admin', 3, 'Administration or health centre staff'],
+const VALUABLE = [
+  [1, 'Not valuable'],
+  [2, 'Slightly'],
+  [3, 'Moderately'],
+  [4, 'Valuable'],
+  [5, 'Very valuable'],
 ];
+
+// Role chosen at the entry to the form. The second group is one category.
+const ROLES = [
+  ['student', 1, 'Undergraduate student', 'You took part in the pilot as a student.'],
+  ['staff', 2, 'Lecturer, administration or health centre staff, technical expert', 'You are reviewing VitalU for students and the university.'],
+];
+// Roles saved by an earlier version of the form.
+const LEGACY_ROLES = { lecturer: 'staff', admin: 'staff' };
 
 const FACULTIES = [
   [1, 'Agriculture'],
@@ -43,7 +59,6 @@ const FACULTIES = [
   [7, 'Medicine'],
   [8, 'Science'],
   [9, 'Veterinary Medicine and Animal Science'],
-  [10, 'Not faculty-based'],
 ];
 
 const YEARS = [
@@ -59,12 +74,6 @@ const SEXES = [
   [3, 'Prefer not to say'],
 ];
 
-const USED = [
-  ['used_app', 'I used the student app myself'],
-  ['used_demo', 'I saw a demonstration of the student app'],
-  ['used_dash', 'I used the admin dashboard'],
-];
-
 const FREQ = [
   [1, 'Once or twice'],
   [2, 'About once a week'],
@@ -72,9 +81,12 @@ const FREQ = [
   [4, 'Daily or almost daily'],
 ];
 
-// System Usability Scale (Brooke, 1996), "system" as "app" and "cumbersome"
-// as "awkward" (Finstad, 2006). Keep the wording and order.
-const SUS = [
+// Usability items, adapted from the System Usability Scale (Brooke, 1996),
+// "system" as "app" and "cumbersome" as "awkward" (Finstad, 2006). Items 9 and
+// 10 of the standard scale are left out because they repeat items 3 and 7, so
+// the result is a usability score out of 100 from eight items, not a standard
+// SUS score. Do not compare it with the published SUS benchmarks.
+const USABILITY = [
   'I think that I would like to use this app frequently.',
   'I found the app unnecessarily complex.',
   'I thought the app was easy to use.',
@@ -83,9 +95,9 @@ const SUS = [
   'I thought there was too much inconsistency in this app.',
   'I would imagine that most people would learn to use this app very quickly.',
   'I found the app very awkward to use.',
-  'I felt very confident using the app.',
-  'I needed to learn a lot of things before I could get going with this app.',
 ];
+
+const UI_LOOK = 'The screens, animations, illustrations and images made VitalU clearer and more pleasant to use.';
 
 const FEATURES = [
   ['f_body', 'Body checks', 'BMI and waist-to-hip ratio calculators', 'bmi'],
@@ -93,7 +105,7 @@ const FEATURES = [
   ['f_mind', 'Anxiety tracker', 'DASS-21 self-check, calm music and relaxation ideas', 'stress'],
   ['f_water', 'Water tracker', 'Daily goal, bottle and reminders', 'water'],
   ['f_move', 'Activity and sleep trackers', 'Steps, active minutes and sleep log', 'steps'],
-  ['f_cycle', 'Cycle tracker', 'Calendar, phases and notifications', 'progress', { femaleOnly: true }],
+  ['f_cycle', 'Cycle tracker', 'Calendar, phases and notifications', 'progress', { studentFemaleOnly: true }],
   ['f_diet', 'Diet tools', 'Calorie counter, meal diary, healthy plate, diversity guide, budget planner', 'diet'],
   ['f_learn', 'Learn articles', 'Health topics written for students', 'assessment'],
   ['f_badges', 'Badges and streaks', 'Aqua Achiever, Active Aura, Smart Eater and others', 'water'],
@@ -109,20 +121,8 @@ const PREPOST = [
   ['pp4', 'I know where to get health or mental health support on campus.'],
 ];
 
-const DASHBOARD = [
-  ['d_nav', 'The dashboard was easy to sign in to and find my way around, on a computer or phone.'],
-  ['d_sched', 'Scheduling the assessment for different faculties and dates was straightforward.'],
-  ['d_quest', 'Reviewing and editing the questionnaire was straightforward.'],
-  ['d_analytics', 'The pooled analytics gave a clear picture of student health.'],
-  ['d_complete', 'Checking assessment completion by registration number was useful.'],
-  ['d_privacy', "I trust that the dashboard protects students' privacy (pooled results only, small groups hidden)."],
-];
-
-const PA_QUESTION = {
-  student: 'How likely are you to complete the next six-monthly periodic health assessment in VitalU?',
-  lecturer: 'How likely are you to encourage your students to complete the six-monthly periodic health assessment?',
-  admin: 'How likely is your office to use the pooled assessment results to plan student health or nutrition support?',
-};
+// Periodic health assessment: students are asked about their own use.
+const PA_QUESTION = 'How likely are you to complete the next six-monthly periodic health assessment in VitalU?';
 
 const PA_DONE = [
   [1, 'Yes'],
@@ -140,6 +140,23 @@ const PA_REASONS = [
   ['r_other', 'Other'],
 ];
 
+// ...and the staff group is asked related questions about the same process.
+const PA_STAFF = [
+  ['pa_value', 'How valuable do you think a six-monthly periodic health assessment is for understanding and supporting student health?', VALUABLE, ['Not valuable', 'Very valuable']],
+  ['pa_students', 'How likely do you think students are to complete it every six months?', LIKELY, ['Very unlikely', 'Very likely']],
+  ['pa_use', 'How likely are you to encourage students to complete it, or to use its pooled results in your work?', LIKELY, ['Very unlikely', 'Very likely']],
+];
+
+const IMPACT_INTRO =
+  'A health monitoring system like VitalU is being introduced at a university in Sri Lanka for the very first time. Its impact builds with long-term use, so these questions ask what you expect over time.';
+
+const ADOPT_PREF = {
+  student: 'I would like to keep using VitalU.',
+  staff: 'I would support rolling VitalU out to all students at the university.',
+};
+const ADOPT_STUDENTS = 'How likely do you think students at the university are to adopt VitalU and keep using it?';
+const IMPACT = "I think an initiative like VitalU can change young people's lifestyles and habits, and help build a healthier generation of young adults.";
+
 const IMPROVE = [
   ['i_speed', 'Speed and reliability'],
   ['i_design', 'Look and layout'],
@@ -149,51 +166,58 @@ const IMPROVE = [
   ['i_learn', 'More or better Learn articles'],
   ['i_notify', 'Reminders and notifications'],
   ['i_help', 'Health support and consultations'],
-  ['i_dash', 'Admin dashboard'],
+  ['i_dash', 'Admin dashboard', { staffOnly: true }],
   ['i_lang', 'Sinhala and Tamil language options'],
   ['i_other', 'Other'],
 ];
 
-/** SUS score (0 to 100) from answers, or '' when any item is missing. */
-function susScore(a) {
+/**
+ * Usability score (0 to 100) from the eight usability items, or '' when any is
+ * missing. Odd items are positive (answer - 1), even items negative (5 - answer).
+ */
+function usabilityScore(a) {
   let sum = 0;
-  for (let i = 1; i <= 10; i++) {
-    const v = a['sus' + i];
+  for (let i = 1; i <= USABILITY.length; i++) {
+    const v = a['us' + i];
     if (typeof v !== 'number') return '';
     sum += i % 2 === 1 ? v - 1 : 5 - v;
   }
-  return sum * 2.5;
+  return Math.round((sum / (USABILITY.length * 4)) * 1000) / 10;
 }
 
 /** CSV columns in analysis order: [header, (row) => value]. */
 function csvColumns() {
   const ans = (k) => (r) => r.answers[k] ?? '';
   const flag = (list, k) => (r) => (Array.isArray(r.answers[list]) ? (r.answers[list].includes(k) ? 1 : 0) : '');
-  const cols = [
+  const roleOf = (r) => LEGACY_ROLES[r.role] || r.role;
+  return [
     ['response_id', (r) => r.id],
     ['submitted_at', (r) => r.submitted_at],
     ['link_group', (r) => r.link_group ?? ''],
     ['consent', ans('consent')],
-    ['role', (r) => (ROLES.find((x) => x[0] === r.role) || [])[1] ?? ''],
+    ['role', (r) => (ROLES.find((x) => x[0] === roleOf(r)) || [])[1] ?? ''],
     ['faculty', ans('faculty')],
     ['year', ans('year')],
     ['sex', ans('sex')],
-    ...USED.map(([k]) => [k, flag('used', k)]),
     ['freq', ans('freq')],
-    ...SUS.map((_, i) => ['sus' + (i + 1), ans('sus' + (i + 1))]),
-    ['sus_score', (r) => susScore(r.answers)],
+    ...USABILITY.map((_, i) => ['us' + (i + 1), ans('us' + (i + 1))]),
+    ['usability_score', (r) => usabilityScore(r.answers)],
+    ['ui_look', ans('ui_look')],
     ...FEATURES.map(([k]) => [k, ans(k)]),
+    ['fav_feature', ans('fav_feature')],
     ...PREPOST.flatMap(([k]) => [[k + '_pre', ans(k + '_pre')], [k + '_post', ans(k + '_post')]]),
-    ...DASHBOARD.map(([k]) => [k, ans(k)]),
+    ['d_comment', ans('d_comment')],
     ['pa_likely', ans('pa_likely')],
     ['pa_done', ans('pa_done')],
     ...PA_REASONS.map(([k]) => [k, flag('pa_reasons', k)]),
     ['pa_reasons_other', ans('pa_reasons_other')],
+    ...PA_STAFF.map(([k]) => [k, ans(k)]),
+    ['adopt_pref', ans('adopt_pref')],
+    ['adopt_students', ans('adopt_students')],
+    ['impact', ans('impact')],
     ...IMPROVE.map(([k]) => [k, flag('improve_pick', k)]),
     ['improve_other', ans('improve_other')],
-    ['recommend', ans('recommend')],
-    ['open_best', ans('open_best')],
+    ['open_overall', ans('open_overall')],
     ['open_improve', ans('open_improve')],
   ];
-  return cols;
 }

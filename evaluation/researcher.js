@@ -10,7 +10,8 @@ const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const ROLE_NAME = { student: 'Undergraduate', lecturer: 'Lecturer', admin: 'Administration' };
+const ROLE_NAME = { student: 'Undergraduate', staff: 'Staff and experts', lecturer: 'Staff and experts', admin: 'Staff and experts' };
+const roleOf = (r) => LEGACY_ROLES[r.role] || r.role;
 const FACULTY_NAME = Object.fromEntries(FACULTIES);
 
 let all = [];
@@ -77,7 +78,7 @@ async function load() {
 
 const filtered = () => {
   const role = $('#role-filter').value;
-  return role ? all.filter((r) => r.role === role) : all;
+  return role ? all.filter((r) => roleOf(r) === role) : all;
 };
 
 $('#role-filter').addEventListener('change', render);
@@ -114,19 +115,20 @@ function bars(rows, total) {
 
 function render() {
   const rows = filtered();
-  const counts = { student: 0, lecturer: 0, admin: 0 };
-  all.forEach((r) => (counts[r.role] = (counts[r.role] || 0) + 1));
-  $('#summary-line').textContent = `${all.length} total: ${counts.student} undergraduates, ${counts.lecturer} lecturers, ${counts.admin} administration`;
+  const counts = { student: 0, staff: 0 };
+  all.forEach((r) => (counts[roleOf(r)] = (counts[roleOf(r)] || 0) + 1));
+  $('#summary-line').textContent = `${all.length} total: ${counts.student} undergraduates, ${counts.staff} lecturers, administration, staff and experts`;
 
   if (!rows.length) {
     $('#report').innerHTML = `<div class="quote"><p>No responses ${all.length ? 'for this group' : 'yet'}. Share the form link, and responses will appear here as they arrive.</p></div>`;
     return;
   }
 
-  const sus = rows.map((r) => susScore(r.answers)).filter((v) => v !== '');
+  const usab = rows.map((r) => usabilityScore(r.answers)).filter((v) => v !== '');
+  const adopt = nums(rows, 'adopt_pref');
+  const impact = nums(rows, 'impact');
   const likely = nums(rows, 'pa_likely');
-  const rec = nums(rows, 'recommend');
-  const susMean = mean(sus);
+  const usabMean = mean(usab);
 
   // Improvement priorities
   const improve = IMPROVE.map(([k, label]) => [label, rows.filter((r) => (r.answers.improve_pick || []).includes(k)).length]).sort((a, b) => b[1] - a[1]);
@@ -146,46 +148,49 @@ function render() {
     return `<tr><td>${esc(text)}</td><td class="num">${pairs.length}</td><td class="num">${median(pairs.map((r) => r.answers[k + '_pre'])) ?? '–'}</td><td class="num">${median(pairs.map((r) => r.answers[k + '_post'])) ?? '–'}</td><td class="num">${up} / ${pairs.length - up - down} / ${down}</td></tr>`;
   }).join('');
 
-  // Dashboard items
-  const dash = DASHBOARD.map(([k, text]) => {
-    const v = nums(rows, k);
-    return `<tr><td>${esc(text)}</td><td class="num">${v.length}</td><td class="num">${median(v) ?? '–'}</td><td class="num">${v.length ? `${v.filter((x) => x >= 4).length} of ${v.length}` : '–'}</td></tr>`;
-  }).join('');
+  // Favourite feature
+  const favs = FEATURES.map(([k, title]) => [title, rows.filter((r) => r.answers.fav_feature === k).length]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]);
+  const favTotal = rows.filter((r) => r.answers.fav_feature).length;
+
+  // Admin dashboard comments (staff group only)
+  const dashComments = rows.filter((r) => r.answers.d_comment);
 
   // Open-ended answers
-  const open = rows.filter((r) => r.answers.open_best || r.answers.open_improve);
+  const open = rows.filter((r) => r.answers.open_overall || r.answers.open_improve);
 
   $('#report').innerHTML = `
     <div class="kpis">
       ${kpi('Responses', rows.length, $('#role-filter').value ? ROLE_NAME[$('#role-filter').value] : 'Everyone')}
-      ${kpi('App usability (SUS)', susMean == null ? '–' : susMean.toFixed(1), sus.length ? `Mean of ${sus.length}, median ${median(sus)}. Average is 68.` : 'No SUS answers yet')}
-      ${kpi('Periodic assessment', likely.length ? `${pct(likely.filter((x) => x >= 4).length, likely.length)}%` : '–', likely.length ? `Likely or very likely, of ${likely.length}` : 'No answers yet')}
-      ${kpi('Would recommend', rec.length ? `${pct(rec.filter((x) => x >= 4).length, rec.length)}%` : '–', rec.length ? `Likely or very likely, of ${rec.length}` : 'No answers yet')}
+      ${kpi('App usability (0 to 100)', usabMean == null ? '–' : usabMean.toFixed(1), usab.length ? `Mean of ${usab.length}, median ${median(usab)}. Eight items, not the standard SUS.` : 'No answers yet')}
+      ${kpi('Want VitalU to continue', adopt.length ? `${pct(adopt.filter((x) => x >= 4).length, adopt.length)}%` : '–', adopt.length ? `Agree or strongly agree, of ${adopt.length}` : 'No answers yet')}
+      ${kpi('Expect lasting change', impact.length ? `${pct(impact.filter((x) => x >= 4).length, impact.length)}%` : '–', impact.length ? `Agree or strongly agree, of ${impact.length}` : 'No answers yet')}
+      ${kpi('Students will complete it', likely.length ? `${pct(likely.filter((x) => x >= 4).length, likely.length)}%` : '–', likely.length ? `Undergraduates likely to complete the assessment, of ${likely.length}` : 'No answers yet')}
     </div>
 
     <div class="grid2">
       <div class="r-section"><h2>What to improve first</h2>${bars(improve.filter((x) => x[1] > 0), rows.length)}</div>
-      <div class="r-section"><h2>Features rated very or extremely useful</h2>${bars(features.filter((x) => x[2] !== 'none'))}</div>
+      <div class="r-section"><h2>Features rated very or extremely useful</h2><p class="fine" style="margin-bottom:10px">Undergraduates rate how useful a feature was for them. Staff and experts rate how useful they expect it to be for students. Use the filter to see one group.</p>${bars(features.filter((x) => x[2] !== 'none'))}</div>
     </div>
+    <div class="r-section"><h2>Favourite feature</h2>${bars(favs, favTotal)}</div>
 
     ${prepost && rows.some((r) => r.answers.pp1_pre != null) ? `<div class="r-section"><h2>Before and now</h2>
       <p class="fine" style="margin-bottom:10px">Medians on the 1 to 5 agreement scale. Run the Wilcoxon signed-rank test on the CSV (see docs/pilot-evaluation-form.md).</p>
       <div class="table-wrap"><table><thead><tr><th>Statement</th><th>Pairs</th><th>Before</th><th>Now</th><th>Higher / same / lower</th></tr></thead><tbody>${prepost}</tbody></table></div></div>` : ''}
 
-    ${rows.some((r) => r.answers.d_nav != null || r.answers.d_sched != null) ? `<div class="r-section"><h2>Admin dashboard</h2>
-      <div class="table-wrap"><table><thead><tr><th>Statement</th><th>Answers</th><th>Median</th><th>Agree</th></tr></thead><tbody>${dash}</tbody></table></div></div>` : ''}
+    ${dashComments.length ? `<div class="r-section"><h2>Admin dashboard comments (${dashComments.length})</h2>
+      ${dashComments.map((r) => `<div class="quote"><div class="meta">${esc(ROLE_NAME[r.role])}, ${esc(fmtDate(r.submitted_at))}</div><p>${esc(r.answers.d_comment)}</p></div>`).join('')}</div>` : ''}
 
     <div class="r-section"><h2>In their own words (${open.length})</h2>
       ${open.length ? open.map((r) => `<div class="quote"><div class="meta">${esc(ROLE_NAME[r.role])}${r.answers.faculty ? `, ${esc(FACULTY_NAME[r.answers.faculty])}` : ''}, ${esc(fmtDate(r.submitted_at))}</div>
-        ${r.answers.open_best ? `<p><strong>Most useful:</strong> ${esc(r.answers.open_best)}</p>` : ''}
+        ${r.answers.open_overall ? `<p><strong>Overall:</strong> ${esc(r.answers.open_overall)}</p>` : ''}
         ${r.answers.open_improve ? `<p><strong>Change, fix or add:</strong> ${esc(r.answers.open_improve)}</p>` : ''}</div>`).join('') : '<p class="muted">No written answers yet.</p>'}
     </div>
 
     <div class="r-section"><h2>All responses</h2>
       <div class="table-wrap"><table>
-        <thead><tr><th>Submitted</th><th>Role</th><th>Faculty</th><th>SUS</th><th>Assessment likely</th><th>Recommend</th><th>Link</th></tr></thead>
+        <thead><tr><th>Submitted</th><th>Role</th><th>Faculty</th><th>Usability</th><th>Wants to continue</th><th>Lasting change</th><th>Link</th></tr></thead>
         <tbody>${rows.map((r) => `<tr><td>${esc(fmtDate(r.submitted_at))}</td><td>${esc(ROLE_NAME[r.role])}</td><td>${esc(FACULTY_NAME[r.answers.faculty] || '–')}</td>
-          <td class="num">${susScore(r.answers) === '' ? '–' : susScore(r.answers)}</td><td class="num">${r.answers.pa_likely ?? '–'}</td><td class="num">${r.answers.recommend ?? '–'}</td><td>${esc(r.link_group || '–')}</td></tr>`).join('')}</tbody>
+          <td class="num">${usabilityScore(r.answers) === '' ? '–' : usabilityScore(r.answers)}</td><td class="num">${r.answers.adopt_pref ?? '–'}</td><td class="num">${r.answers.impact ?? '–'}</td><td>${esc(r.link_group || '–')}</td></tr>`).join('')}</tbody>
       </table></div></div>`;
 }
 

@@ -20,7 +20,7 @@ Plain HTML, CSS and JavaScript with no build step. It uses the same Supabase pro
 
 ## Set up
 
-1. **Database.** Apply `supabase/migrations/20261019130000_pilot_feedback.sql`, for example with `supabase db push` or by pasting it into the Supabase SQL editor.
+1. **Database.** Apply `supabase/migrations/20261019130000_pilot_feedback.sql` and `20261019140000_pilot_feedback_staff_role.sql`, for example with `supabase db push` or by pasting them into the Supabase SQL editor.
 2. **Your researcher account.** In the Supabase SQL editor, replace the email and run:
 
    ```sql
@@ -42,10 +42,11 @@ Plain HTML, CSS and JavaScript with no build step. It uses the same Supabase pro
 Send one link per group, so you can tell where responses came from. The role is pre-selected but can still be changed.
 
 - Undergraduates: `.../evaluation/form.html?g=student`
-- Lecturers: `.../evaluation/form.html?g=lecturer`
-- Administration: `.../evaluation/form.html?g=admin`
+- Lecturers, administration, health centre staff and technical experts: `.../evaluation/form.html?g=staff`
 
-Or send the home page, `.../evaluation/`, which explains the app and links to the form.
+Or send the home page, `.../evaluation/`, which explains the app. Its **Give feedback** button opens the form, where people choose their role first.
+
+There are two forms on the same base questions: students evaluate the student app, and the second group evaluates the student app and the admin dashboard. See [docs/pilot-evaluation-form.md](../docs/pilot-evaluation-form.md).
 
 ## Hosting
 
