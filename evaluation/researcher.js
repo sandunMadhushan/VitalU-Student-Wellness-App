@@ -174,7 +174,7 @@ function render() {
     <div class="r-section"><h2>Favourite feature</h2>${bars(favs, favTotal)}</div>
 
     ${prepost && rows.some((r) => r.answers.pp1_pre != null) ? `<div class="r-section"><h2>Before and now</h2>
-      <p class="fine" style="margin-bottom:10px">Medians on the 1 to 5 agreement scale. Run the Wilcoxon signed-rank test on the CSV (see docs/pilot-evaluation-form.md).</p>
+      <p class="fine" style="margin-bottom:10px">Medians on the 1 to 5 agreement scale. Both groups answer this; use the filter to see one group. Run the Wilcoxon signed-rank test on the CSV (see docs/pilot-evaluation-form.md).</p>
       <div class="table-wrap"><table><thead><tr><th>Statement</th><th>Pairs</th><th>Before</th><th>Now</th><th>Higher / same / lower</th></tr></thead><tbody>${prepost}</tbody></table></div></div>` : ''}
 
     ${dashComments.length ? `<div class="r-section"><h2>Admin dashboard comments (${dashComments.length})</h2>

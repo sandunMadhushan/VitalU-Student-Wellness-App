@@ -7,7 +7,7 @@ Revised after the researcher's review of the first version (changes are listed a
 This document has three parts:
 
 1. **The forms**: every question, who sees it, and how answers are coded.
-2. **The analysis plan**: how to turn the answers into findings, including the Wilcoxon signed-rank test.
+2. **The analysis plan**: step-by-step quantitative and qualitative analysis, the tests to use, and the software.
 3. **Notes for the website**: how this is built and where responses go.
 
 ---
@@ -16,17 +16,19 @@ This document has three parts:
 
 ### Two forms, one base
 
-At the entry to the form, after pressing **Give feedback**, the respondent chooses one of two roles. Each role gets its own form, built from the same base questions with different wording.
+At the entry to the form, after pressing **Give feedback**, the respondent chooses one of two roles. Each role gets its own form, built from the same base questions. **Both groups used the app during the pilot**, so both answer the usability, favourite-feature, before-and-after and adoption questions as users, in the same words. They differ only where the roles differ.
 
 | | Form A: undergraduate students | Form B: lecturers, administration or health centre staff, technical experts |
 |---|---|---|
-| What they evaluate | The student app, from their own use | The student app, for students, **and** the admin dashboard |
-| Feature wording | "How useful **was** each feature **for you**?" | "How useful **do you think** each feature **will be for students**?" |
+| What they evaluate | The student app | The student app **and** the admin dashboard |
+| Usability, favourite feature, before and after, "keep using VitalU" | Asked as a user | Asked as a user, same wording |
+| Feature usefulness | "How useful **was** each feature **for you**?" | "How useful **do you think** each feature **will be for students**?" |
 | Admin dashboard | Not shown (students have no access) | Shown, as one open comment |
 | Faculty, batch, sex | Asked | Not asked |
+| How often they opened the app | Asked | Asked |
 | Periodic assessment | Their own likelihood to complete it | Related questions about its value and uptake |
-| Before and after | Asked | Not asked |
-| Time | About 6 to 8 minutes | About 4 to 6 minutes |
+| Support for a roll-out to all students | Not asked | Asked |
+| Time | About 6 to 8 minutes | About 5 to 7 minutes |
 
 Because the role is chosen at the entry, the form no longer asks "Which describes you best?" or "Which parts of VitalU did you use?".
 
@@ -54,12 +56,12 @@ Because the role is chosen at the entry, the form no longer asks "Which describe
 |---|--------|:------:|:------:|
 | 0 | Choose your role | ✓ | ✓ |
 | 1 | Welcome and consent | ✓ | ✓ |
-| 2 | About you | ✓ | |
+| 2 | About you (Form B: "Your use of VitalU", frequency only) | ✓ | ✓ |
 | 3 | Using the student app (usability, part 1) | ✓ | ✓ |
 | 4 | Using the student app (usability, part 2, and look and feel) | ✓ | ✓ |
 | 5 | Student app features | ✓ | ✓ |
 | 6 | Favourite feature | ✓ | ✓ |
-| 7 | Before and after VitalU | ✓ | |
+| 7 | Before and after VitalU | ✓ | ✓ |
 | 8 | The admin dashboard | | ✓ |
 | 9 | The periodic health assessment | ✓ | ✓ |
 | 10 | The bigger picture (adoption and impact) | ✓ | ✓ |
@@ -92,7 +94,9 @@ A link ending `?g=student` or `?g=staff` selects the role in advance and skips t
 |----|----------|---------|
 | `consent` | Do you agree to take part? | 1 = Yes, I have read the information and agree · 0 = No (ends the form) |
 
-### Screen 2. About you (Form A only)
+### Screen 2. About you
+
+Form A asks all four questions. Form B asks only `freq` ("How often did you open the student app during the pilot?").
 
 | ID | Question | Codes |
 |----|----------|-------|
@@ -105,7 +109,7 @@ A link ending `?g=student` or `?g=staff` selects the role in advance and skips t
 
 ### Screens 3 and 4. Using the student app (both forms)
 
-Agreement scale, all required in this section so the score can be worked out. Form B's introduction reads "Think about your experience trying the VitalU app, even if it was brief."
+Agreement scale, all required in this section so the score can be worked out. Both forms read "Think about your experience using the VitalU app."
 
 These are eight of the ten System Usability Scale items (Brooke, 1996; "system" is "app" and "cumbersome" is "awkward", after Finstad, 2006). Items 9 ("I felt very confident using the app") and 10 ("I needed to learn a lot of things before I could get going") were removed because they repeat items 3 and 7.
 
@@ -149,9 +153,9 @@ One card per feature, each rated with five faces. A tap moves to the next card. 
 
 | ID | Question | Answer |
 |----|----------|--------|
-| `fav_feature` | Form A: Which feature of the app did you like the most? Form B: Which feature do you think students will like the most? | One of the feature IDs above, or `none` |
+| `fav_feature` | Which feature of the app did you like the most? (both forms) | One of the feature IDs above, or `none` |
 
-### Screen 7. Before and after VitalU (Form A only)
+### Screen 7. Before and after VitalU (both forms)
 
 Each statement is rated twice on the agreement scale, **before** the pilot and **now**.
 
@@ -198,7 +202,8 @@ Introduction shown above the questions:
 
 | ID | Question | Scale |
 |----|----------|-------|
-| `adopt_pref` | Form A: I would like to keep using VitalU. Form B: I would support rolling VitalU out to all students at the university. | Agreement. This is the **overall adoption preference**. |
+| `adopt_pref` | I would like to keep using VitalU. (both forms) | Agreement. This is the **overall adoption preference**. |
+| `support_rollout` | I would support rolling VitalU out to all students at the university. (Form B only) | Agreement |
 | `adopt_students` | How likely do you think students at the university are to adopt VitalU and keep using it? | Likelihood |
 | `impact` | I think an initiative like VitalU can change young people's lifestyles and habits, and help build a healthier generation of young adults. | Agreement |
 
@@ -222,7 +227,7 @@ Both optional. "Please do not include names or anything that could identify you 
 | Form | Screens | Time |
 |------|---------|------|
 | A: undergraduate students | 12 | 6 to 8 minutes |
-| B: lecturers, administration, staff and experts | 11 | 4 to 6 minutes |
+| B: lecturers, administration, staff and experts | 13 | 5 to 7 minutes |
 
 ### What changed after the researcher's review
 
@@ -244,209 +249,252 @@ Both optional. "Please do not include names or anything that could identify you 
 
 The "likely to recommend VitalU to a fellow student" question was also dropped, because the adoption questions now cover the same idea.
 
+**Second revision.** The second group also used the app, so they now answer as users: the same usability introduction, favourite feature ("Which feature of the app did you like the most?"), before-and-after statements, frequency of use and "I would like to keep using VitalU". Questions that asked them to guess students' preferences were removed, except feature usefulness, which still asks how useful each feature will be for students. "I would support rolling VitalU out to all students" is kept as a separate staff-only item (`support_rollout`).
+
 ---
 
 ## Part 2. How to analyse the responses
 
-Use free tools: **jamovi** (point and click), **R**, or Python with `pandas` and `scipy`. SPSS works too. Export the responses as a CSV (one row per respondent, the IDs above as column names). **Always analyse Form A and Form B separately first**, because the same feature question means something different in each: what students found useful versus what staff expect to be useful.
+### 2.1 Overview
 
-### Step 1. Clean the data
+The form gives two kinds of data, and they are analysed in different places:
 
-1. Remove rows where `consent` is not 1.
-2. Remove clear duplicates: same answers in every column, submitted minutes apart.
-3. Remove **straight-liners** from the usability items: people who chose the same answer for all eight. Half the items are negatively worded, so identical answers mean they did not read them. Report how many.
-4. Leave blank cells as missing. Do not turn "Did not use" or "Not sure" into 0 or 3.
+| Data | Questions | Analysed with | Where |
+|------|-----------|---------------|-------|
+| **Quantitative** (numbers, choices) | All 1 to 5 scales, usability items, favourite feature, multi-select lists, role, faculty | Descriptive statistics and non-parametric tests | jamovi (recommended), JASP, SPSS, R or Excel |
+| **Qualitative** (written comments) | `open_overall`, `open_improve`, `d_comment`, `improve_other`, `pa_reasons_other` | Thematic analysis | NVivo, ATLAS.ti, MAXQDA, or free: Taguette, QualCoder, Excel |
 
-### Step 2. Describe who answered
+**The workflow:**
 
-Report counts and percentages for `role`, and, for undergraduates, `faculty`, `year`, `sex` and `freq`. Give a response rate per group if you know how many were invited: `completed forms ÷ people invited × 100`.
+1. Download the CSV from the researcher page.
+2. Clean it in Excel.
+3. Analyse the numbers in jamovi.
+4. Import the written comments into NVivo, or a free alternative, and code them into themes.
+5. Combine both in the findings: numbers show *how many*, themes and quotes show *why*.
 
-### Step 3. Usability score
+### 2.2 Software
 
-The CSV includes `usability_score` (0 to 100), worked out from `us1` to `us8` for anyone who answered all eight. To work it out yourself:
+**For the numbers**
 
-1. Odd items (`us1`, `us3`, `us5`, `us7`): subtract 1 from the answer.
-2. Even items (`us2`, `us4`, `us6`, `us8`): subtract the answer from 5.
-3. Add the 8 results (0 to 32), divide by 32, multiply by 100.
+| Software | Cost | Why use it |
+|----------|------|-----------|
+| **jamovi** (jamovi.org) | Free | Point and click, opens CSV directly, has every test below, and gives effect sizes. **Recommended.** |
+| **JASP** (jasp-stats.org) | Free | Very similar to jamovi, with clean APA-style tables. |
+| **IBM SPSS Statistics** | Paid; often available through the university | The traditional choice in health research. Same tests, more menus. |
+| **R** (with RStudio) | Free | Most flexible and reproducible, but needs code. Commands are given below. |
+| **Microsoft Excel** or Google Sheets | Usually available | Cleaning, counts, percentages and charts. Not for the tests. |
 
-In R:
+**For the written comments**
 
-```r
-odd  <- c("us1","us3","us5","us7")
-even <- c("us2","us4","us6","us8")
-d$usability <- (rowSums(d[odd] - 1) + rowSums(5 - d[even])) / 32 * 100
-```
+| Software | Cost | Notes |
+|----------|------|-------|
+| **NVivo** (Lumivero) | Paid; a 14-day free trial; often licensed by universities | The most widely used qualitative software in health research. Imports the CSV as a dataset, so each comment stays linked to the person's role and faculty. |
+| **ATLAS.ti** | Paid, with a student licence | Similar to NVivo, strong on visual networks of codes. |
+| **MAXQDA** | Paid, with a student licence | Similar, with good mixed-methods tools that link codes with the numbers. |
+| **Taguette** (taguette.org) | Free, open source | Simple highlight-and-tag coding in the browser. Enough for a few hundred comments. |
+| **QualCoder** | Free, open source | A desktop tool closer to NVivo. |
+| **Excel** | Usually available | A coding spreadsheet: one row per comment, one column per code. Fine for under about 150 comments. |
 
-**Report** mean, standard deviation, median and interquartile range, for each form.
+If "Nova" meant **NVivo**, it is the right choice when the university has a licence. If not, Taguette or an Excel coding sheet gives the same result for a dataset of this size.
 
-> **Important.** With items 9 and 10 removed this is **not a standard SUS score**, so the published benchmarks (68 is average, above 80 is excellent) cannot be applied to it. Describe it as "a usability score from eight System Usability Scale items" and compare it only within your own data (students against staff) and across future rounds. If you later need the benchmarks, ask all ten items.
+### 2.3 Step 1. Prepare the data (Excel)
 
-Example sentence: *"Undergraduates rated usability at a mean of 78.1 out of 100 (SD 11.5, n = 42), using eight items adapted from the System Usability Scale."*
+1. On the researcher page, press **Download CSV**. Use **Everyone** for the full file.
+2. Open it in Excel and **save a copy** as `vitalu_feedback_raw.xlsx`. Never edit the raw file; work on a copy.
+3. **Remove** rows where `consent` is not 1.
+4. **Remove duplicates**: rows with the same answers in every column, submitted minutes apart.
+5. **Remove straight-liners** from the usability items: people who chose the same answer for all eight (`us1` to `us8`). Half the items are negatively worded, so identical answers mean they did not read them. Report how many you removed.
+6. **Keep blanks as blanks.** A blank means not shown, skipped, "Did not use" or "Not sure". Never replace it with 0 or 3.
+7. Add a column `group` = "Student" when `role` = 1 and "Staff" when `role` = 2.
+8. Save as `vitalu_feedback_clean.csv` for jamovi, and copy the text columns into a separate sheet for the qualitative work (section 2.7).
 
-### Step 4. Before and after: the Wilcoxon signed-rank test (Form A)
+### 2.4 Step 2. Descriptive statistics (jamovi: Exploration → Descriptives)
 
-#### Why this test
+Report these for each group (put `group` in **Split by**).
 
-Each student rated the same statement twice ("before" and "now"), so the two answers are **paired**. Likert answers are **ordinal**, not truly numeric, and small samples are rarely normally distributed. The Wilcoxon signed-rank test is the standard non-parametric test for paired ordinal data. It asks: *are the "now" ratings consistently higher (or lower) than the "before" ratings?*
+| What | Columns | Report |
+|------|---------|--------|
+| Who answered | `group`, `faculty`, `year`, `sex`, `freq` | Counts (n) and % (tick **Frequency tables**) |
+| Usability | `usability_score` | Mean, SD, median, IQR, min and max |
+| Each 1 to 5 item | `ui_look`, `f_*`, `pp*_pre`, `pp*_post`, `pa_*`, `adopt_pref`, `support_rollout`, `adopt_students`, `impact` | **Median and IQR**, and **% agreeing**, which is the % answering 4 or 5 ("top-two box") |
+| Choices | `fav_feature`, `pa_done` | Counts and % |
+| Multi-select | `r_*`, `i_*` | % ticking each (mean of the 0/1 column × 100) |
+| Comments | `open_*`, `d_comment` | Number who wrote something |
 
-#### How it works, in five steps
+**Why median and IQR, not only means?** Likert answers are ordered categories, not measurements, so the median is the safer summary. Many papers also give the mean (SD) alongside, which is acceptable if you say so.
 
-For one statement, say `pp1`:
+**Response rate** per group = completed forms ÷ people invited × 100.
 
-1. **Difference.** For each student, `d = now − before`.
-2. **Drop zeros.** Students with no change (`d = 0`) are set aside. *n* is the number left.
-3. **Rank.** Rank the absolute differences `|d|` from smallest (rank 1) to largest. Tied values get the average of the ranks they cover.
-4. **Sum by sign.** Add the ranks of the positive differences (**W+**) and of the negative ones (**W−**).
-5. **Compare.** If nothing changed, W+ and W− should be similar. The bigger the gap, the stronger the evidence of change. The p-value tells you how likely a gap this big is by chance.
+**Charts:**
+- **Diverging stacked bars** for the 1 to 5 items (features, adoption, impact): one bar per item, disagree to the left and agree to the right.
+- **Horizontal bars** for favourite feature and improvement priorities.
+- **A box plot** of usability score by group.
 
-#### Worked example (made-up numbers)
+### 2.5 Step 3. Usability score
 
-Eight students rate *"I understand what my own health numbers mean"*:
+`usability_score` (0 to 100) is already in the CSV, from the eight usability items:
 
-| Student | Before | Now | d | \|d\| | Rank | Signed rank |
-|---------|--------|-----|---|-------|------|-------------|
-| A | 2 | 4 | +2 | 2 | 5 | +5 |
-| B | 3 | 4 | +1 | 1 | 2 | +2 |
-| C | 2 | 2 | 0 | | dropped | |
-| D | 1 | 3 | +2 | 2 | 5 | +5 |
-| E | 3 | 5 | +2 | 2 | 5 | +5 |
-| F | 4 | 4 | 0 | | dropped | |
-| G | 2 | 3 | +1 | 1 | 2 | +2 |
-| H | 3 | 2 | −1 | 1 | 2 | −2 |
+- odd items (`us1`, `us3`, `us5`, `us7`): answer − 1
+- even items (`us2`, `us4`, `us6`, `us8`): 5 − answer
+- add the eight results, divide by 32, and multiply by 100
 
-- *n* = 6, after dropping C and F.
-- The three 1s share ranks 1, 2 and 3, so each gets 2. The three 2s share ranks 4, 5 and 6, so each gets 5.
-- **W+** = 5 + 2 + 5 + 5 + 2 = **19**. **W−** = **2**.
-- Under "no change" the expected W+ is n(n+1)/4 = 10.5.
-- Spread: √(n(n+1)(2n+1)/24 − tie correction) = √(22.75 − 1) = 4.66. The tie correction is Σ(t³ − t)/48 over each group of t tied values: (24 + 24)/48 = 1.
-- **z** = (19 − 10.5) / 4.66 = **1.82**, two-tailed **p ≈ 0.07**.
-- **Effect size r** = z / √n = 1.82 / √6 = **0.74**.
-- Medians: before = 2.5, now = 3.5.
+> Because items 9 and 10 of the standard System Usability Scale were removed, this is **not a standard SUS score**, so the published benchmarks (68 average, above 80 excellent) do not apply. Call it "a usability score from eight items adapted from the System Usability Scale" and compare it between groups and across future rounds only.
 
-With only 6 students who changed, a fairly large shift still does not reach p < 0.05. Aim for **at least 20 to 30 students** completing this screen.
+**Reliability:** check that the eight items hang together with **Cronbach's alpha** (jamovi: Factor → Reliability Analysis, move `us1` to `us8` in, and tick **Reverse scaled items** for `us2`, `us4`, `us6` and `us8`). Alpha of 0.70 or more is acceptable.
 
-#### Running it
+### 2.6 Step 4. Statistical tests
 
-| Tool | How |
-|------|-----|
-| jamovi | T-Tests → Paired Samples T-Test → move `pp1_pre` and `pp1_post` in → tick **Wilcoxon rank**, untick Student's, tick **Effect size** |
-| SPSS | Analyze → Nonparametric Tests → Legacy Dialogs → 2 Related Samples → Wilcoxon |
-| R | `wilcox.test(d$pp1_post, d$pp1_pre, paired = TRUE, exact = FALSE)` |
-| Python | `scipy.stats.wilcoxon(df.pp1_post, df.pp1_pre, zero_method="wilcox")` |
+All tests here are **non-parametric**, because Likert answers are ordinal and the samples are small and rarely normal. Use p < 0.05. When you run the same test on several items, adjust with the **Holm** correction.
 
-R does not print z. Get it from the p-value with `z <- qnorm(p / 2, lower.tail = FALSE)`, or use `rstatix::wilcox_effsize()`, which gives r directly.
+| Research question | Data | Test | jamovi menu |
+|-------------------|------|------|-------------|
+| Did people feel their knowledge and habits improved after using VitalU? | `pp1_pre` vs `pp1_post` (and pp2 to pp4), per group | **Wilcoxon signed-rank** (paired) | T-Tests → Paired Samples → tick Wilcoxon rank |
+| Do students and staff differ in usability, adoption, impact belief or look-and-feel? | `usability_score`, `adopt_pref`, `adopt_students`, `impact`, `ui_look` by `group` | **Mann-Whitney U** (two independent groups) | T-Tests → Independent Samples → tick Mann-Whitney U |
+| Do staff expect a feature to be more or less useful than students found it? | Each `f_*` by `group` | **Mann-Whitney U**, Holm-corrected across the 12 | Same as above |
+| Is a feature rated reliably above "moderately useful"? | Each `f_*` against 3 | **One-sample Wilcoxon signed-rank** | T-Tests → One Sample T-Test → tick Wilcoxon rank, test value 3 |
+| Does usability differ by faculty or batch (students)? | `usability_score` by `faculty` or `year` | **Kruskal-Wallis**, then Dwass-Steel-Critchlow-Fligner pairwise comparisons | ANOVA → One-Way ANOVA (Non-parametric) |
+| Are students who completed the assessment more willing to do it again? | `pa_likely` by `pa_done` | **Mann-Whitney U** (Yes vs No) | Independent Samples |
+| Do people who find the app easy also want to keep using it, or believe in its impact? | `usability_score` with `adopt_pref`, `impact` | **Spearman's rank correlation** | Regression → Correlation Matrix → tick Spearman |
+| Is the favourite feature linked to group? | `fav_feature` by `group` | **Chi-square test of independence**, or **Fisher's exact test** when expected counts are under 5 (likely here) | Frequencies → Independent Samples (χ²) → Statistics: tick Fisher's exact |
 
-#### Four tests, so adjust the p-values
+**Always report an effect size**, not only p:
 
-You run the test four times (pp1 to pp4), so correct for multiple testing with the **Holm** method: `p.adjust(c(p1, p2, p3, p4), method = "holm")`.
+| Test | Effect size | Small / medium / large |
+|------|-------------|------------------------|
+| Wilcoxon signed-rank | r = z / √n (jamovi: rank biserial correlation) | 0.1 / 0.3 / 0.5 |
+| Mann-Whitney U | r = z / √N, or rank biserial correlation | 0.1 / 0.3 / 0.5 |
+| Kruskal-Wallis | ε² (epsilon squared) | 0.01 / 0.08 / 0.26 |
+| Spearman | ρ itself | 0.1 / 0.3 / 0.5 |
+| Chi-square | Cramér's V | 0.1 / 0.3 / 0.5 |
 
-#### Reading the effect size r
+**Sample size.** With fewer than about 6 people per group, describe medians instead of testing. For the before-and-after test, aim for **20 to 30 or more** per group.
 
-| r | Size of change (Cohen, 1988) |
-|---|-------------------------------|
-| 0.1 | Small |
-| 0.3 | Medium |
-| 0.5 or more | Large |
+#### The Wilcoxon signed-rank test, step by step
 
-#### Reporting
+Each person rated the same statement twice, before and now, so the answers are **paired**. The test asks whether the "now" ratings are consistently higher than the "before" ratings.
 
-| Statement | Before median (IQR) | Now median (IQR) | Improved / same / worse | z | p (Holm) | r |
-|-----------|--------------------|------------------|-------------------------|---|----------|---|
-| Understand my health numbers | | | | | | |
-| Balanced and varied meals | | | | | | |
-| Water and activity | | | | | | |
-| Know where to get help | | | | | | |
+1. **Difference.** For each person, d = now − before.
+2. **Drop zeros.** People with no change are set aside. *n* is the number left.
+3. **Rank** the absolute differences |d| from smallest (1) to largest. Ties share the average rank.
+4. **Sum by sign:** W+ (ranks of positive differences) and W− (ranks of negative ones).
+5. **Compare.** The further W+ is from W−, the stronger the evidence of change. The p-value says how likely a gap this big is by chance.
 
-#### Limitation to state honestly
+**Worked example** (made-up numbers): eight students rate *"I understand what my own health numbers mean"*.
 
-This is a **retrospective pre-test**: "before" is remembered, not measured at the start. It is accepted in programme evaluation and avoids response-shift bias (Howard, 1980), but it can overstate change if people want to please the researchers. Report it as **self-perceived change**, not proof that behaviour changed.
+| Person | Before | Now | d | Rank of \|d\| | Signed rank |
+|--------|--------|-----|---|---------------|-------------|
+| A | 2 | 4 | +2 | 5 | +5 |
+| B | 3 | 4 | +1 | 2 | +2 |
+| C | 2 | 2 | 0 | dropped | |
+| D | 1 | 3 | +2 | 5 | +5 |
+| E | 3 | 5 | +2 | 5 | +5 |
+| F | 4 | 4 | 0 | dropped | |
+| G | 2 | 3 | +1 | 2 | +2 |
+| H | 3 | 2 | −1 | 2 | −2 |
 
-### Step 5. Feature usefulness
+- *n* = 6, W+ = 19 and W− = 2.
+- Expected W+ under no change is n(n+1)/4 = 10.5.
+- Spread, with the tie correction, is √(22.75 − 1) = 4.66.
+- **z = (19 − 10.5) / 4.66 = 1.82**, two-tailed **p ≈ 0.07**.
+- **r = 1.82 / √6 = 0.74**, a large effect.
 
-For each feature, in each form separately:
+A large shift in only 6 people still misses p < 0.05, which is why you need enough respondents.
 
-- **Rated by:** % who gave a rating (not blank).
-- **Median and IQR** of the 1 to 5 rating.
-- **% useful:** % who chose 4 or 5.
+**Run it for pp1 to pp4, once for each group**, then Holm-correct the four p-values. In R: `p.adjust(c(p1, p2, p3, p4), method = "holm")`.
 
-Present all 12 as a **diverging stacked bar chart**, sorted by % useful. Then compare the two forms side by side: *"Do staff expect the same features to be useful that students actually found useful?"* Where they differ most is a useful finding in itself. A **Mann-Whitney U test** per feature (Holm-corrected) can test the difference.
+**How to write it:** *"Students reported better understanding of their own health numbers after the pilot (median 2 before, 4 now; Wilcoxon z = 4.12, p < .001, r = 0.62)."*
 
-*Optional:* a **one-sample Wilcoxon signed-rank test** against 3 ("moderately useful") shows whether a feature was rated reliably above the middle: `wilcox.test(d$f_water, mu = 3)`. Holm-correct across the 12 features.
+**Limitation.** "Before" is remembered, not measured at the start: a retrospective pre-test. It is accepted in programme evaluation (Howard, 1980) but can overstate change. Call it **self-perceived change**.
 
-**Favourite feature.** Count `fav_feature` per form and show as a bar chart. Compare what students chose with what staff predicted students would choose.
+#### The same tests in R and SPSS
 
-### Step 6. Look and feel
+| Test | R | SPSS |
+|------|---|------|
+| Wilcoxon signed-rank | `wilcox.test(d$pp1_post, d$pp1_pre, paired = TRUE, exact = FALSE)` | Analyze → Nonparametric Tests → Legacy Dialogs → 2 Related Samples |
+| Mann-Whitney U | `wilcox.test(usability_score ~ group, data = d)` | Analyze → Nonparametric Tests → Legacy Dialogs → 2 Independent Samples |
+| One-sample Wilcoxon | `wilcox.test(d$f_water, mu = 3)` | Analyze → Nonparametric Tests → One Sample |
+| Kruskal-Wallis | `kruskal.test(usability_score ~ factor(faculty), data = students)` | Analyze → Nonparametric Tests → Legacy Dialogs → K Independent Samples |
+| Spearman | `cor.test(d$usability_score, d$adopt_pref, method = "spearman")` | Analyze → Correlate → Bivariate → Spearman |
+| Fisher's exact | `fisher.test(table(d$group, d$fav_feature))` | Analyze → Descriptive Statistics → Crosstabs → Exact |
+| Cronbach's alpha | `psych::alpha(d[paste0("us", 1:8)], check.keys = TRUE)` | Analyze → Scale → Reliability Analysis |
+| Effect size r | `rstatix::wilcox_effsize()` | Compute by hand: z / √n |
 
-Report the median and % agree (4 or 5) for `ui_look`, per form. It is one item, so keep it descriptive. Read it together with the "Look and layout" choice in the improvement list and the written comments.
+### 2.7 Step 5. Qualitative analysis of the comments
 
-### Step 7. Admin dashboard (Form B)
+**Which text to analyse:**
 
-`d_comment` is open text. Use **thematic analysis** (step 10). Count how many staff commented, group the comments into themes (for example *Ease of use*, *Missing features*, *Analytics*, *Privacy*), and quote a few.
+| Column | Who | Question |
+|--------|-----|----------|
+| `open_overall` | Both | Overall comments about the VitalU initiative |
+| `open_improve` | Both | What should we change, fix or add? |
+| `d_comment` | Staff | Comments on the admin dashboard |
+| `improve_other`, `pa_reasons_other` | Both / students | Short "Other" answers |
 
-### Step 8. Periodic health assessment
+**Where to do it.** Not in jamovi. Use NVivo, or a free alternative, so every comment keeps its link to the person's group and faculty.
 
-**Form A (students)**
-- Report `pa_likely` as % likely or very likely (4 or 5) and the median.
-- Cross-tabulate with `pa_done`: did students who completed it in the pilot say they are more likely to do it again?
-- Rank `pa_reasons` by how often each was chosen. That tells you what to change to raise completion.
-- *Optional:* compare likelihood between students who did and did not complete it with a **Mann-Whitney U test**: `wilcox.test(pa_likely ~ completed, data = d)`.
+**In NVivo:**
+1. **Import.** Create a project, then Import → Survey (or Dataset), and choose the clean CSV. Mark `response_id` as the identifier. Mark `group`, `faculty` and `year` as **classifying** columns (they become attributes). Mark the text columns as **codable**.
+2. **Read** every comment once without coding, to get a feel for the data.
+3. **Code** by highlighting a phrase and dragging it onto a new **code** (NVivo calls codes "nodes" in older versions), for example "wants Sinhala", "water reminders helpful", "dashboard needs export". One comment can have several codes.
+4. **Group** related codes into 4 to 8 parent codes, the **themes**. For example:
+   - *Ease of use*
+   - *Motivation and badges*
+   - *Diet tools*
+   - *Privacy and trust*
+   - *Feature requests*
+   - *Value of the initiative*
+   - *Dashboard improvements*
+5. **Compare groups** with a **Crosstab query** (themes × `group`) to see which themes students and staff each raised.
+6. **Export** the code book and the crosstab for your appendix, and pick one or two short quotes per theme.
 
-**Form B (staff)**
-- Report the median and % 4 or 5 for `pa_value`, `pa_students` and `pa_use`.
-- Compare `pa_students` (what staff expect) with students' own `pa_likely`: *"Staff expect students to take part less (or more) than students say they will."*
+**Without NVivo:**
+- **Taguette:** paste or upload the comments, highlight phrases, add tags, then export the tagged highlights.
+- **Excel:** one row per comment, with columns for `response_id`, `group`, the comment, Code 1, Code 2 and Code 3. Filter by code to group them into themes, and use a PivotTable (theme × group) for the counts.
 
-### Step 9. Adoption and impact (both forms)
+**Method:** Braun and Clarke's (2006) **reflexive thematic analysis**, six phases:
+1. Get familiar with the data.
+2. Generate initial codes.
+3. Search for themes.
+4. Review the themes.
+5. Define and name them.
+6. Write up.
 
-These three items answer the central question of the study.
+For short survey comments like these, a simpler **qualitative content analysis**, which codes and then counts how often each code appears, is also acceptable. Say which one you used.
 
-| Item | Report |
-|------|--------|
-| `adopt_pref` | % agree (4 or 5) and median, per form: students want to keep using it, staff support a roll-out |
-| `adopt_students` | % likely (4 or 5) and median, per form: do both groups believe students will adopt it? |
-| `impact` | % agree and median, per form: can an initiative like this change young people's habits? |
+**Rigour:**
+- If possible, a second person (for example your supervisor) codes about 20% of the comments independently.
+- You then compare and resolve any differences. NVivo can calculate **Cohen's kappa** for agreement; 0.6 or more is good.
+- Keep a short code book: the code name, its definition and an example quote.
 
-Use a **Mann-Whitney U test** to compare the two forms on each item, Holm-corrected across the three. Optionally check the link between them with **Spearman's rank correlation** (`cor.test(d$adopt_pref, d$impact, method = "spearman")`): do people who believe in long-term change also want to adopt it?
+**Report it as:**
 
-Frame `impact` carefully. It is a **belief and an expectation**, not evidence of change. Because the system is new and its effect builds with long-term use, state that the pilot can show intention and early perception, and that behaviour change needs follow-up over a longer period.
+| Theme | What it covers | Students (n) | Staff (n) | Example quote |
+|-------|----------------|--------------|-----------|---------------|
 
-### Step 10. Improvement priorities
+Remove anything that could identify someone before quoting.
 
-Rank `improve_pick` options by % choosing each, overall and per form, as a horizontal bar chart. `i_dash` appears for Form B only, so compute its percentage within Form B.
+### 2.8 Step 6. Bring it together (mixed methods)
 
-### Step 11. Open-ended answers
+Use the numbers and the comments side by side. For example: *"Diet tools had the lowest usefulness rating among students (52% very or extremely useful), and comments explain why: the food list was missing common canteen meals (n = 9)."* This is a **convergent mixed-methods** presentation: each result is backed by the other kind of data.
 
-Fields: `open_overall`, `open_improve`, and for staff `d_comment`. Use **thematic analysis** (Braun & Clarke, 2006):
+### 2.9 Suggested findings structure
 
-1. **Read** all answers once without coding.
-2. **Code** each answer with short labels, for example "wants Sinhala", "water reminders helpful", "dashboard needs export". One answer can have several codes.
-3. **Group** codes into 4 to 8 **themes**, for example *Ease of use*, *Motivation and badges*, *Diet tools*, *Privacy and trust*, *Feature requests*, *Value of the initiative*.
-4. **Count** how many respondents mention each theme, per form.
-5. **Quote** one or two short, anonymous answers per theme.
-6. **Check:** if possible, a second person codes 20% of answers independently, and you resolve differences together.
-
-| Theme | Example codes | Students (n) | Staff (n) | Example quote |
-|-------|---------------|--------------|-----------|---------------|
-
-### Step 12. Comparing groups within a form
-
-To see whether usability differs by faculty (students), use the **Kruskal-Wallis test** for three or more groups: `kruskal.test(usability_score ~ factor(faculty), data = students)`, or Mann-Whitney U for two. With small groups, describe the medians side by side instead of testing.
-
-### Suggested findings structure
-
-1. **Respondents:** who took part, by form (step 2).
-2. **Usability and look and feel:** the usability score and `ui_look` (steps 3 and 6).
-3. **Perceived change (students):** before-and-after table with Wilcoxon results (step 4).
-4. **Feature value:** usefulness chart and favourite feature, students against staff (step 5).
-5. **Admin dashboard:** staff comments and themes (step 7).
-6. **Periodic assessment:** students' likelihood and what would help; staff's views (step 8).
-7. **Adoption and long-term impact:** the three items (step 9).
-8. **Priorities for improvement:** closed choices backed by themes and quotes (steps 10 and 11).
+1. **Respondents:** who took part, by group (section 2.4).
+2. **Usability and look and feel:** usability score with Cronbach's alpha, `ui_look`, and the students vs staff comparison.
+3. **Perceived change:** before-and-after table with Wilcoxon results, for each group.
+4. **Feature value:** usefulness chart; students' experience vs staff expectations; favourite feature.
+5. **Admin dashboard:** staff themes from `d_comment`.
+6. **Periodic assessment:**
+   - students' likelihood to complete it, and what would help
+   - staff views on its value and uptake
+7. **Adoption and long-term impact:** `adopt_pref`, `adopt_students`, `impact` and `support_rollout`, with group comparisons and the Spearman links.
+8. **Priorities for improvement:** closed choices plus themes and quotes.
 9. **Limitations:**
    - self-report data
    - retrospective pre-test
-   - small and self-selected sample
-   - short pilot, so only early perception of a long-term effect
-   - eight-item usability score, not the standard SUS
+   - small, self-selected sample
+   - a short pilot showing early perception of a long-term effect
+   - an eight-item usability score, not the standard SUS
    - Likert data treated as ordinal
 
 ### References

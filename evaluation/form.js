@@ -1,7 +1,8 @@
 // VitalU pilot evaluation form: one section per screen. The role chosen on the
 // first screen picks one of two forms built on the same base questions:
 //   student  evaluates the student app from their own use
-//   staff    evaluates the student app for students, and the admin dashboard
+//   staff    also used the app, so answers as a user; rates each feature for
+//            how useful it will be for students; reviews the admin dashboard
 // Answers stay in the browser until submitted, then go anonymously through
 // submit_pilot_feedback().
 'use strict';
@@ -41,7 +42,7 @@ const isStudent = () => A.role === 'student';
 
 function steps() {
   if (isStudent()) return ['role', 'consent', 'about', 'usab1', 'usab2', 'features', 'favourite', 'prepost', 'assessment', 'impact', 'improve', 'open'];
-  return ['role', 'consent', 'usab1', 'usab2', 'features', 'favourite', 'dashboard', 'assessment', 'impact', 'improve', 'open'];
+  return ['role', 'consent', 'about', 'usab1', 'usab2', 'features', 'favourite', 'prepost', 'dashboard', 'assessment', 'impact', 'improve', 'open'];
 }
 
 function featureList() {
@@ -108,13 +109,16 @@ const screens = {
     ${q('consent', 'Do you agree to take part?', radios('consent', [[1, 'Yes, I have read the information and agree'], [0, 'No, I do not want to take part']]))}
     ${actions({ next: 'Start' })}`,
 
-  about: () => `
+  about: () => isStudent() ? `
     <h1>About you</h1>
     <p class="lead">A few quick details, so we can see how different groups found VitalU. Nothing here identifies you.</p>
     ${q('faculty', 'Your faculty', `<select name="faculty" aria-label="Your faculty" class="full"><option value="">Select</option>${FACULTIES.map(([v, l]) => `<option value="${v}" ${A.faculty === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`)}
     ${q('year', 'Your batch', radios('year', YEARS, { columns: true }))}
     ${q('sex', 'Sex', radios('sex', SEXES, { columns: true }))}
     ${q('freq', 'How often did you open the student app?', radios('freq', FREQ, { columns: true }))}
+    ${actions()}` : `
+    <h1>Your use of VitalU</h1>
+    ${q('freq', 'How often did you open the student app during the pilot?', radios('freq', FREQ, { columns: true }))}
     ${actions()}`,
 
   usab1: () => usabilityScreen(0, 5, false),
@@ -127,8 +131,8 @@ const screens = {
     ${actions()}`,
 
   favourite: () => `
-    <h1>${isStudent() ? 'Your favourite feature' : 'The feature students will like most'}</h1>
-    ${q('fav_feature', isStudent() ? 'Which feature of the app did you like the most?' : 'Which feature do you think students will like the most?', radios('fav_feature', [...featureList().map(([k, t]) => [k, t]), ['none', 'None of them, or not sure']], { columns: true }), 'Choose one.')}
+    <h1>Your favourite feature</h1>
+    ${q('fav_feature', 'Which feature of the app did you like the most?', radios('fav_feature', [...featureList().map(([k, t]) => [k, t]), ['none', 'None of them, or not sure']], { columns: true }), 'Choose one.')}
     ${actions()}`,
 
   prepost: () => `
@@ -167,7 +171,8 @@ const screens = {
   impact: () => `
     <h1>The bigger picture</h1>
     <p class="callout">${esc(IMPACT_INTRO)}</p>
-    ${statement('adopt_pref', ADOPT_PREF[A.role] || ADOPT_PREF.student, scale('adopt_pref', AGREE, AGREE_ENDS))}
+    ${statement('adopt_pref', ADOPT_PREF, scale('adopt_pref', AGREE, AGREE_ENDS))}
+    ${isStudent() ? '' : statement('support_rollout', SUPPORT_ROLLOUT, scale('support_rollout', AGREE, AGREE_ENDS))}
     ${q('adopt_students', ADOPT_STUDENTS, scale('adopt_students', LIKELY, LIKELY_ENDS))}
     ${statement('impact', IMPACT, scale('impact', AGREE, AGREE_ENDS))}
     ${actions()}`,
@@ -192,7 +197,7 @@ function usabilityScreen(from, to, withLook) {
   const items = USABILITY.slice(from, to);
   return `
     <h1>Using the student app</h1>
-    <p class="lead">${isStudent() ? 'Think about your experience with the VitalU app.' : 'Think about your experience trying the VitalU app, even if it was brief.'} How much do you agree with each statement? (${from === 0 ? `1 to ${to}` : `${from + 1} to ${to}`} of ${USABILITY.length})</p>
+    <p class="lead">Think about your experience using the VitalU app. How much do you agree with each statement? (${from === 0 ? `1 to ${to}` : `${from + 1} to ${to}`} of ${USABILITY.length})</p>
     ${items.map((text, i) => statement('us' + (from + i + 1), text, scale('us' + (from + i + 1), AGREE, AGREE_ENDS))).join('')}
     ${withLook ? statement('ui_look', UI_LOOK, scale('ui_look', AGREE, AGREE_ENDS)) : ''}
     ${actions()}`;
@@ -403,14 +408,14 @@ el.addEventListener('submit', async (e) => {
 function cleanAnswers() {
   // Keep only answers for questions this person was actually shown, so
   // switching role midway does not leave stray values.
-  const keep = new Set(['consent', 'role', 'ui_look', 'fav_feature', 'adopt_pref', 'adopt_students', 'impact', 'improve_pick', 'improve_other', 'open_overall', 'open_improve']);
+  const keep = new Set(['consent', 'role', 'freq', 'ui_look', 'fav_feature', 'adopt_pref', 'adopt_students', 'impact', 'improve_pick', 'improve_other', 'open_overall', 'open_improve']);
   USABILITY.forEach((_, i) => keep.add('us' + (i + 1)));
   featureList().forEach(([k]) => keep.add(k));
+  PREPOST.forEach(([k]) => { keep.add(k + '_pre'); keep.add(k + '_post'); });
   if (isStudent()) {
-    ['faculty', 'year', 'sex', 'freq', 'pa_likely', 'pa_done', 'pa_reasons', 'pa_reasons_other'].forEach((k) => keep.add(k));
-    PREPOST.forEach(([k]) => { keep.add(k + '_pre'); keep.add(k + '_post'); });
+    ['faculty', 'year', 'sex', 'pa_likely', 'pa_done', 'pa_reasons', 'pa_reasons_other'].forEach((k) => keep.add(k));
   } else {
-    keep.add('d_comment');
+    ['d_comment', 'support_rollout'].forEach((k) => keep.add(k));
     PA_STAFF.forEach(([k]) => keep.add(k));
   }
   const out = {};
