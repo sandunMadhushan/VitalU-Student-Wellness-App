@@ -21,13 +21,13 @@ At the entry to the form, after pressing **Give feedback**, the respondent choos
 | | Form A: undergraduate students | Form B: lecturers, administration or health centre staff, technical experts |
 |---|---|---|
 | What they evaluate | The student app | The student app **and** the admin dashboard |
-| Usability, favourite feature, before and after, "keep using VitalU" | Asked as a user | Asked as a user, same wording |
+| Usability, favourite feature, before and after | Asked as a user | Asked as a user, same wording |
 | Feature usefulness | "How useful **was** each feature **for you**?" | "How useful **do you think** each feature **will be for students**?" |
 | Admin dashboard | Not shown (students have no access) | Shown, as one open comment |
 | Faculty, batch, sex | Asked | Not asked |
 | How often they opened the app | Asked | Asked |
 | Periodic assessment | Their own likelihood to complete it | Related questions about its value and uptake |
-| Support for a roll-out to all students | Not asked | Asked |
+| Overall adoption preference | "I would like to keep using VitalU." | "I would support rolling VitalU out to all students at the university." |
 | Time | About 6 to 8 minutes | About 5 to 7 minutes |
 
 Because the role is chosen at the entry, the form no longer asks "Which describes you best?" or "Which parts of VitalU did you use?".
@@ -202,8 +202,7 @@ Introduction shown above the questions:
 
 | ID | Question | Scale |
 |----|----------|-------|
-| `adopt_pref` | I would like to keep using VitalU. (both forms) | Agreement. This is the **overall adoption preference**. |
-| `support_rollout` | I would support rolling VitalU out to all students at the university. (Form B only) | Agreement |
+| `adopt_pref` | Form A: I would like to keep using VitalU. Form B: I would support rolling VitalU out to all students at the university. | Agreement. This is the **overall adoption preference**. |
 | `adopt_students` | How likely do you think students at the university are to adopt VitalU and keep using it? | Likelihood |
 | `impact` | I think an initiative like VitalU can change young people's lifestyles and habits, and help build a healthier generation of young adults. | Agreement |
 
@@ -249,7 +248,7 @@ Both optional. "Please do not include names or anything that could identify you 
 
 The "likely to recommend VitalU to a fellow student" question was also dropped, because the adoption questions now cover the same idea.
 
-**Second revision.** The second group also used the app, so they now answer as users: the same usability introduction, favourite feature ("Which feature of the app did you like the most?"), before-and-after statements, frequency of use and "I would like to keep using VitalU". Questions that asked them to guess students' preferences were removed, except feature usefulness, which still asks how useful each feature will be for students. "I would support rolling VitalU out to all students" is kept as a separate staff-only item (`support_rollout`).
+**Second revision.** The second group also used the app, so they now answer as users: the same usability introduction, favourite feature ("Which feature of the app did you like the most?"), before-and-after statements and frequency of use. Feature usefulness still asks how useful each feature will be for students, and the overall adoption question keeps its role-specific wording (students: keep using it; staff: support a roll-out to all students).
 
 ---
 
@@ -316,7 +315,7 @@ Report these for each group (put `group` in **Split by**).
 |------|---------|--------|
 | Who answered | `group`, `faculty`, `year`, `sex`, `freq` | Counts (n) and % (tick **Frequency tables**) |
 | Usability | `usability_score` | Mean, SD, median, IQR, min and max |
-| Each 1 to 5 item | `ui_look`, `f_*`, `pp*_pre`, `pp*_post`, `pa_*`, `adopt_pref`, `support_rollout`, `adopt_students`, `impact` | **Median and IQR**, and **% agreeing**, which is the % answering 4 or 5 ("top-two box") |
+| Each 1 to 5 item | `ui_look`, `f_*`, `pp*_pre`, `pp*_post`, `pa_*`, `adopt_pref`, `adopt_students`, `impact` | **Median and IQR**, and **% agreeing**, which is the % answering 4 or 5 ("top-two box") |
 | Choices | `fav_feature`, `pa_done` | Counts and % |
 | Multi-select | `r_*`, `i_*` | % ticking each (mean of the 0/1 column × 100) |
 | Comments | `open_*`, `d_comment` | Number who wrote something |
@@ -349,7 +348,7 @@ All tests here are **non-parametric**, because Likert answers are ordinal and th
 | Research question | Data | Test | jamovi menu |
 |-------------------|------|------|-------------|
 | Did people feel their knowledge and habits improved after using VitalU? | `pp1_pre` vs `pp1_post` (and pp2 to pp4), per group | **Wilcoxon signed-rank** (paired) | T-Tests → Paired Samples → tick Wilcoxon rank |
-| Do students and staff differ in usability, adoption, impact belief or look-and-feel? | `usability_score`, `adopt_pref`, `adopt_students`, `impact`, `ui_look` by `group` | **Mann-Whitney U** (two independent groups) | T-Tests → Independent Samples → tick Mann-Whitney U |
+| Do students and staff differ in usability, impact belief, expected student uptake or look-and-feel? | `usability_score`, `adopt_students`, `impact`, `ui_look` by `group` | **Mann-Whitney U** (two independent groups) | T-Tests → Independent Samples → tick Mann-Whitney U |
 | Do staff expect a feature to be more or less useful than students found it? | Each `f_*` by `group` | **Mann-Whitney U**, Holm-corrected across the 12 | Same as above |
 | Is a feature rated reliably above "moderately useful"? | Each `f_*` against 3 | **One-sample Wilcoxon signed-rank** | T-Tests → One Sample T-Test → tick Wilcoxon rank, test value 3 |
 | Does usability differ by faculty or batch (students)? | `usability_score` by `faculty` or `year` | **Kruskal-Wallis**, then Dwass-Steel-Critchlow-Fligner pairwise comparisons | ANOVA → One-Way ANOVA (Non-parametric) |
@@ -487,7 +486,7 @@ Use the numbers and the comments side by side. For example: *"Diet tools had the
 6. **Periodic assessment:**
    - students' likelihood to complete it, and what would help
    - staff views on its value and uptake
-7. **Adoption and long-term impact:** `adopt_pref`, `adopt_students`, `impact` and `support_rollout`, with group comparisons and the Spearman links.
+7. **Adoption and long-term impact:** `adopt_pref` (reported separately per group, as the wording differs), `adopt_students` and `impact`, with group comparisons and the Spearman links.
 8. **Priorities for improvement:** closed choices plus themes and quotes.
 9. **Limitations:**
    - self-report data

@@ -45,7 +45,7 @@ const VALUABLE = [
 // Role chosen at the entry to the form. The second group is one category.
 const ROLES = [
   ['student', 1, 'Undergraduate student', 'You took part in the pilot as a student.'],
-  ['staff', 2, 'Lecturer, administration or health centre staff, technical expert', 'You used VitalU during the pilot and are reviewing it for students and the university.'],
+  ['staff', 2, 'Lecturer, administration or health centre staff, technical expert', 'You are reviewing VitalU for students and the university.'],
 ];
 // Roles saved by an earlier version of the form.
 const LEGACY_ROLES = { lecturer: 'staff', admin: 'staff' };
@@ -151,10 +151,11 @@ const PA_STAFF = [
 const IMPACT_INTRO =
   'A health monitoring system like VitalU is being introduced at a university in Sri Lanka for the very first time. Its impact builds with long-term use, so these questions ask what you expect over time.';
 
-// Asked of everyone in the same words, so the two groups can be compared.
-const ADOPT_PREF = 'I would like to keep using VitalU.';
-// Staff only: whether they back a wider roll-out.
-const SUPPORT_ROLLOUT = 'I would support rolling VitalU out to all students at the university.';
+// Overall adoption preference, worded for each role.
+const ADOPT_PREF = {
+  student: 'I would like to keep using VitalU.',
+  staff: 'I would support rolling VitalU out to all students at the university.',
+};
 const ADOPT_STUDENTS = 'How likely do you think students at the university are to adopt VitalU and keep using it?';
 const IMPACT = "I think an initiative like VitalU can change young people's lifestyles and habits, and help build a healthier generation of young adults.";
 
@@ -214,7 +215,6 @@ function csvColumns() {
     ['pa_reasons_other', ans('pa_reasons_other')],
     ...PA_STAFF.map(([k]) => [k, ans(k)]),
     ['adopt_pref', ans('adopt_pref')],
-    ['support_rollout', ans('support_rollout')],
     ['adopt_students', ans('adopt_students')],
     ['impact', ans('impact')],
     ...IMPROVE.map(([k]) => [k, flag('improve_pick', k)]),

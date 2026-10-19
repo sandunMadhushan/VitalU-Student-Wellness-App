@@ -162,7 +162,7 @@ function render() {
     <div class="kpis">
       ${kpi('Responses', rows.length, $('#role-filter').value ? ROLE_NAME[$('#role-filter').value] : 'Everyone')}
       ${kpi('App usability (0 to 100)', usabMean == null ? '–' : usabMean.toFixed(1), usab.length ? `Mean of ${usab.length}, median ${median(usab)}. Eight items, not the standard SUS.` : 'No answers yet')}
-      ${kpi('Want VitalU to continue', adopt.length ? `${pct(adopt.filter((x) => x >= 4).length, adopt.length)}%` : '–', adopt.length ? `Agree or strongly agree, of ${adopt.length}` : 'No answers yet')}
+      ${kpi('Adoption preference', adopt.length ? `${pct(adopt.filter((x) => x >= 4).length, adopt.length)}%` : '–', adopt.length ? `Agree or strongly agree, of ${adopt.length}` : 'No answers yet')}
       ${kpi('Expect lasting change', impact.length ? `${pct(impact.filter((x) => x >= 4).length, impact.length)}%` : '–', impact.length ? `Agree or strongly agree, of ${impact.length}` : 'No answers yet')}
       ${kpi('Students will complete it', likely.length ? `${pct(likely.filter((x) => x >= 4).length, likely.length)}%` : '–', likely.length ? `Undergraduates likely to complete the assessment, of ${likely.length}` : 'No answers yet')}
     </div>
@@ -188,7 +188,7 @@ function render() {
 
     <div class="r-section"><h2>All responses</h2>
       <div class="table-wrap"><table>
-        <thead><tr><th>Submitted</th><th>Role</th><th>Faculty</th><th>Usability</th><th>Wants to continue</th><th>Lasting change</th><th>Link</th></tr></thead>
+        <thead><tr><th>Submitted</th><th>Role</th><th>Faculty</th><th>Usability</th><th>Adoption preference</th><th>Lasting change</th><th>Link</th></tr></thead>
         <tbody>${rows.map((r) => `<tr><td>${esc(fmtDate(r.submitted_at))}</td><td>${esc(ROLE_NAME[r.role])}</td><td>${esc(FACULTY_NAME[r.answers.faculty] || '–')}</td>
           <td class="num">${usabilityScore(r.answers) === '' ? '–' : usabilityScore(r.answers)}</td><td class="num">${r.answers.adopt_pref ?? '–'}</td><td class="num">${r.answers.impact ?? '–'}</td><td>${esc(r.link_group || '–')}</td></tr>`).join('')}</tbody>
       </table></div></div>`;

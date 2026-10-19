@@ -171,8 +171,7 @@ const screens = {
   impact: () => `
     <h1>The bigger picture</h1>
     <p class="callout">${esc(IMPACT_INTRO)}</p>
-    ${statement('adopt_pref', ADOPT_PREF, scale('adopt_pref', AGREE, AGREE_ENDS))}
-    ${isStudent() ? '' : statement('support_rollout', SUPPORT_ROLLOUT, scale('support_rollout', AGREE, AGREE_ENDS))}
+    ${statement('adopt_pref', ADOPT_PREF[A.role] || ADOPT_PREF.student, scale('adopt_pref', AGREE, AGREE_ENDS))}
     ${q('adopt_students', ADOPT_STUDENTS, scale('adopt_students', LIKELY, LIKELY_ENDS))}
     ${statement('impact', IMPACT, scale('impact', AGREE, AGREE_ENDS))}
     ${actions()}`,
@@ -415,7 +414,7 @@ function cleanAnswers() {
   if (isStudent()) {
     ['faculty', 'year', 'sex', 'pa_likely', 'pa_done', 'pa_reasons', 'pa_reasons_other'].forEach((k) => keep.add(k));
   } else {
-    ['d_comment', 'support_rollout'].forEach((k) => keep.add(k));
+    keep.add('d_comment');
     PA_STAFF.forEach(([k]) => keep.add(k));
   }
   const out = {};
