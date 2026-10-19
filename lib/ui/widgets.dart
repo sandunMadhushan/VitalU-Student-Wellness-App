@@ -747,16 +747,26 @@ abstract class VHeader extends StatelessWidget {
   Widget sliver(BuildContext context) {
     final actions = [...actionsFor(context), const SizedBox(width: 4)];
     if (large) {
-      return SliverAppBar.large(
-        pinned: true,
-        automaticallyImplyLeading: false,
-        leading: brand ? const BrandMark() : null,
-        leadingWidth: brand ? 140 : null,
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        title: Text(titleText),
-        actions: actions,
-      );
+      // The bar with the brand and actions stays pinned; the large title
+      // scrolls away under it instead of collapsing into the bar, where it
+      // was squeezed between the brand and the actions and cut off.
+      return SliverMainAxisGroup(slivers: [
+        SliverAppBar(
+          pinned: true,
+          automaticallyImplyLeading: false,
+          leading: brand ? const BrandMark() : null,
+          leadingWidth: brand ? 140 : null,
+          backgroundColor: AppColors.surface,
+          surfaceTintColor: Colors.transparent,
+          actions: actions,
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(Sp.margin, Sp.sm, Sp.margin, Sp.md),
+            child: Text(titleText, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.onSurface), maxLines: 2, overflow: TextOverflow.ellipsis),
+          ),
+        ),
+      ]);
     }
     return SliverAppBar(
       pinned: true,

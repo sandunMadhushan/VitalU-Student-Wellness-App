@@ -82,7 +82,7 @@ class _DietHubScreenState extends State<DietHubScreen> {
         TileGrid(children: [
           DietFeatureCard(image: 'meal_diary', color: AppColors.mind, kind: 'Logging', title: 'Meal diary', text: 'Log meals by portion or with a photo', action: 'Log', onTap: () => _go('/diet/diary')),
           DietFeatureCard(image: 'plate_guide', color: AppColors.water, kind: 'Portions', title: 'Healthy plate', text: 'Portions with your own hand', action: 'Learn', onTap: () => _go('/diet/plate')),
-          DietFeatureCard(image: 'diversity', color: AppColors.tertiary, kind: 'Variety', title: 'Dietary diversity', text: 'Ten food groups, scored daily', action: 'Check', onTap: () => _go('/diet/diversity')),
+          DietFeatureCard(image: 'diversity', color: AppColors.tertiary, kind: 'Variety', title: 'Diversity guide', text: 'Ten food groups, scored daily', action: 'Check', onTap: () => _go('/diet/diversity')),
           DietFeatureCard(image: 'budget', color: AppColors.warning, kind: 'Budget', title: 'Budget planner', text: 'Balanced meals within your budget', action: 'Plan', onTap: () => _go('/diet/budget')),
         ]),
         _qualityCard(),
@@ -181,7 +181,7 @@ class DietFeatureCard extends StatelessWidget {
       ]),
     );
     final label = Text(kind, style: T.labelSm.c(color).w(FontWeight.w700).tracking(0.2));
-    final heading = Text(title, style: T.headlineSm.s(17), maxLines: 1, overflow: TextOverflow.ellipsis);
+    final heading = Text(title, style: T.headlineSm.s(17), maxLines: 2, overflow: TextOverflow.ellipsis);
     final desc = Text(text, style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis);
 
     return Material(

@@ -94,7 +94,7 @@ class ToolBlock extends StatelessWidget {
       ]),
     );
     final label = Text(kind, style: T.labelSm.c(color).w(FontWeight.w700).tracking(0.2));
-    final heading = Text(title, style: T.headlineSm.s(17), maxLines: 1, overflow: TextOverflow.ellipsis);
+    final heading = Text(title, style: T.headlineSm.s(17), maxLines: 2, overflow: TextOverflow.ellipsis);
     final desc = Text(text, style: T.bodySm.c(AppColors.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis);
 
     return Material(

@@ -262,8 +262,8 @@ class Push {
       final day = DateTime(now.year, now.month, now.day).add(Duration(days: d));
       final i = (day.difference(DateTime(2026)).inDays) % 7;
       for (final (slot, hour, minute, greeting, lines, route) in [
-        (0, 7, 30, 'Good morning', _morning, '/home'),
-        (1, 19, 30, 'Good evening', _evening, '/diet/diary'),
+        (0, 7, 30, 'Good Morning', _morning, '/home'),
+        (1, 19, 30, 'Good Evening', _evening, '/diet/diary'),
       ]) {
         final at = DateTime(day.year, day.month, day.day, hour, minute);
         if (!at.isAfter(now)) continue;

@@ -454,6 +454,45 @@ Proportion = Score ÷ Maximum
 
 Using a proportion of the factors actually answered means a student who
 skips the laboratory questions is not given a falsely low or high result.
+
+### Worked example: a result shown as "of 20"
+
+The result ring shows the score over the maximum, for example "5 of 20".
+The maximum is not fixed. It is the sum of the highest points for the
+questions the student answered:
+
+- All 11 factors answered: 3 (age) + 1 (sex) + 9 × 2 (every other factor)
+  = **22**.
+- One 2-point factor skipped, such as total cholesterol: 22 − 2 = **20**.
+- Both fasting blood sugar and cholesterol skipped: 22 − 4 = **18**.
+
+Results saved before the app started storing the maximum also show "of 20".
+
+A student who answers everything except cholesterol:
+
+| Factor | Answer | Points | Highest possible |
+|--------|--------|--------|------------------|
+| Age | 22 years (under 30) | 0 | 3 |
+| Sex | female | 0 | 1 |
+| BMI | 26.0 (25 to 29.9) | 1 | 2 |
+| Smoking | never | 0 | 2 |
+| Physical activity | rarely | 1 | 2 |
+| Family history of early heart attack | yes | 2 | 2 |
+| Diabetes (diagnosed) | no | 0 | 2 |
+| High blood pressure (diagnosed) | no | 0 | 2 |
+| Blood pressure reading | 125/82 mmHg | 1 | 2 |
+| Fasting blood sugar | 95 mg/dL | 0 | 2 |
+| Total cholesterol | skipped | – | – |
+| **Total** | | **5** | **20** |
+
+Proportion = 5 ÷ 20 = 25 %, which is below 35 %, so the result is **Low**.
+The app shows "5 of 20, Low risk". The contributing factors list marks
+BMI, physical activity and blood pressure as "Some risk" (1 point) and
+family history as "Higher risk" (2 points).
+
+The same student would reach Moderate at 7 points (35 % of 20) and High at
+12 points (60 % of 20). A score of 20 on its own would mean every answered
+factor scored its maximum: 20 of 20 (100 %) or 20 of 22 (91 %), both High.
 The cut-offs for each factor follow common clinical thresholds (WHO BMI
 categories, American Diabetes Association fasting glucose, NCEP ATP III
 cholesterol, and the 120/80 and 140/90 blood pressure levels).

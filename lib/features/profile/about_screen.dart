@@ -109,7 +109,7 @@ class _AboutScreenState extends State<AboutScreen> {
           ListRow(icon: Symbols.mail_rounded, color: AppColors.nutrition, title: 'Contact Us', subtitle: 'Send feedback to the research team', onTap: () => context.push('/contact')),
         ]),
         Text(
-          'Sounds: "Water Glass Pour", "Quick Win Success Fanfare" and "Peaceful Spa Bells" by BudgetPixel, CC BY 4.0 (water sound shortened, bells re-encoded). Illustrations created with Figma AI. For general well-being support, not a diagnostic tool.',
+          'Sounds: "Water Glass Pour", "Quick Win Success Fanfare" and "Peaceful Spa Bells" by BudgetPixel, CC BY 4.0 (water sound shortened, bells re-encoded). For general well-being support, not a diagnostic tool.',
           textAlign: TextAlign.center,
           style: T.bodySm.c(AppColors.outline),
         ),

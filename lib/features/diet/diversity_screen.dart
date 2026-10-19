@@ -92,7 +92,7 @@ class _DiversityScreenState extends State<DiversityScreen> {
     final c = adequate ? AppColors.tertiary : AppColors.nutrition;
 
     return VPage(
-      header: TitleHeader('Dietary diversity', onLeading: () => goBack(context, '/diet')),
+      header: TitleHeader('Dietary diversity guide',onLeading: () => goBack(context, '/diet')),
       onRefresh: _load,
       bottom: PrimaryButton('Log a meal', leadingIcon: Symbols.add_rounded, color: AppColors.nutrition, onTap: () async {
         await context.push('/diet/log');

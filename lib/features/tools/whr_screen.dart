@@ -192,7 +192,7 @@ class _WhrScreenState extends State<WhrScreen> {
     };
     final s = ratio.toStringAsFixed(2);
     final meaning = switch (cat.$1) {
-      'Low Risk' => 'A lower waist-to-hip ratio means weight is carried relatively more at the hips than the waist. Unlike BMI, this looks at where fat is stored, not just how much there is.',
+      'Low Risk' => 'A lower waist-to-hip ratio means weight is carried relatively more at the hips than the waist. Keep up your regular movement and balanced meals to stay in this range.',
       'Moderate Risk' => 'A ratio of $s is slightly above the low-risk range, suggesting a modest shift toward central (abdominal) fat distribution. Regular walking, more vegetables and fibre, and fewer sugary drinks help reduce waist size over time.',
       _ => 'Higher waist-to-hip ratio. Your result indicates a greater tendency toward central fat distribution, which is associated with increased cardiometabolic risk. This is not a diagnosis; a campus doctor or dietitian can help.',
     };
