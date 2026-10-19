@@ -187,9 +187,11 @@ class _ReportExplainedScreenState extends State<ReportExplainedScreen> {
               const SizedBox(height: 6),
               Text(
                   r['status'] == 'failed'
-                      ? (r['error']?.toString().contains('GEMINI') == true
+                      ? (r['error']?.toString().contains('API_KEY') == true
                           ? 'The report reader is not configured yet. Please try again later.'
-                          : 'Blurry photos or unusual layouts can be hard to read. Try again, or upload a clearer photo or PDF.')
+                          : r['error']?.toString().startsWith('This PDF') == true
+                              ? r['error'].toString()
+                              : 'Blurry photos or unusual layouts can be hard to read. Try again, or upload a clearer photo or PDF.')
                       : 'This usually takes under a minute. Pull down to refresh.',
                   textAlign: TextAlign.center,
                   style: T.bodyMd.c(AppColors.onSurfaceVariant)),
