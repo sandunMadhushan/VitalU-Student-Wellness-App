@@ -106,10 +106,24 @@ function showLogin(message) {
 async function showApp(user) {
   $('#login').hidden = true;
   $('#app').hidden = false;
-  $('#who-email').textContent = user.email || '';
+  state.email = user.email || '';
+  $('#who-email').textContent = state.email;
+  $('#who-initial').textContent = (state.email[0] || 'A').toUpperCase();
+  $('#today').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   await Promise.all([loadMeta(), refreshConsultCount()]);
   openTab('overview');
 }
+
+// Light and dark themes. The choice is remembered in this browser only.
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try {
+    localStorage.setItem('vitalu-admin-theme', theme);
+  } catch {
+    /* private mode */
+  }
+}
+$('#theme-btn').addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
 
 $('#login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -138,21 +152,33 @@ $('#logout').addEventListener('click', async () => {
 
 const renderers = { overview: renderOverview, analytics: renderAnalytics, completion: renderCompletion, schedule: renderSchedule, questions: renderQuestions, learn: renderLearn, consults: renderConsults };
 
+// On narrow screens the sidebar slides in as a drawer.
 function setMenu(open) {
-  $('.topbar').classList.toggle('open', open);
+  document.body.classList.toggle('nav-open', open);
   $('#menu-btn').setAttribute('aria-expanded', String(open));
 }
 
 function openTab(name) {
-  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.classList.toggle('active', t.dataset.tab === name);
+    t.setAttribute('aria-selected', String(t.dataset.tab === name));
+  });
   document.querySelectorAll('.tab-panel').forEach((p) => (p.hidden = p.id !== `tab-${name}`));
   const active = document.querySelector(`.tab[data-tab="${name}"]`);
-  $('#menu-current').textContent = active ? active.firstChild.textContent.trim() : '';
+  $('#menu-current').textContent = active ? $('.label', active).textContent.trim() : '';
   setMenu(false);
+  $('.main').scrollTop = 0;
   renderers[name]();
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => openTab(t.dataset.tab)));
-$('#menu-btn').addEventListener('click', () => setMenu(!$('.topbar').classList.contains('open')));
+$('#menu-btn').addEventListener('click', () => setMenu(!document.body.classList.contains('nav-open')));
+$('#scrim').addEventListener('click', () => setMenu(false));
+document.addEventListener('keydown', (e) => e.key === 'Escape' && setMenu(false));
+// Any element with data-goto="<tab>" opens that tab.
+document.addEventListener('click', (e) => {
+  const go = e.target.closest('[data-goto]');
+  if (go) openTab(go.dataset.goto);
+});
 
 async function loadMeta() {
   const [ov, d, q] = await Promise.all([
@@ -173,42 +199,133 @@ async function loadMeta() {
 async function renderOverview() {
   const el = $('#tab-overview');
   el.innerHTML = '<p class="muted">Loading…</p>';
-  await loadMeta();
+  const [, recent] = await Promise.all([
+    loadMeta(),
+    sb.from('anon_consultations').select('id, code, topic, message, urgency, created_at').eq('status', 'open').order('created_at', { ascending: false }).limit(3),
+    refreshConsultCount(),
+  ]);
   const o = state.overview;
   const windows = o.windows || [];
+  const byStart = windows.slice().sort((a, b) => new Date(a.opens_at) - new Date(b.opens_at));
   const current = windows.find((w) => windowStatus(w)[0] === 'Open') || windows.find((w) => windowStatus(w)[0] === 'Closed');
-  const upcoming = windows.filter((w) => windowStatus(w)[0] === 'Upcoming').sort((a, b) => new Date(a.opens_at) - new Date(b.opens_at))[0];
+  const upcoming = byStart.filter((w) => windowStatus(w)[0] === 'Upcoming')[0];
   const byFaculty = Object.entries(o.students_by_faculty || {}).sort((a, b) => b[1] - a[1]);
+  const consults = recent.data || [];
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const icon = (id) => `<svg><use href="#i-${id}"/></svg>`;
+  const shortDate = (d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const ago = (d) => {
+    const m = Math.round((Date.now() - new Date(d)) / 60000);
+    if (m < 60) return `${Math.max(1, m)} min ago`;
+    if (m < 1440) return `${Math.round(m / 60)} h ago`;
+    return shortDate(d);
+  };
+  const donePct = current ? pct(current.completed, current.eligible) : 0;
+  const urgency = { urgent: ['Urgent', 'bad'], soon: ['Soon', 'warn'], routine: ['Routine', 'info'] };
+
+  // This week, Monday to Sunday, with a dot on days when a window is open.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const end = new Date(d);
+    end.setDate(d.getDate() + 1);
+    const has = windows.some((w) => new Date(w.opens_at) < end && new Date(w.closes_at) >= d);
+    return `<div class="day ${d.getTime() === today.getTime() ? 'on' : ''} ${has ? 'has' : ''}">${d.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)}<b>${d.getDate()}</b></div>`;
+  }).join('');
+
+  // Agenda: open and upcoming windows first; otherwise the most recent ones.
+  const live = byStart.filter((w) => windowStatus(w)[0] !== 'Closed');
+  const agenda = (live.length ? live : byStart.slice(-3).reverse()).slice(0, 4);
 
   el.innerHTML = `
-    <div class="head"><div><h1>Overview</h1><p class="muted">Registered students and assessment participation.</p></div></div>
-    <div class="grid k4">
-      <div class="card kpi"><div class="label">Registered students</div><div class="value">${o.students ?? 0}</div></div>
-      <div class="card kpi"><div class="label">${current ? esc(current.term) : 'Latest window'} responses</div>
-        <div class="value">${current ? current.completed : 0}</div>
-        <div class="fine">${current ? `${pct(current.completed, current.eligible)}% of ${current.eligible} eligible` : 'No window yet'}</div></div>
-      <div class="card kpi"><div class="label">In progress now</div><div class="value">${current ? current.in_progress : 0}</div></div>
-      <div class="card kpi"><div class="label">Next window opens</div><div class="value" style="font-size:22px">${upcoming ? fmtDate(upcoming.opens_at) : 'Not scheduled'}</div>
-        <div class="fine">${upcoming ? esc(upcoming.faculty || 'All faculties') : 'Use Schedule to plan one'}</div></div>
-    </div>
-    <div class="grid k2">
-      <div class="card"><h3>Assessment windows</h3>
-        <div class="table-wrap"><table><thead><tr><th>Window</th><th>Faculty</th><th>Dates</th><th>Completed</th></tr></thead><tbody>
-        ${
-          windows.length
-            ? windows
+    <div class="ov">
+      <div class="ov-main">
+        <div class="hello"><div><h1>${hello}</h1><p class="muted">Track assessment participation and plan student health support.</p></div>
+          <button class="btn primary" data-goto="schedule">${icon('calendar').replace('<svg>', '<svg width="16" height="16">')} Schedule assessment</button></div>
+
+        <div class="tiles">
+          <div class="tile"><div class="tile-top">Registered students<span class="tile-ico">${icon('users')}</span></div>
+            <div class="tile-val">${(o.students ?? 0).toLocaleString('en-GB')}</div>
+            <div class="tile-sub">across ${byFaculty.length} ${byFaculty.length === 1 ? 'faculty' : 'faculties'}</div></div>
+          <div class="tile"><div class="tile-top">${current && windowStatus(current)[0] === 'Open' ? 'Responses this window' : 'Latest window responses'}<span class="tile-ico">${icon('check')}</span></div>
+            <div class="tile-val">${current ? current.completed.toLocaleString('en-GB') : 0}</div>
+            <div class="tile-bar"><i style="width:${donePct}%"></i></div>
+            <div class="tile-sub">${current ? `${donePct}% of ${current.eligible} eligible · ${esc(current.term)}` : 'No window yet'}</div></div>
+          <div class="tile"><div class="tile-top">In progress now<span class="tile-ico">${icon('pulse')}</span></div>
+            <div class="tile-val">${current ? current.in_progress : 0}</div>
+            <div class="tile-sub">started, not yet submitted</div></div>
+          <div class="tile"><div class="tile-top">Next window opens<span class="tile-ico">${icon('calendar')}</span></div>
+            <div class="tile-val sm">${upcoming ? fmtDate(upcoming.opens_at) : 'Not scheduled'}</div>
+            <div class="tile-sub">${upcoming ? esc(upcoming.faculty || 'All faculties') : 'Use Schedule to plan one'}</div></div>
+        </div>
+
+        <div class="ov-grid">
+          <div class="card"><div class="card-head"><h3>Waiting consultations</h3><button class="btn small" data-goto="consults">View all</button></div>
+            ${
+              recent.error
+                ? `<p class="muted">${esc(recent.error.message)}</p>`
+                : consults.length
+                ? `<div class="list">${consults
+                    .map((c, i) => {
+                      const [u, cls] = urgency[c.urgency] || [c.urgency, ''];
+                      return `<button class="li" data-goto="consults"><span class="ini c${i % 4}">${esc((c.code || '?').replace(/[^A-Za-z0-9]/g, '').slice(-2))}</span>
+                        <span class="li-main"><strong>${esc(c.topic || c.code)}</strong><span>${esc(c.message)}</span></span>
+                        <span class="li-side">${ago(c.created_at)}<span class="pill ${cls}">${esc(u)}</span></span></button>`;
+                    })
+                    .join('')}</div>`
+                : '<div class="empty">No questions waiting for a reply.</div>'
+            }</div>
+          <div class="card"><div class="big-num"><div><b>${(o.students ?? 0).toLocaleString('en-GB')}</b><div class="muted">students on VitalU</div></div><button class="btn small" data-goto="completion">Completion</button></div>
+            <h3 style="margin:14px 0 12px">Students by faculty</h3>
+            ${byFaculty.length ? bars(byFaculty.slice(0, 6).map(([k, v]) => ({ label: shortFaculty(k), value: v }))) : '<p class="muted">No students yet.</p>'}
+            ${byFaculty.length > 6 ? `<p class="fine" style="margin-top:10px">and ${byFaculty.length - 6} more ${byFaculty.length - 6 === 1 ? 'faculty' : 'faculties'}</p>` : ''}</div>
+        </div>
+
+        <div class="card"><div class="card-head"><h3>Assessment windows</h3><button class="btn small" data-goto="schedule">Manage</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Window</th><th>Faculty</th><th>Dates</th><th>Completed</th><th>Status</th></tr></thead><tbody>
+          ${
+            windows.length
+              ? windows
+                  .map((w, i) => {
+                    const [s, cls] = windowStatus(w);
+                    const p = pct(w.completed, w.eligible);
+                    return `<tr><td><div class="cell-ico"><span class="ini c${i % 4}">${icon('clipboard')}</span><strong>${esc(w.term)}</strong></div></td>
+                    <td>${esc(shortFaculty(w.faculty || 'All faculties'))}</td>
+                    <td class="nowrap">${shortDate(w.opens_at)} – ${fmtDate(w.closes_at)}</td>
+                    <td><div class="prog"><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div><span>${w.completed}/${w.eligible}</span></div></td>
+                    <td><span class="pill ${cls}">${s}</span></td></tr>`;
+                  })
+                  .join('')
+              : '<tr><td colspan="5" class="muted">No windows scheduled yet.</td></tr>'
+          }
+          </tbody></table></div></div>
+      </div>
+
+      <aside class="rail" aria-label="Your agenda">
+        <div class="profile"><span class="avatar">${esc((state.email?.[0] || 'A').toUpperCase())}</span>
+          <strong>${esc(state.email || 'Administrator')}</strong><span class="muted">Health administration</span>
+          <span class="pill good">Administrator</span></div>
+        <div class="card-head" style="margin:0"><h3>Assessment agenda</h3><button class="btn small" data-goto="schedule">View all</button></div>
+        <div class="week">${week}</div>
+        <div class="agenda">${
+          agenda.length
+            ? agenda
                 .map((w) => {
-                  const [s, cls] = windowStatus(w);
-                  return `<tr><td><strong>${esc(w.term)}</strong><br><span class="pill ${cls}">${s}</span></td>
-                  <td>${esc(w.faculty || 'All faculties')}</td>
-                  <td>${fmtDate(w.opens_at)} to ${fmtDate(w.closes_at)}</td>
-                  <td>${w.completed} / ${w.eligible} <span class="fine">(${pct(w.completed, w.eligible)}%)</span></td></tr>`;
+                  const [s] = windowStatus(w);
+                  return `<div class="ag ${s === 'Open' ? 'live' : ''}"><span class="ag-ico">${icon(s === 'Open' ? 'pulse' : s === 'Upcoming' ? 'clock' : 'check')}</span>
+                    <div class="ag-main"><strong>${esc(w.term)}</strong><span>${esc(shortFaculty(w.faculty || 'All faculties'))}</span><span>${shortDate(w.opens_at)} – ${shortDate(w.closes_at)} · ${s}</span></div>
+                    <span class="ag-pct">${s === 'Upcoming' ? shortDate(w.opens_at) : `${pct(w.completed, w.eligible)}%`}</span></div>`;
                 })
                 .join('')
-            : '<tr><td colspan="4" class="muted">No windows scheduled yet.</td></tr>'
-        }
-        </tbody></table></div></div>
-      <div class="card"><h3>Students by faculty</h3>${byFaculty.length ? bars(byFaculty.map(([k, v]) => ({ label: k.replace('Faculty of ', ''), value: v }))) : '<p class="muted">No students yet.</p>'}</div>
+            : '<div class="empty">Nothing scheduled. Plan the next six-monthly assessment.</div>'
+        }</div>
+        <button class="btn wide" data-goto="schedule">All assessment windows</button>
+      </aside>
     </div>`;
 }
 
@@ -1007,6 +1124,7 @@ async function refreshConsultCount() {
   const pill = $('#open-count');
   pill.hidden = !count;
   pill.textContent = count || '';
+  $('#bell-dot').hidden = !count;
 }
 
 async function renderConsults() {

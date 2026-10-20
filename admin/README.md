@@ -7,6 +7,8 @@ locally (for example `npx serve admin`).
 
 ## What admins can do
 
+- **Light and dark themes**: switch with the moon/sun button at the top right.
+  The choice is remembered in that browser.
 - **Overview**: registered students and participation in each assessment window.
 - **Analytics**: pooled results of the periodic assessment, by window and
   faculty, with a CSV download. Results for groups of fewer than five
