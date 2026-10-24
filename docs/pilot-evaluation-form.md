@@ -153,7 +153,7 @@ One card per feature, each rated with five faces. A tap moves to the next card. 
 
 | ID | Question | Answer |
 |----|----------|--------|
-| `fav_feature` | Which feature of the app did you like the most? (both forms) | One of the feature IDs above, or `none` |
+| `fav_feature` | Which feature of the app did you like the most? (both forms) | In the CSV, a number: 1 to 12 in the feature order above (1 = Body checks, 4 = Water tracker, and so on), 13 = none of them, or not sure. The codebook download lists every code. |
 
 ### Screen 7. Before and after VitalU (both forms)
 
@@ -298,7 +298,7 @@ If "Nova" meant **NVivo**, it is the right choice when the university has a lice
 
 ### 2.3 Step 1. Prepare the data (Excel)
 
-1. On the researcher page, press **Download CSV**. Use **Everyone** for the full file.
+1. On the researcher page, open **Download** and choose **Data for analysis (CSV)**. Use **Everyone** for the full file. Also download the **Codebook (CSV)**, which lists what every column means and what each code stands for. If you want to read the answers as words, **Data with answer text (CSV)** has the same columns with labels instead of codes. The page also has a **Data table, as exported** section showing exactly these columns.
 2. Open it in Excel and **save a copy** as `vitalu_feedback_raw.xlsx`. Never edit the raw file; work on a copy.
 3. **Remove** rows where `consent` is not 1.
 4. **Remove duplicates**: rows with the same answers in every column, submitted minutes apart.
@@ -394,12 +394,15 @@ Each person rated the same statement twice, before and now, so the answers are *
 - *n* = 6, W+ = 19 and W− = 2.
 - Expected W+ under no change is n(n+1)/4 = 10.5.
 - Spread, with the tie correction, is √(22.75 − 1) = 4.66.
-- **z = (19 − 10.5) / 4.66 = 1.82**, two-tailed **p ≈ 0.07**.
+- **z = (19 − 10.5) / 4.66 = 1.82**. This z is the one used for the effect size.
 - **r = 1.82 / √6 = 0.74**, a large effect.
+- For the p-value, R, SPSS, jamovi and the researcher page also apply a continuity correction of 0.5: z = (19 − 10.5 − 0.5) / 4.66 = 1.72, two-tailed **p = 0.086**.
 
 A large shift in only 6 people still misses p < 0.05, which is why you need enough respondents.
 
 **Run it for pp1 to pp4, once for each group**, then Holm-correct the four p-values. In R: `p.adjust(c(p1, p2, p3, p4), method = "holm")`.
+
+**On the researcher page.** The **Before and now: Wilcoxon signed-rank test** section runs this test automatically for all four statements, separately for each group, with medians, the higher / same / lower counts, W+ and W−, z, p, Holm-corrected p and r. It gives the same results as R's `wilcox.test(post, pre, paired = TRUE)` (checked against SciPy): an exact p-value when there are fewer than 50 pairs with no ties or zero differences, otherwise the normal approximation with tie and continuity corrections. **Download → Wilcoxon results (CSV)** saves the table for your report. The CSV also has `pp1_diff` to `pp4_diff` (now minus before) for each person, if you want to chart the changes. Re-run the test in jamovi or SPSS for your thesis so the method section can cite the software.
 
 **How to write it:** *"Students reported better understanding of their own health numbers after the pilot (median 2 before, 4 now; Wilcoxon z = 4.12, p < .001, r = 0.62)."*
 
@@ -513,9 +516,20 @@ Built in the `evaluation/` folder (see its README):
 
 - **Home page:** what VitalU is, and a **Give feedback** button.
 - **Form:** role screen first, then the matching form. Answers are saved anonymously.
-- **Researcher page** (`researcher.html`): visible only to the research team, not in the campus admin dashboard. It shows a summary and every written comment, and has a **Download CSV** button.
+- **Researcher page** (`researcher.html`): visible only to the research team, not in the campus admin dashboard. Sign in with email and password or Google; **Forgot password?** sends a reset link. It shows:
+  - a summary and charts, and every written comment
+  - the Wilcoxon signed-rank test for the before-and-now statements
+  - **All responses**: select one to read every answer, with Previous, Next and a picker to go through them one by one
+  - **Data table, as exported**: every column exactly as in the CSV
+  - **Download**: data for analysis (codes), data with answer text, the codebook, and the Wilcoxon results
 - **Links to send:** one per group, so you can tell where responses came from.
   - Undergraduates: `.../evaluation/form.html?g=student`
   - Lecturers, administration, health centre staff and technical experts: `.../evaluation/form.html?g=staff`
   - Or send the home page `.../evaluation/`, where people choose their role.
-- **CSV columns:** one row per response, oldest first. Multi-select answers are 0/1 columns (`r_short`, `i_speed` and so on), `usability_score` is already worked out, `role` is 1 = student and 2 = staff, and blank means not shown, skipped, or "did not use".
+- **CSV columns:** one row per response, oldest first, one column per question, numbers for every choice:
+  - multi-select answers are 0/1 columns (`r_short`, `i_speed` and so on)
+  - `fav_feature` is a number from 1 to 13
+  - `usability_score` and `pp1_diff` to `pp4_diff` are already worked out
+  - `role` is 1 = student and 2 = staff
+  - blank means not shown, skipped, or "did not use"
+- The staff form is switched off for now (`STAFF_FORM_ENABLED` in `evaluation/form.js`), so everyone gets the student form.

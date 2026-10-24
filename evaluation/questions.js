@@ -187,39 +187,83 @@ function usabilityScore(a) {
   return Math.round((sum / (USABILITY.length * 4)) * 1000) / 10;
 }
 
-/** CSV columns in analysis order: [header, (row) => value]. */
-function csvColumns() {
+// Favourite feature as a number for analysis: 1 to 12 in FEATURES order,
+// 13 = none of them, or not sure.
+const FAV_CODES = [...FEATURES.map(([k, t], i) => [i + 1, t, k]), [13, 'None of them, or not sure', 'none']];
+
+/**
+ * Every exported column, in analysis order. One row per response, one column
+ * per field, numbers wherever the answer is a choice, so the file opens
+ * straight in jamovi, SPSS, R or Excel. Each field:
+ *   col      column name
+ *   section  part of the form
+ *   q        question or statement as shown (or a description)
+ *   values   [code, label] pairs for coded answers (omitted for text/number)
+ *   shown    who sees it
+ *   get(r)   the value for one response ('' when blank)
+ */
+function fields() {
   const ans = (k) => (r) => r.answers[k] ?? '';
   const flag = (list, k) => (r) => (Array.isArray(r.answers[list]) ? (r.answers[list].includes(k) ? 1 : 0) : '');
   const roleOf = (r) => LEGACY_ROLES[r.role] || r.role;
+  const ticked = [[0, 'Not ticked'], [1, 'Ticked']];
+  const both = 'Both groups';
+  const bothDiff = (k) => (r) => {
+    const a = r.answers[k + '_pre'];
+    const b = r.answers[k + '_post'];
+    return typeof a === 'number' && typeof b === 'number' ? b - a : '';
+  };
   return [
-    ['response_id', (r) => r.id],
-    ['submitted_at', (r) => r.submitted_at],
-    ['link_group', (r) => r.link_group ?? ''],
-    ['consent', ans('consent')],
-    ['role', (r) => (ROLES.find((x) => x[0] === roleOf(r)) || [])[1] ?? ''],
-    ['faculty', ans('faculty')],
-    ['year', ans('year')],
-    ['sex', ans('sex')],
-    ['freq', ans('freq')],
-    ...USABILITY.map((_, i) => ['us' + (i + 1), ans('us' + (i + 1))]),
-    ['usability_score', (r) => usabilityScore(r.answers)],
-    ['ui_look', ans('ui_look')],
-    ...FEATURES.map(([k]) => [k, ans(k)]),
-    ['fav_feature', ans('fav_feature')],
-    ...PREPOST.flatMap(([k]) => [[k + '_pre', ans(k + '_pre')], [k + '_post', ans(k + '_post')]]),
-    ['d_comment', ans('d_comment')],
-    ['pa_likely', ans('pa_likely')],
-    ['pa_done', ans('pa_done')],
-    ...PA_REASONS.map(([k]) => [k, flag('pa_reasons', k)]),
-    ['pa_reasons_other', ans('pa_reasons_other')],
-    ...PA_STAFF.map(([k]) => [k, ans(k)]),
-    ['adopt_pref', ans('adopt_pref')],
-    ['adopt_students', ans('adopt_students')],
-    ['impact', ans('impact')],
-    ...IMPROVE.map(([k]) => [k, flag('improve_pick', k)]),
-    ['improve_other', ans('improve_other')],
-    ['open_overall', ans('open_overall')],
-    ['open_improve', ans('open_improve')],
+    { col: 'response_id', section: 'Record', q: 'Unique id of the response', get: (r) => r.id, shown: 'System' },
+    { col: 'submitted_at', section: 'Record', q: 'Date and time submitted (UTC)', get: (r) => r.submitted_at, shown: 'System' },
+    { col: 'link_group', section: 'Record', q: 'Group named in the link used (student or staff), blank if none', get: (r) => r.link_group ?? '', shown: 'System' },
+    { col: 'consent', section: 'Consent', q: 'Do you agree to take part?', values: [[1, 'Yes'], [0, 'No']], get: ans('consent'), shown: both },
+    { col: 'role', section: 'About you', q: 'Role', values: ROLES.map(([, c, l]) => [c, l]), get: (r) => (ROLES.find((x) => x[0] === roleOf(r)) || [])[1] ?? '', shown: both },
+    { col: 'faculty', section: 'About you', q: 'Your faculty', values: FACULTIES, get: ans('faculty'), shown: 'Students' },
+    { col: 'year', section: 'About you', q: 'Your batch', values: YEARS, get: ans('year'), shown: 'Students' },
+    { col: 'sex', section: 'About you', q: 'Sex', values: SEXES, get: ans('sex'), shown: 'Students' },
+    { col: 'freq', section: 'About you', q: 'How often did you open the student app?', values: FREQ, get: ans('freq'), shown: both },
+    ...USABILITY.map((q, i) => ({ col: 'us' + (i + 1), section: 'Usability', q, values: AGREE, get: ans('us' + (i + 1)), shown: both })),
+    { col: 'usability_score', section: 'Usability', q: 'Usability score 0 to 100 from us1 to us8 (odd items: answer minus 1; even items: 5 minus answer; sum divided by 32, times 100). Blank unless all eight are answered.', get: (r) => usabilityScore(r.answers), shown: 'Computed' },
+    { col: 'ui_look', section: 'Usability', q: UI_LOOK, values: AGREE, get: ans('ui_look'), shown: both },
+    ...FEATURES.map(([k, t, hint]) => ({
+      col: k,
+      section: 'Feature usefulness',
+      q: `${t} (${hint}). Students: how useful was it for you? Staff: how useful will it be for students? Blank means did not use or not sure.`,
+      values: USEFUL.map(([c, l]) => [c, l]),
+      get: ans(k),
+      shown: k === 'f_cycle' ? 'Female students and staff' : both,
+    })),
+    { col: 'fav_feature', section: 'Feature usefulness', q: 'Which feature of the app did you like the most?', values: FAV_CODES.map(([c, l]) => [c, l]), get: (r) => (FAV_CODES.find((x) => x[2] === r.answers.fav_feature) || [])[0] ?? '', shown: both },
+    ...PREPOST.flatMap(([k, q]) => [
+      { col: k + '_pre', section: 'Before and after', q: `Before using VitalU: ${q}`, values: AGREE, get: ans(k + '_pre'), shown: both },
+      { col: k + '_post', section: 'Before and after', q: `Now: ${q}`, values: AGREE, get: ans(k + '_post'), shown: both },
+      { col: k + '_diff', section: 'Before and after', q: `${k}_post minus ${k}_pre (positive means improved). Blank unless both are answered.`, get: bothDiff(k), shown: 'Computed' },
+    ]),
+    { col: 'd_comment', section: 'Admin dashboard', q: 'What are your comments on the admin dashboard?', get: ans('d_comment'), shown: 'Staff' },
+    { col: 'pa_likely', section: 'Periodic assessment', q: PA_QUESTION, values: LIKELY, get: ans('pa_likely'), shown: 'Students' },
+    { col: 'pa_done', section: 'Periodic assessment', q: 'Did you complete the periodic health assessment during the pilot?', values: PA_DONE, get: ans('pa_done'), shown: 'Students' },
+    ...PA_REASONS.map(([k, l]) => ({ col: k, section: 'Periodic assessment', q: `What would make you more likely to complete it? ${l}`, values: ticked, get: flag('pa_reasons', k), shown: 'Students' })),
+    { col: 'pa_reasons_other', section: 'Periodic assessment', q: 'Other reason (text)', get: ans('pa_reasons_other'), shown: 'Students' },
+    ...PA_STAFF.map(([k, q, opts]) => ({ col: k, section: 'Periodic assessment', q, values: opts, get: ans(k), shown: 'Staff' })),
+    { col: 'adopt_pref', section: 'Bigger picture', q: `Overall adoption preference. Students: "${ADOPT_PREF.student}" Staff: "${ADOPT_PREF.staff}"`, values: AGREE, get: ans('adopt_pref'), shown: both },
+    { col: 'adopt_students', section: 'Bigger picture', q: ADOPT_STUDENTS, values: LIKELY, get: ans('adopt_students'), shown: both },
+    { col: 'impact', section: 'Bigger picture', q: IMPACT, values: AGREE, get: ans('impact'), shown: both },
+    ...IMPROVE.map(([k, l]) => ({ col: k, section: 'Improve', q: `Which areas should we improve first? ${l}`, values: ticked, get: flag('improve_pick', k), shown: k === 'i_dash' ? 'Staff' : both })),
+    { col: 'improve_other', section: 'Improve', q: 'Other area to improve (text)', get: ans('improve_other'), shown: both },
+    { col: 'open_overall', section: 'In your own words', q: 'Do you have any overall comments about the VitalU initiative?', get: ans('open_overall'), shown: both },
+    { col: 'open_improve', section: 'In your own words', q: 'What should we change, fix or add?', get: ans('open_improve'), shown: both },
   ];
+}
+
+/** CSV columns in analysis order: [header, (row) => value]. */
+function csvColumns() {
+  return fields().map((f) => [f.col, f.get]);
+}
+
+/** The label for a coded value, or the value itself. */
+function labelOf(field, v) {
+  if (v === '' || v === null || v === undefined || !field.values) return v ?? '';
+  const hit = field.values.find(([c]) => String(c) === String(v));
+  return hit ? hit[1] : v;
 }

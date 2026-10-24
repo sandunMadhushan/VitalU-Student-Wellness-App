@@ -82,7 +82,15 @@
                 <option value="staff">Lecturers, administration, staff and experts</option>
               </select>
               <button class="btn ghost" id="refresh" type="button">Refresh</button>
-              <button class="btn primary" id="export" type="button">Download CSV</button>
+              <details class="dl-menu" id="export-menu">
+                <summary class="btn primary">Download</summary>
+                <div class="dl-list" role="menu">
+                  <button type="button" role="menuitem" data-dl="codes"><b>Data for analysis (CSV)</b><span>Numeric codes, one column per question. For jamovi, SPSS, R or Excel.</span></button>
+                  <button type="button" role="menuitem" data-dl="labels"><b>Data with answer text (CSV)</b><span>Same columns, with the answer wording instead of codes.</span></button>
+                  <button type="button" role="menuitem" data-dl="codebook"><b>Codebook (CSV)</b><span>What each column means and what each code stands for.</span></button>
+                  <button type="button" role="menuitem" data-dl="wilcoxon"><b>Wilcoxon results (CSV)</b><span>The before-and-now test table, ready for your report.</span></button>
+                </div>
+              </details>
             </div>
           </div>
           <div id="report"></div>
@@ -91,8 +99,28 @@
     </div>
   </div>
 
+  <dialog id="viewer" class="viewer" aria-labelledby="v-title">
+    <div class="v-head">
+      <div>
+        <h2 class="v-title" id="v-title"></h2>
+        <p class="v-meta fine"></p>
+      </div>
+      <button class="icon-btn" type="button" data-v="close" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="v-nav">
+      <button class="btn ghost small" type="button" data-v="prev">Previous</button>
+      <label class="sr-only" for="v-pick">Choose a response</label>
+      <select id="v-pick"></select>
+      <button class="btn ghost small" type="button" data-v="next">Next</button>
+    </div>
+    <div class="v-body"></div>
+  </dialog>
+
   <script src="config.js"></script>
   <script src="questions.js"></script>
+  <script src="stats.js"></script>
   <script src="researcher.js"></script>
 </body>
 </html>

@@ -164,7 +164,16 @@ const filtered = () => {
 
 $('#role-filter').addEventListener('change', render);
 $('#refresh').addEventListener('click', load);
-$('#export').addEventListener('click', () => downloadCsv(filtered()));
+$('#export-menu').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-dl]');
+  if (!b) return;
+  const kind = b.dataset.dl;
+  if (kind === 'codes') downloadCsv(filtered());
+  if (kind === 'labels') downloadCsv(filtered(), true);
+  if (kind === 'codebook') downloadCodebook();
+  if (kind === 'wilcoxon') downloadWilcoxon(filtered());
+  b.closest('details').open = false;
+});
 
 // ---------------------------------------------------------------------------
 // Summary
@@ -175,12 +184,7 @@ const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : nu
 const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
 const fmtDate = (iso) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-function median(xs) {
-  if (!xs.length) return null;
-  const s = [...xs].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-}
+// median() comes from stats.js.
 
 function kpi(label, value, sub) {
   return `<div class="kpi"><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}</div>`;
@@ -221,13 +225,8 @@ function render() {
     return [title, pct(useful, v.length), v.length ? `${pct(useful, v.length)}% of ${v.length}` : 'none'];
   }).sort((a, b) => b[1] - a[1]);
 
-  // Before and now (medians)
-  const prepost = PREPOST.map(([k, text]) => {
-    const pairs = rows.filter((r) => typeof r.answers[k + '_pre'] === 'number' && typeof r.answers[k + '_post'] === 'number');
-    const up = pairs.filter((r) => r.answers[k + '_post'] > r.answers[k + '_pre']).length;
-    const down = pairs.filter((r) => r.answers[k + '_post'] < r.answers[k + '_pre']).length;
-    return `<tr><td>${esc(text)}</td><td class="num">${pairs.length}</td><td class="num">${median(pairs.map((r) => r.answers[k + '_pre'])) ?? '–'}</td><td class="num">${median(pairs.map((r) => r.answers[k + '_post'])) ?? '–'}</td><td class="num">${up} / ${pairs.length - up - down} / ${down}</td></tr>`;
-  }).join('');
+  // Before and now: Wilcoxon signed-rank test per statement, Holm-corrected.
+  const prepost = wilcoxonTable(rows);
 
   // Favourite feature
   const favs = FEATURES.map(([k, title]) => [title, rows.filter((r) => r.answers.fav_feature === k).length]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]);
@@ -254,9 +253,7 @@ function render() {
     </div>
     <div class="r-section"><h2>Favourite feature</h2>${bars(favs, favTotal)}</div>
 
-    ${prepost && rows.some((r) => r.answers.pp1_pre != null) ? `<div class="r-section"><h2>Before and now</h2>
-      <p class="fine" style="margin-bottom:10px">Medians on the 1 to 5 agreement scale. Both groups answer this; use the filter to see one group. Run the Wilcoxon signed-rank test on the CSV (see docs/pilot-evaluation-form.md).</p>
-      <div class="table-wrap"><table><thead><tr><th>Statement</th><th>Pairs</th><th>Before</th><th>Now</th><th>Higher / same / lower</th></tr></thead><tbody>${prepost}</tbody></table></div></div>` : ''}
+    ${prepost}
 
     ${dashComments.length ? `<div class="r-section"><h2>Admin dashboard comments (${dashComments.length})</h2>
       ${dashComments.map((r) => `<div class="quote"><div class="meta">${esc(ROLE_NAME[r.role])}, ${esc(fmtDate(r.submitted_at))}</div><p>${esc(r.answers.d_comment)}</p></div>`).join('')}</div>` : ''}
@@ -268,11 +265,138 @@ function render() {
     </div>
 
     <div class="r-section"><h2>All responses</h2>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Submitted</th><th>Role</th><th>Faculty</th><th>Usability</th><th>Adoption preference</th><th>Lasting change</th><th>Link</th></tr></thead>
-        <tbody>${rows.map((r) => `<tr><td>${esc(fmtDate(r.submitted_at))}</td><td>${esc(ROLE_NAME[r.role])}</td><td>${esc(FACULTY_NAME[r.answers.faculty] || '–')}</td>
-          <td class="num">${usabilityScore(r.answers) === '' ? '–' : usabilityScore(r.answers)}</td><td class="num">${r.answers.adopt_pref ?? '–'}</td><td class="num">${r.answers.impact ?? '–'}</td><td>${esc(r.link_group || '–')}</td></tr>`).join('')}</tbody>
-      </table></div></div>`;
+      <p class="fine" style="margin-bottom:10px">Select a response to read every answer, then use Previous and Next to go through them one by one.</p>
+      <div class="table-wrap"><table class="pick-table">
+        <thead><tr><th>#</th><th>Submitted</th><th>Role</th><th>Faculty</th><th>Usability</th><th>Adoption preference</th><th>Lasting change</th><th></th></tr></thead>
+        <tbody>${rows.map((r, i) => `<tr data-open="${i}" tabindex="0"><td class="num">${rows.length - i}</td><td>${esc(fmtDate(r.submitted_at))}</td><td>${esc(ROLE_NAME[r.role])}</td><td>${esc(FACULTY_NAME[r.answers.faculty] || '–')}</td>
+          <td class="num">${usabilityScore(r.answers) === '' ? '–' : usabilityScore(r.answers)}</td><td class="num">${r.answers.adopt_pref ?? '–'}</td><td class="num">${r.answers.impact ?? '–'}</td><td><button class="btn ghost small" type="button" data-open="${i}">View</button></td></tr>`).join('')}</tbody>
+      </table></div></div>
+
+    <div class="r-section"><details class="data-table">
+      <summary><h2>Data table, as exported</h2><span class="fine">One row per response, one column per question, numeric codes. This is exactly what Download CSV gives you.</span></summary>
+      ${dataTable(rows)}
+    </details></div>`;
+
+  $('#report').querySelectorAll('[data-open]').forEach((el) => {
+    const open = (e) => {
+      e.stopPropagation();
+      openResponse(Number(el.dataset.open));
+    };
+    el.addEventListener('click', open);
+    if (el.tagName === 'TR') el.addEventListener('keydown', (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open(e)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Before and after: Wilcoxon signed-rank test
+// ---------------------------------------------------------------------------
+
+const p3 = (p) => (p == null ? '–' : p < 0.001 ? '< .001' : p.toFixed(3).replace(/^0/, ''));
+
+function wilcoxonFor(rows) {
+  const tests = PREPOST.map(([k, text]) => {
+    const pairs = rows.filter((r) => typeof r.answers[k + '_pre'] === 'number' && typeof r.answers[k + '_post'] === 'number');
+    return { k, text, res: wilcoxonSignedRank(pairs.map((r) => r.answers[k + '_pre']), pairs.map((r) => r.answers[k + '_post'])) };
+  });
+  const adj = holm(tests.map((t) => (t.res && t.res.n ? t.res.p : null)));
+  tests.forEach((t, i) => (t.pHolm = adj[i]));
+  return tests;
+}
+
+function wilcoxonTable(rows) {
+  if (!rows.some((r) => typeof r.answers.pp1_pre === 'number')) return '';
+  // Students and staff are tested separately, as the groups are different people.
+  const groups = $('#role-filter').value
+    ? [[ROLE_NAME[$('#role-filter').value], rows]]
+    : [['Undergraduates', rows.filter((r) => roleOf(r) === 'student')], ['Staff and experts', rows.filter((r) => roleOf(r) === 'staff')]].filter(([, g]) => g.some((r) => typeof r.answers.pp1_pre === 'number'));
+  const methods = new Set();
+  const body = groups.map(([name, g]) => {
+    const tests = wilcoxonFor(g);
+    return `<tr class="group-row"><th colspan="9">${esc(name)}</th></tr>` + tests.map((t) => {
+      const r = t.res;
+      if (!r) return `<tr><td>${esc(t.text)}</td><td class="num" colspan="8">No pairs yet</td></tr>`;
+      if (r.n) methods.add(r.method);
+      const sig = t.pHolm != null && t.pHolm < 0.05;
+      return `<tr>
+        <td>${esc(t.text)}</td>
+        <td class="num">${r.pairs}</td>
+        <td class="num">${r.medianPre}</td>
+        <td class="num">${r.medianPost}</td>
+        <td class="num">${r.up} / ${r.same} / ${r.down}</td>
+        <td class="num">${r.n ? `${r.wPlus} / ${r.wMinus}` : '–'}</td>
+        <td class="num">${r.n ? r.z.toFixed(2) : '–'}</td>
+        <td class="num">${r.n ? `${p3(r.p)} <span class="fine">(Holm ${p3(t.pHolm)})</span>` : '–'}${sig ? ' <span class="sig">significant</span>' : ''}</td>
+        <td class="num">${r.n ? `${r.r.toFixed(2)} <span class="fine">${effectLabel(r.r)}</span>` : '–'}</td>
+      </tr>`;
+    }).join('');
+  }).join('');
+  const few = groups.some(([, g]) => g.filter((r) => typeof r.answers.pp1_pre === 'number').length < 20);
+  return `<div class="r-section"><h2>Before and now: Wilcoxon signed-rank test</h2>
+    <p class="fine" style="margin-bottom:10px">Each person rated each statement for before VitalU and now (1 = strongly disagree, 5 = strongly agree). The test checks whether "now" is consistently higher than "before". Medians are shown; W+ and W− are the summed ranks of increases and decreases; z is the standardised statistic; r = |z| / √n is the effect size (0.1 small, 0.3 medium, 0.5 large). p-values are two-sided, and Holm-corrected for the four statements. Method: ${esc([...methods].join('; ') || 'none yet')}. Same results as R <code>wilcox.test(post, pre, paired = TRUE)</code>.</p>
+    ${few ? '<p class="fine warn-note">Fewer than 20 pairs in a group: treat the p-values with caution and report the medians and counts too.</p>' : ''}
+    <div class="table-wrap"><table class="stats-table"><thead><tr><th>Statement</th><th>Pairs</th><th>Before (median)</th><th>Now (median)</th><th>Higher / same / lower</th><th>W+ / W−</th><th>z</th><th>p</th><th>r</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// One response at a time
+// ---------------------------------------------------------------------------
+
+let viewIndex = 0;
+
+function openResponse(i) {
+  const rows = filtered();
+  if (!rows.length) return;
+  viewIndex = (i + rows.length) % rows.length;
+  const r = rows[viewIndex];
+  let section = '';
+  const items = fields().filter((f) => f.section !== 'Record').map((f) => {
+    const v = f.get(r);
+    if (v === '' || v === null || v === undefined) return '';
+    // Ticked boxes: list only the ones ticked.
+    if (f.values && f.values.length === 2 && f.values[1][1] === 'Ticked' && v !== 1) return '';
+    const head = f.section !== section ? `<h3 class="v-sec">${esc((section = f.section))}</h3>` : '';
+    const ans = f.values ? `${esc(labelOf(f, v))} <span class="code">${esc(v)}</span>` : esc(v);
+    return `${head}<div class="v-row"><div class="v-q"><span class="code">${esc(f.col)}</span> ${esc(f.q)}</div><div class="v-a">${ans}</div></div>`;
+  }).join('');
+  const dlg = $('#viewer');
+  dlg.querySelector('.v-title').textContent = `Response ${rows.length - viewIndex} of ${rows.length}`;
+  dlg.querySelector('.v-meta').textContent = `${ROLE_NAME[r.role]}, submitted ${fmtDate(r.submitted_at)}. ID ${r.id}`;
+  dlg.querySelector('.v-body').innerHTML = items || '<p class="muted">No answers.</p>';
+  dlg.querySelector('.v-body').scrollTop = 0;
+  const pick = dlg.querySelector('#v-pick');
+  pick.innerHTML = rows.map((x, k) => `<option value="${k}" ${k === viewIndex ? 'selected' : ''}>#${rows.length - k}: ${esc(ROLE_NAME[x.role])}, ${esc(fmtDate(x.submitted_at))}</option>`).join('');
+  if (!dlg.open) dlg.showModal();
+}
+
+$('#viewer').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-v]');
+  if (b) {
+    if (b.dataset.v === 'close') return $('#viewer').close();
+    openResponse(viewIndex + (b.dataset.v === 'next' ? -1 : 1));
+  } else if (e.target === $('#viewer')) {
+    $('#viewer').close();
+  }
+});
+$('#v-pick').addEventListener('change', (e) => openResponse(Number(e.target.value)));
+document.addEventListener('keydown', (e) => {
+  if (!$('#viewer').open || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight') openResponse(viewIndex - 1);
+  if (e.key === 'ArrowLeft') openResponse(viewIndex + 1);
+});
+
+// ---------------------------------------------------------------------------
+// The data table, exactly as exported
+// ---------------------------------------------------------------------------
+
+function dataTable(rows) {
+  const fs = fields();
+  const head = fs.map((f) => `<th title="${esc(f.q)}">${esc(f.col)}</th>`).join('');
+  const body = [...rows].reverse().map((r) => `<tr>${fs.map((f) => {
+    const v = f.get(r);
+    const s = v === null || v === undefined ? '' : String(v);
+    return `<td title="${esc(labelOf(f, v))}">${esc(s.length > 40 ? s.slice(0, 40) + '…' : s)}</td>`;
+  }).join('')}</tr>`).join('');
+  return `<div class="table-wrap data-wrap"><table class="raw"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -286,22 +410,54 @@ function csvCell(v) {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-function downloadCsv(rows) {
-  if (!rows.length) return alertBox('There are no responses to download yet.');
-  const cols = csvColumns();
-  const lines = [cols.map(([h]) => h).join(',')];
-  // Oldest first reads more naturally in a spreadsheet.
-  for (const r of [...rows].reverse()) lines.push(cols.map(([, f]) => csvCell(f(r))).join(','));
+function saveFile(name, lines) {
   // A byte order mark so Excel opens the file as UTF-8.
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
-  const role = $('#role-filter').value;
   a.href = URL.createObjectURL(blob);
-  a.download = `vitalu-pilot-feedback${role ? '-' + role : ''}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+const fileTag = () => `${$('#role-filter').value ? '-' + $('#role-filter').value : ''}-${new Date().toISOString().slice(0, 10)}`;
+
+/** One row per response, oldest first. labels = answer text instead of codes. */
+function downloadCsv(rows, labels = false) {
+  if (!rows.length) return alertBox('There are no responses to download yet.');
+  const fs = fields();
+  const lines = [fs.map((f) => f.col).join(',')];
+  for (const r of [...rows].reverse()) lines.push(fs.map((f) => csvCell(labels ? labelOf(f, f.get(r)) : f.get(r))).join(','));
+  saveFile(`vitalu-pilot-feedback${labels ? '-labels' : ''}${fileTag()}.csv`, lines);
+}
+
+/** What every column means and how each answer is coded. */
+function downloadCodebook() {
+  const lines = ['column,section,question,shown_to,codes'];
+  for (const f of fields()) {
+    const codes = f.values ? f.values.map(([c, l]) => `${c} = ${l}`).join('; ') : f.shown === 'Computed' ? 'number' : 'text';
+    lines.push([f.col, f.section, f.q, f.shown, codes].map(csvCell).join(','));
+  }
+  saveFile('vitalu-pilot-feedback-codebook.csv', lines);
+}
+
+/** The Wilcoxon results table, ready for a report. */
+function downloadWilcoxon(rows) {
+  const lines = ['group,statement,pairs,median_before,median_now,higher,same,lower,n_nonzero,W_plus,W_minus,z,p,p_holm,r,effect,method'];
+  const groups = $('#role-filter').value
+    ? [[ROLE_NAME[$('#role-filter').value], rows]]
+    : [['Undergraduates', rows.filter((r) => roleOf(r) === 'student')], ['Staff and experts', rows.filter((r) => roleOf(r) === 'staff')]];
+  for (const [name, g] of groups) {
+    for (const t of wilcoxonFor(g)) {
+      const r = t.res;
+      if (!r) continue;
+      lines.push([name, t.text, r.pairs, r.medianPre, r.medianPost, r.up, r.same, r.down, r.n, r.wPlus, r.wMinus, r.z.toFixed(3), r.p.toFixed(4), t.pHolm == null ? '' : t.pHolm.toFixed(4), r.r.toFixed(3), effectLabel(r.r), r.method].map(csvCell).join(','));
+    }
+  }
+  if (lines.length === 1) return alertBox('No before-and-after answers yet.');
+  saveFile(`vitalu-pilot-wilcoxon${fileTag()}.csv`, lines);
 }
 
 function alertBox(message) {
