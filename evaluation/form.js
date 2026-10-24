@@ -15,7 +15,11 @@ const SENT_KEY = 'vitalu_eval_sent';
 
 const params = new URLSearchParams(location.search);
 const g = params.get('g');
-const linkRole = g === 'student' ? 'student' : g === 'staff' || LEGACY_ROLES[g] ? 'staff' : null;
+// The staff form (lecturers, administration, health centre staff, technical
+// experts) is switched off for now: everyone gets the student form, whatever
+// link they used. Set to true to bring back the role choice.
+const STAFF_FORM_ENABLED = false;
+const linkRole = !STAFF_FORM_ENABLED ? 'student' : g === 'student' ? 'student' : g === 'staff' || LEGACY_ROLES[g] ? 'staff' : null;
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -26,6 +30,7 @@ const store = {
 let A = store.get(DRAFT_KEY) || {};
 if (LEGACY_ROLES[A.role]) A.role = LEGACY_ROLES[A.role];
 if (linkRole && !A.role) A.role = linkRole;
+if (!STAFF_FORM_ENABLED) A.role = 'student';
 let stepIndex = 0;
 let featureIndex = 0;
 let locked = false;
@@ -41,6 +46,7 @@ const isStudent = () => A.role === 'student';
 // ---------------------------------------------------------------------------
 
 function steps() {
+  if (!STAFF_FORM_ENABLED) return ['consent', 'about', 'usab1', 'usab2', 'features', 'favourite', 'prepost', 'assessment', 'impact', 'improve', 'open'];
   if (isStudent()) return ['role', 'consent', 'about', 'usab1', 'usab2', 'features', 'favourite', 'prepost', 'assessment', 'impact', 'improve', 'open'];
   return ['role', 'consent', 'about', 'usab1', 'usab2', 'features', 'favourite', 'prepost', 'dashboard', 'assessment', 'impact', 'improve', 'open'];
 }
@@ -460,11 +466,16 @@ function endScreen(html) {
   h?.focus();
 }
 
+/** Where a new response starts: skip the role screen when the role is known. */
+function firstStep() {
+  return steps()[0] === 'role' && linkRole ? 1 : 0;
+}
+
 function restart() {
   A = linkRole ? { role: linkRole } : {};
   save();
   featureIndex = 0;
-  stepIndex = linkRole ? 1 : 0;
+  stepIndex = firstStep();
   render();
 }
 
@@ -494,7 +505,7 @@ if (store.get(SENT_KEY) && !store.get(DRAFT_KEY)) {
   // Resume where the person left off. A link that names the role skips the
   // role screen, and Back still returns to it.
   const saved = store.get(POS_KEY);
-  stepIndex = A.role ? (typeof saved === 'number' && saved > 0 ? saved : linkRole ? 1 : 0) : 0;
+  stepIndex = A.role ? (typeof saved === 'number' && saved > 0 ? saved : firstStep()) : 0;
   if (steps()[stepIndex] === 'features') featureIndex = firstUnrated();
   render({ animate: false });
 }

@@ -436,3 +436,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 55%, transpa
   .kpi { min-height: 120px; }
   .kpi .v { font-size: 28px; }
 }
+
+/* Researcher sign-in: Google button, divider, forgot password */
+.google-btn { width: 100%; margin-top: 22px; background: var(--card); }
+.or-line { display: flex; align-items: center; gap: 12px; margin: 20px 0 4px; color: var(--muted); font-size: 13.5px; }
+.or-line::before, .or-line::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.text-link { display: inline-block; margin-top: 10px; padding: 4px 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--green); cursor: pointer; }
+.text-link:hover { text-decoration: underline; }
+.text-link[disabled] { opacity: 0.5; cursor: default; }
+.ok-msg { color: var(--green); font-weight: 600; margin-top: 14px; }

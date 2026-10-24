@@ -20,17 +20,51 @@ let all = [];
 // Session
 // ---------------------------------------------------------------------------
 
-function showLogin(message) {
+// Google sign-in and password reset emails return to this page. The URL
+// must be listed in Supabase: Authentication > URL Configuration > Redirect URLs.
+const RETURN_URL = location.origin + location.pathname;
+let recovering = false;
+
+function showLogin(message, ok) {
   $('#dash').hidden = true;
+  $('#reset').hidden = true;
   $('#signout').hidden = true;
   $('#login').hidden = false;
   const err = $('#login-err');
   err.hidden = !message;
   err.textContent = message || '';
+  const okEl = $('#login-ok');
+  okEl.hidden = !ok;
+  okEl.textContent = ok || '';
 }
 
+function showReset() {
+  $('#dash').hidden = true;
+  $('#login').hidden = true;
+  $('#signout').hidden = true;
+  $('#reset').hidden = false;
+  $('#new-pass').focus();
+}
+
+// Arriving from a password reset email signs the person in with a recovery
+// session; ask for the new password before showing anything else.
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    recovering = true;
+    showReset();
+  }
+});
+
 async function start() {
+  // An error from Google or the reset link comes back in the URL.
+  const back = new URLSearchParams(location.hash.slice(1) || location.search);
+  if (back.get('error_description')) {
+    history.replaceState(null, '', RETURN_URL);
+    return showLogin(back.get('error_description').replace(/\+/g, ' '));
+  }
+  if (recovering) return;
   const { data } = await sb.auth.getSession();
+  if (recovering) return;
   if (!data.session) return showLogin();
   const { data: ok, error } = await sb.rpc('is_feedback_viewer');
   if (error || !ok) {
@@ -52,6 +86,53 @@ $('#login').addEventListener('submit', async (e) => {
   btn.disabled = false;
   btn.textContent = 'Sign in';
   if (error) return showLogin('Email or password is incorrect.');
+  start();
+});
+
+$('#google-btn').addEventListener('click', async () => {
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: RETURN_URL } });
+  if (error) showLogin('Google sign-in is not available right now. Use your email and password instead.');
+});
+
+$('#forgot-btn').addEventListener('click', async () => {
+  const email = $('#email').value.trim();
+  if (!email || !$('#email').checkValidity()) {
+    $('#email').focus();
+    return showLogin('Enter your email above, then press Forgot password again.');
+  }
+  const btn = $('#forgot-btn');
+  btn.disabled = true;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: RETURN_URL });
+  btn.disabled = false;
+  if (error) {
+    return showLogin(/rate|seconds/i.test(error.message) ? 'Please wait a minute before asking for another email.' : 'Could not send the email. Check the address and try again.');
+  }
+  showLogin(null, `If ${email} has an account, a password reset link is on its way. Open it on this device.`);
+});
+
+$('#reset').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const a = $('#new-pass').value;
+  const b = $('#new-pass2').value;
+  const err = $('#reset-err');
+  err.hidden = false;
+  if (a.length < 8) return (err.textContent = 'Use at least 8 characters.');
+  if (a !== b) return (err.textContent = 'The two passwords do not match.');
+  err.hidden = true;
+  const btn = $('#reset-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  const { error } = await sb.auth.updateUser({ password: a });
+  btn.disabled = false;
+  btn.textContent = 'Save new password';
+  if (error) {
+    err.hidden = false;
+    err.textContent = 'Could not save the new password. The reset link may have expired, so ask for a new one.';
+    return;
+  }
+  recovering = false;
+  history.replaceState(null, '', RETURN_URL);
+  $('#reset').hidden = true;
   start();
 });
 
