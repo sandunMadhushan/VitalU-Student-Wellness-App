@@ -12,7 +12,7 @@ Plain HTML, CSS and JavaScript. No build step; the one library (Lenis) is self-h
 | `img/` | App icon, 3D icons from `assets/icons3d` and people from `assets/art` and `assets/images` (converted to WebP) |
 | `fonts/` | Self-hosted fonts |
 | `vendor/` | [Lenis](https://github.com/darkroomengineering/lenis) 1.3.11 for smooth scrolling (turned off when the visitor prefers reduced motion) |
-| `api/download.js` | `/download`: sends visitors straight to the APK of the latest GitHub release (see below) |
+| `api/download.js` | `/download`: starts the download of the APK in the latest GitHub release (see below) |
 | `vercel.json` | Sends old `/admin` and `/evaluation` links to the web app, and caches images and fonts |
 | `404.html` | Sends any other old app link to the same path on web.vitalu.madhushan.me |
 
@@ -21,12 +21,9 @@ Plain HTML, CSS and JavaScript. No build step; the one library (Lenis) is self-h
 - Web app: `https://web.vitalu.madhushan.me/`
 - Android download: `/download` (on this site)
 
-`/download` looks up the latest release of the private GitHub repo and redirects to GitHub's signed link for its `.apk`, so the file downloads straight away. It needs a token in Vercel, set once:
+`/download` looks up the latest GitHub release and sends the browser to its `.apk`, which GitHub serves as a file download, so visitors stay on the page and the download starts. It is cached for 5 minutes. To ship a new version, publish a GitHub release with the APK attached; the site picks it up within 5 minutes.
 
-1. GitHub, Settings, Developer settings, Fine-grained tokens, Generate new token. Repository access: only `VitalU-Student-Wellness-App`. Permissions: Contents, Read-only.
-2. Vercel project, Settings, Environment Variables: add `GITHUB_TOKEN` with that token (Production), then redeploy.
-
-Without the token, `/download` falls back to the GitHub releases page. To ship a new version, publish a GitHub release with the APK attached; the site picks it up automatically.
+`GITHUB_TOKEN` (Vercel env var, read-only) is optional; it only raises GitHub's API rate limit. If the lookup fails, `/download` falls back to the GitHub releases page.
 
 ## Preview locally
 
