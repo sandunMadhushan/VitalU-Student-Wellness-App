@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VitalU: healthy habits that fit between lectures</title>
+  <meta name="description" content="VitalU is a free, private health companion for university students in Sri Lanka. Log water, meals, sleep and stress in a tap or two, understand your own numbers and reach campus support.">
+  <meta name="theme-color" content="#0B7A63">
+  <meta property="og:title" content="VitalU: healthy habits that fit between lectures">
+  <meta property="og:description" content="A free, private health companion for university students in Sri Lanka.">
+  <meta property="og:image" content="https://vitalu.madhushan.me/img/icon-512.png">
+  <meta property="og:url" content="https://vitalu.madhushan.me/">
+  <link rel="icon" href="favicon.png">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="preload" href="fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Sign-in, sign-up and password-reset links sent before the app moved to
+    // web.vitalu.madhushan.me still land here. Pass them on to the app.
+    if (/[?&#](code|access_token|error_description|token_hash)=/.test(location.search + location.hash)) {
+      location.replace('https://web.vitalu.madhushan.me/' + location.search + location.hash);
+    }
+    document.documentElement.classList.add('js');
+  </script>
+  <!--
+    Links used on this page. To change one, search for the URL and replace it everywhere.
+    Web app:  https://web.vitalu.madhushan.me/
+    Download: https://github.com/sandunMadhushan/VitalU-Student-Wellness-App/releases/latest
+  -->
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Shared SVG icons -->
+  <svg width="0" height="0" class="sr" aria-hidden="true">
+    <symbol id="ic-drop" viewBox="0 0 24 24"><path d="M12 2.7c3.6 4.3 6.5 8 6.5 11.3A6.5 6.5 0 0 1 5.5 14c0-3.3 2.9-7 6.5-11.3Z"/></symbol>
+    <symbol id="ic-walk" viewBox="0 0 24 24"><circle cx="13.5" cy="4.5" r="2"/><path d="m9.8 21 1.6-6.4 2.1 2v4.4h2v-5.9l-2.2-2.1.7-3.2A7 7 0 0 0 19 12v-2c-1.8 0-3.3-1-4.1-2.4l-1-1.6a2 2 0 0 0-2.6-.8L6 7.6V12h2V8.9l1.8-.7L8.2 16l-4.9-1-.4 2 7 1.4Z"/></symbol>
+    <symbol id="ic-moon" viewBox="0 0 24 24"><path d="M12.3 3a7.5 7.5 0 0 0 8.6 9.9A9 9 0 1 1 12.3 3Z"/></symbol>
+    <symbol id="ic-meal" viewBox="0 0 24 24"><path d="M7 2v8.5a2.5 2.5 0 0 1-1.5 2.3V22h-2v-9.2A2.5 2.5 0 0 1 2 10.5V2h1.5v6h1V2H6v6h1V2Zm10 0c2.2 0 4 2.7 4 6 0 2.4-1 4.4-2.5 5.4V22h-2v-8.6C15 12.4 14 10.4 14 8c0-3.3 1.4-6 3-6Z"/></symbol>
+    <symbol id="ic-home" viewBox="0 0 24 24"><path d="M12 3 3 10v11h6v-6h6v6h6V10Z"/></symbol>
+    <symbol id="ic-chart" viewBox="0 0 24 24"><path d="M4 20V10h3v10Zm6.5 0V4h3v16ZM17 20v-7h3v7Z"/></symbol>
+    <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0Z"/></symbol>
+    <symbol id="ic-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6Z"/></symbol>
+    <symbol id="ic-phone" viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1Z"/></symbol>
+    <symbol id="ic-lock" viewBox="0 0 24 24"><path d="M17 9V7A5 5 0 0 0 7 7v2H5v12h14V9Zm-8-2a3 3 0 0 1 6 0v2H9Zm3 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></symbol>
+    <symbol id="ic-flask" viewBox="0 0 24 24"><path d="M9 2h6v2h-1v5.3l5.6 9.5A2 2 0 0 1 17.9 22H6.1a2 2 0 0 1-1.7-3.2L10 9.3V4H9Zm-1.9 15h9.8l-2.4-4H9.5Z"/></symbol>
+    <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5Zm-1 6h2v3h3v2h-3v3h-2v-3H8v-2h3Z"/></symbol>
+    <symbol id="ic-android" viewBox="0 0 24 24"><path d="M17.6 9.5 19.4 6.4a.4.4 0 0 0-.7-.4l-1.9 3.2a11 11 0 0 0-9.6 0L5.3 6a.4.4 0 0 0-.7.4l1.8 3.1A10.4 10.4 0 0 0 1 18h22a10.4 10.4 0 0 0-5.4-8.5ZM7 15.3a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Zm10 0a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4Z"/></symbol>
+    <symbol id="ic-open" viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14ZM5 5h6v2H7v10h10v-4h2v6H5Z"/></symbol>
+    <symbol id="ic-camera" viewBox="0 0 24 24"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3Zm3 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z"/></symbol>
+    <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M11 1h2v3h-2Zm0 19h2v3h-2ZM1 11h3v2H1Zm19 0h3v2h-3ZM4.2 2.8l2.1 2.1-1.4 1.4-2.1-2.1Zm13.5 13.5 2.1 2.1-1.4 1.4-2.1-2.1ZM2.8 19.8l2.1-2.1 1.4 1.4-2.1 2.1ZM16.3 4.9l2.1-2.1 1.4 1.4-2.1 2.1Z"/></symbol>
+  </svg>
+
+  <header class="nav" id="top">
+    <div class="wrap nav-in">
+      <a class="brand" href="#top" aria-label="VitalU home">
+        <img src="img/icon-192.png" alt="" width="34" height="34">
+        <span>VitalU</span>
+      </a>
+      <nav class="links" aria-label="Main">
+        <a href="#top" class="is-on">Home</a>
+        <a href="#features">Features</a>
+        <a href="#tools">Tools</a>
+        <a href="#help">Help lines</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn btn-dark btn-sm" href="https://web.vitalu.madhushan.me/">Open web app</a>
+        <a class="btn btn-line btn-sm hide-sm" href="https://github.com/sandunMadhushan/VitalU-Student-Wellness-App/releases/latest">Download</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="wrap hero-in">
+        <div class="hero-copy">
+          <svg class="sparks" viewBox="0 0 90 70" aria-hidden="true">
+            <path class="draw" d="M8 46c6-14 11-24 15-38"/>
+            <path class="draw" d="M30 52c10-10 20-17 31-23"/>
+            <path class="draw" d="M44 66c11-5 25-6 40-4"/>
+          </svg>
+          <h1 class="headline">
+            <span class="ln"><span>Healthy habits</span></span>
+            <span class="ln"><span>that fit</span></span>
+            <span class="ln nowrap"><span><span class="scribble">between lectures<svg viewBox="0 0 400 34" preserveAspectRatio="none" aria-hidden="true"><path class="draw" d="M4 22C80 10 210 6 396 14M30 30c110-9 230-11 330-7"/></svg></span>!</span></span>
+          </h1>
+          <p class="lede reveal-hero">VitalU is a private health companion for university students in Sri Lanka. Log water, meals, sleep and stress in a tap or two, understand your own numbers, and reach campus support when you need it.</p>
+          <div class="cta reveal-hero">
+            <a class="btn btn-dark" href="https://web.vitalu.madhushan.me/">Open the web app</a>
+            <a class="btn btn-line" href="https://github.com/sandunMadhushan/VitalU-Student-Wellness-App/releases/latest"><svg class="i"><use href="#ic-android"/></svg>Download for Android</a>
+          </div>
+          <p class="fine reveal-hero">Free for students. On iPhone, open the web app in Safari.</p>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="blob"></div>
+          <svg class="flight" viewBox="0 0 520 620" fill="none">
+            <path class="draw slow" d="M30 120C120 40 260 30 330 70c90 52 60 150-10 140-60-9-40-90 40-110 90-22 140 40 130 120M120 560c60-70 200-40 230 10 30 50 110 60 150 0"/>
+          </svg>
+          <div class="cloud c1" data-depth="10"></div>
+          <div class="cloud c2" data-depth="18"></div>
+          <svg class="birds" viewBox="0 0 80 40" data-depth="24"><path class="draw" d="M4 20q6-7 11 0q5-7 11 0M44 8q4-5 8 0q4-5 8 0M54 30q3-4 6 0q3-4 6 0"/></svg>
+
+          <div class="phone-stage" data-depth="6">
+            <div class="phone">
+              <div class="notch"></div>
+              <div class="screen">
+                <div class="status"><span>9:41</span><span class="bars"><i></i><i></i><i></i></span></div>
+
+                <!-- Screen: home -->
+                <div class="scr is-on" data-scr="0">
+                  <div class="app-top">
+                    <svg class="i menu" viewBox="0 0 24 24"><path d="M4 7h16v2H4Zm0 4h10v2H4Zm0 4h16v2H4Z"/></svg>
+                    <span class="me"><img src="img/hero_female.webp" alt=""><b>Nimali</b></span>
+                  </div>
+                  <h3 class="app-h">Good morning,<br>Nimali.</h3>
+                  <div class="rings">
+                    <div class="ring" style="--p:.67;--c:#1A6FE0"><svg viewBox="0 0 40 40"><circle r="16" cx="20" cy="20"/><circle class="arc" r="16" cx="20" cy="20"/></svg><svg class="i"><use href="#ic-drop"/></svg><b>1.4 L</b><small>Water</small></div>
+                    <div class="ring" style="--p:.78;--c:#E0590F"><svg viewBox="0 0 40 40"><circle r="16" cx="20" cy="20"/><circle class="arc" r="16" cx="20" cy="20"/></svg><svg class="i"><use href="#ic-walk"/></svg><b>6,240</b><small>Steps</small></div>
+                    <div class="ring" style="--p:.9;--c:#5552D1"><svg viewBox="0 0 40 40"><circle r="16" cx="20" cy="20"/><circle class="arc" r="16" cx="20" cy="20"/></svg><svg class="i"><use href="#ic-moon"/></svg><b>7h 10</b><small>Sleep</small></div>
+                  </div>
+                  <div class="row-h"><b>For you today</b><span>See all</span></div>
+                  <div class="recs">
+                    <div class="rec" style="--bg:#DCEFE8"><img src="img/idea_tea.webp" alt=""><b>Calm tea break</b><small>5 min</small></div>
+                    <div class="rec" style="--bg:#FDE7D9"><img src="img/idea_walk.webp" alt=""><b>Evening walk</b><small>20 min</small></div>
+                  </div>
+                  <div class="row-h"><b>Coming up</b><span>See all</span></div>
+                  <div class="next"><img src="img/i-assessment.webp" alt=""><div><b>Term check-in</b><small>Opens Monday</small></div><em>Remind</em></div>
+                </div>
+
+                <!-- Screen: water -->
+                <div class="scr" data-scr="1">
+                  <h3 class="app-h sm">Water</h3>
+                  <div class="drop-meter">
+                    <svg viewBox="0 0 120 150"><defs><clipPath id="dropclip"><path d="M60 6c26 32 48 60 48 86a48 48 0 0 1-96 0C12 66 34 38 60 6Z"/></clipPath></defs>
+                      <path d="M60 6c26 32 48 60 48 86a48 48 0 0 1-96 0C12 66 34 38 60 6Z" fill="#E4EEFC"/>
+                      <g clip-path="url(#dropclip)"><g class="lvl"><path class="wave" d="M-60 70q15-8 30 0t30 0 30 0 30 0 30 0 30 0 30 0 30 0V200H-60Z" fill="#1A6FE0"/></g></g>
+                    </svg>
+                    <div class="drop-t"><b><span data-water>1.4</span> L</b><small>of 2.1 L today</small></div>
+                  </div>
+                  <div class="quick">
+                    <span><b>250 ml</b>Glass</span><span><b>500 ml</b>Bottle</span><span><b>1 L</b>Large</span>
+                  </div>
+                  <div class="tip"><svg class="i"><use href="#ic-sun"/></svg><p>It is 31°C where you are. Add one more glass this afternoon.</p></div>
+                </div>
+
+                <!-- Screen: meal -->
+                <div class="scr" data-scr="2">
+                  <h3 class="app-h sm">Meal log</h3>
+                  <div class="snap"><img src="img/i-calorie_counter.webp" alt=""><span class="scan"></span><span class="tag"><svg class="i"><use href="#ic-camera"/></svg>Analysed</span></div>
+                  <b class="dish">Rice and curry with dhal</b>
+                  <small class="kcal">640 kcal estimated</small>
+                  <div class="macros">
+                    <div><span>Carbs</span><i style="--w:78%;--c:#E0590F"></i><b>92 g</b></div>
+                    <div><span>Protein</span><i style="--w:40%;--c:#0B7A63"></i><b>21 g</b></div>
+                    <div><span>Fat</span><i style="--w:32%;--c:#5552D1"></i><b>18 g</b></div>
+                  </div>
+                  <div class="chips"><span>Grains</span><span>Pulses</span><span>Vegetables</span></div>
+                </div>
+
+                <!-- Screen: help -->
+                <div class="scr" data-scr="3">
+                  <h3 class="app-h sm">Need help now?</h3>
+                  <div class="hl"><b>1990</b><div><strong>Suwa Seriya</strong><small>Free ambulance</small></div><svg class="i"><use href="#ic-phone"/></svg></div>
+                  <div class="hl"><b>1926</b><div><strong>NIMH helpline</strong><small>Mental health, 24 hours</small></div><svg class="i"><use href="#ic-phone"/></svg></div>
+                  <div class="hl"><b>1333</b><div><strong>CCCline</strong><small>Someone to talk to</small></div><svg class="i"><use href="#ic-phone"/></svg></div>
+                  <div class="ask"><img src="img/i-consult.webp" alt=""><div><strong>Ask the health centre</strong><small>Send a question without your name.</small></div></div>
+                </div>
+
+                <div class="tabbar">
+                  <span class="is-on"><svg class="i"><use href="#ic-home"/></svg></span>
+                  <span><svg class="i"><use href="#ic-drop"/></svg></span>
+                  <span class="fab"><svg class="i"><use href="#ic-plus"/></svg></span>
+                  <span><svg class="i"><use href="#ic-meal"/></svg></span>
+                  <span><svg class="i"><use href="#ic-user"/></svg></span>
+                </div>
+              </div>
+            </div>
+            <div class="phone-shadow"></div>
+          </div>
+
+          <img class="guide" src="img/hero_female.webp" alt="" data-depth="14">
+          <img class="sticker s1" src="img/i-water.webp" alt="" data-depth="28">
+          <img class="sticker s2" src="img/i-steps.webp" alt="" data-depth="22">
+          <img class="sticker s3" src="img/i-sleep.webp" alt="" data-depth="34">
+          <div class="toast" data-depth="20"><svg class="i"><use href="#ic-drop"/></svg><span>+250 ml logged</span></div>
+        </div>
+
+        <div class="screen-dots" role="tablist" aria-label="App screens">
+          <button role="tab" aria-selected="true" data-go="0">Home</button>
+          <button role="tab" aria-selected="false" data-go="1">Water</button>
+          <button role="tab" aria-selected="false" data-go="2">Meals</button>
+          <button role="tab" aria-selected="false" data-go="3">Help</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Facts band -->
+    <section class="band" aria-label="VitalU in numbers">
+      <div class="wrap band-in">
+        <div class="fact"><b data-count="14">14</b><span>health tools<br>in one app</span></div>
+        <div class="fact"><b data-count="32">32</b><span>short reads<br>for students</span></div>
+        <div class="fact"><b data-count="8">8</b><span>food groups<br>tracked for variety</span></div>
+        <div class="fact"><b data-count="3">3</b><span>help lines<br>one tap away</span></div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="way" id="features">
+      <div class="wrap way-in">
+        <div class="way-h reveal">
+          <svg class="sparks sm" viewBox="0 0 90 70" aria-hidden="true"><path class="draw" d="M8 46c6-14 11-24 15-38"/><path class="draw" d="M30 52c10-10 20-17 31-23"/></svg>
+          <h2>A little care,<br>every day.</h2>
+        </div>
+        <article class="feat reveal">
+          <img src="img/i-water.webp" alt="" width="96" height="96" loading="lazy">
+          <h3>Log it in one tap</h3>
+          <p>Your water target comes from your weight. Add a glass with one tap, and on hot days VitalU suggests a little more.</p>
+        </article>
+        <article class="feat reveal">
+          <img src="img/i-calorie_counter.webp" alt="" width="96" height="96" loading="lazy">
+          <h3>Snap your lunch</h3>
+          <p>Photograph your rice and curry. VitalU estimates the calories, the macros and which food groups the plate covers.</p>
+        </article>
+        <article class="feat reveal">
+          <img src="img/i-tg.webp" alt="" width="96" height="96" loading="lazy">
+          <h3>Read your blood report</h3>
+          <p>Upload a lab report and see each value next to its normal range, with a plain-English note. It explains; it does not diagnose.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Tools -->
+    <section class="tools" id="tools">
+      <div class="wrap">
+        <div class="tools-h reveal">
+          <h2>What do you need today?</h2>
+          <p>Small tools a busy student actually uses, built around Sri Lankan food, rupee budgets and campus life.</p>
+        </div>
+        <div class="seg reveal" role="tablist" aria-label="Filter tools">
+          <span class="seg-pill" aria-hidden="true"></span>
+          <button role="tab" aria-selected="true" data-f="all">All</button>
+          <button role="tab" aria-selected="false" data-f="daily">Daily habits</button>
+          <button role="tab" aria-selected="false" data-f="numbers">Your numbers</button>
+          <button role="tab" aria-selected="false" data-f="food">Food</button>
+          <button role="tab" aria-selected="false" data-f="mind">Mind and help</button>
+        </div>
+        <ul class="grid" id="tool-grid">
+          <li data-c="daily"><img src="img/i-water.webp" alt="" loading="lazy"><div><h3>Water</h3><p>A daily target from your weight, quick-add glasses and tips on hot days.</p></div></li>
+          <li data-c="daily"><img src="img/i-steps.webp" alt="" loading="lazy"><div><h3>Steps and activity</h3><p>Counts steps on your phone and compares your week with 150 active minutes.</p></div></li>
+          <li data-c="daily"><img src="img/i-sleep.webp" alt="" loading="lazy"><div><h3>Sleep</h3><p>Log bedtime, wake time and how rested you feel, and see the week’s pattern.</p></div></li>
+          <li data-c="daily"><img src="img/i-progress.webp" alt="" loading="lazy"><div><h3>Progress and badges</h3><p>Weekly trends for every habit, gentle milestones and a PDF summary.</p></div></li>
+          <li data-c="numbers"><img src="img/i-bmi.webp" alt="" loading="lazy"><div><h3>BMI and waist-to-hip</h3><p>Your numbers on a clear scale, with a healthy weight range for you.</p></div></li>
+          <li data-c="numbers"><img src="img/i-bp.webp" alt="" loading="lazy"><div><h3>Heart risk check</h3><p>A factor-based check pre-filled from your profile, with advice at every level.</p></div></li>
+          <li data-c="numbers"><img src="img/i-tg.webp" alt="" loading="lazy"><div><h3>Blood report reader</h3><p>Upload a lab report and get each value explained in plain English.</p></div></li>
+          <li data-c="numbers"><img src="img/i-assessment.webp" alt="" loading="lazy"><div><h3>Term check-ins</h3><p>A short wellness assessment each term on food, sleep, activity and stress.</p></div></li>
+          <li data-c="food"><img src="img/i-calorie_counter.webp" alt="" loading="lazy"><div><h3>Snap-to-log meals</h3><p>Photograph a meal and VitalU estimates the dish, calories and macros.</p></div></li>
+          <li data-c="food"><img src="img/i-plate_guide.webp" alt="" loading="lazy"><div><h3>Healthy plate</h3><p>Half vegetables, a quarter grains, a quarter protein, shown with local foods.</p></div></li>
+          <li data-c="food"><img src="img/i-diversity.webp" alt="" loading="lazy"><div><h3>Food variety</h3><p>Tick off the 8 food groups you ate today and see where your plate is thin.</p></div></li>
+          <li data-c="food"><img src="img/i-budget.webp" alt="" loading="lazy"><div><h3>Budget meal planner</h3><p>Plan a week of meals in rupees and share the grocery list with housemates.</p></div></li>
+          <li data-c="mind"><img src="img/i-stress.webp" alt="" loading="lazy"><div><h3>Stress check</h3><p>The DASS-21 self-check, with calming ideas matched to your results.</p></div></li>
+          <li data-c="mind"><img src="img/i-consult.webp" alt="" loading="lazy"><div><h3>Campus support</h3><p>Find campus health professionals and ask a question without your name.</p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section class="help" id="help">
+      <div class="wrap help-in">
+        <div class="help-copy reveal">
+          <h2>Help is never<br>far away.</h2>
+          <p>Call a Sri Lankan help line straight from the app, or ask the campus health centre a question without giving your name. A professional replies.</p>
+          <ul class="lines">
+            <li><a href="tel:1990"><b>1990</b><span><strong>Suwa Seriya</strong>Free ambulance</span><svg class="i"><use href="#ic-phone"/></svg></a></li>
+            <li><a href="tel:1926"><b>1926</b><span><strong>NIMH helpline</strong>Mental health, 24 hours</span><svg class="i"><use href="#ic-phone"/></svg></a></li>
+            <li><a href="tel:1333"><b>1333</b><span><strong>CCCline</strong>Someone to talk to</span><svg class="i"><use href="#ic-phone"/></svg></a></li>
+          </ul>
+        </div>
+        <div class="crowd" aria-hidden="true">
+          <svg class="threads" viewBox="0 0 500 460" fill="none">
+            <path class="draw" d="M250 230C180 170 130 120 90 70M250 230c70-60 110-110 160-150M250 230c-90 20-150 70-190 140M250 230c80 30 140 80 180 150M250 230c-10 80-20 140-30 200"/>
+          </svg>
+          <div class="core"><img src="img/hero_tools.webp" alt=""></div>
+          <span class="av a1"><img src="img/idea_tea.webp" alt=""></span>
+          <span class="av a2"><img src="img/hero_male.webp" alt=""></span>
+          <span class="av a3"><img src="img/idea_dance.webp" alt=""></span>
+          <span class="av a4"><img src="img/idea_journal.webp" alt=""></span>
+          <span class="av a5"><img src="img/idea_walk.webp" alt=""></span>
+          <span class="bub b1">Can I ask without my name?</span>
+          <span class="bub b2 me">Yes. A campus professional will reply.</span>
+          <span class="pin p1"><svg class="i"><use href="#ic-phone"/></svg>1926</span>
+          <span class="pin p2"><svg class="i"><use href="#ic-phone"/></svg>1990</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy -->
+    <section class="private" id="privacy">
+      <div class="wrap">
+        <div class="private-h reveal">
+          <h2>Your health stays yours.</h2>
+          <p>VitalU keeps your records private by default and tells you plainly what happens with them.</p>
+        </div>
+        <div class="cards">
+          <article class="card reveal"><span class="badge" style="--c:#0B7A63"><svg class="i"><use href="#ic-lock"/></svg></span><h3>Only you see your records</h3><p>Every log, result and report is locked to your account. No other student, lecturer or administrator can open it.</p></article>
+          <article class="card reveal"><span class="badge" style="--c:#5552D1"><svg class="i"><use href="#ic-flask"/></svg></span><h3>Research only if you say yes</h3><p>With your consent, term check-ins are pooled by faculty for planning. Groups smaller than five are never shown.</p></article>
+          <article class="card reveal"><span class="badge" style="--c:#EF5A5F"><svg class="i"><use href="#ic-shield"/></svg></span><h3>Guidance, not a diagnosis</h3><p>VitalU explains your numbers and points you to real help. It does not replace a doctor.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq" id="faq">
+      <div class="wrap faq-in">
+        <div class="faq-side reveal">
+          <h2>Still wondering?</h2>
+          <p>Your question may already be answered here. If not, start the app and look around; it takes a minute to sign up.</p>
+          <div class="get">
+            <img src="img/hero_male.webp" alt="" loading="lazy">
+            <div>
+              <h3>Start with VitalU</h3>
+              <p>Sign in with email or Google.</p>
+              <a class="btn btn-dark btn-sm" href="https://web.vitalu.madhushan.me/">Open the web app</a>
+              <a class="btn btn-line btn-sm" href="https://github.com/sandunMadhushan/VitalU-Student-Wellness-App/releases/latest">Download for Android</a>
+            </div>
+          </div>
+        </div>
+        <div class="qa reveal">
+          <details open><summary>Is VitalU free?</summary><div><p>Yes. VitalU is free for students, on Android and in the browser.</p></div></details>
+          <details><summary>Who can see my health records?</summary><div><p>Only you. Your logs, results and reports are locked to your account, and nobody else at the university can open them.</p></div></details>
+          <details><summary>Does VitalU diagnose anything?</summary><div><p>No. Blood report and meal analyses are there to help you understand your numbers. For anything that worries you, talk to a doctor or the campus health centre.</p></div></details>
+          <details><summary>How do I install the Android app?</summary><div><p>Tap Download for Android and open the downloaded APK. If your phone asks, allow installs from your browser.</p></div></details>
+          <details><summary>Can I use VitalU on an iPhone?</summary><div><p>Yes. Open the web app in Safari, sign in, then tap Share and choose Add to Home Screen to keep it one tap away.</p></div></details>
+          <details><summary>What if I need help right now?</summary><div><p>Call 1990 for a free Suwa Seriya ambulance, 1926 for the NIMH mental health helpline, or 1333 for CCCline.</p></div></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div class="foot-brand">
+        <a class="brand light" href="#top"><img src="img/icon-192.png" alt="" width="34" height="34"><span>VitalU</span></a>
+        <p>A health companion for university students in Sri Lanka.</p>
+      </div>
+      <div><h4>App</h4><ul><li><a href="#features">Features</a></li><li><a href="#tools">Tools</a></li><li><a href="#privacy">Privacy</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div><h4>Get VitalU</h4><ul><li><a href="https://web.vitalu.madhushan.me/">Open the web app</a></li><li><a href="https://github.com/sandunMadhushan/VitalU-Student-Wellness-App/releases/latest">Download for Android</a></li></ul></div>
+      <div><h4>Help lines</h4><ul><li><a href="tel:1990">1990 Suwa Seriya</a></li><li><a href="tel:1926">1926 NIMH</a></li><li><a href="tel:1333">1333 CCCline</a></li></ul></div>
+    </div>
+    <div class="wrap foot-base">
+      <span>© 2026 VitalU</span>
+      <span>For general wellbeing. Not a diagnostic tool.</span>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
