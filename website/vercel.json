@@ -1,10 +1,32 @@
 {
   "cleanUrls": true,
   "redirects": [
-    { "source": "/admin/:path*", "destination": "https://web.vitalu.madhushan.me/admin/:path*", "permanent": false },
-    { "source": "/evaluation/:path*", "destination": "https://web.vitalu.madhushan.me/evaluation/:path*", "permanent": false }
+    {
+      "source": "/admin/:path*",
+      "destination": "https://web.vitalu.madhushan.me/admin/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/evaluation/:path*",
+      "destination": "https://web.vitalu.madhushan.me/evaluation/:path*",
+      "permanent": false
+    }
   ],
   "headers": [
-    { "source": "/(img|fonts)/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }] }
+    {
+      "source": "/(img|fonts)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, immutable"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/download",
+      "destination": "/api/download"
+    }
   ]
 }

@@ -2,7 +2,7 @@
 
 The public home page for VitalU, served at **vitalu.madhushan.me**. The Flutter web app (with `/admin` and `/evaluation`) moves to **web.vitalu.madhushan.me**.
 
-Plain HTML, CSS and JavaScript. No build step and no outside scripts.
+Plain HTML, CSS and JavaScript. No build step; the one library (Lenis) is self-hosted in `vendor/`.
 
 | File | What it is |
 |------|------------|
@@ -11,15 +11,22 @@ Plain HTML, CSS and JavaScript. No build step and no outside scripts.
 | `main.js` | Load sequence, phone screen rotation, pointer parallax, scroll reveals, counters, tool filter, FAQ |
 | `img/` | App icon, 3D icons from `assets/icons3d` and people from `assets/art` and `assets/images` (converted to WebP) |
 | `fonts/` | Self-hosted fonts |
+| `vendor/` | [Lenis](https://github.com/darkroomengineering/lenis) 1.3.11 for smooth scrolling (turned off when the visitor prefers reduced motion) |
+| `api/download.js` | `/download`: sends visitors straight to the APK of the latest GitHub release (see below) |
 | `vercel.json` | Sends old `/admin` and `/evaluation` links to the web app, and caches images and fonts |
 | `404.html` | Sends any other old app link to the same path on web.vitalu.madhushan.me |
 
 ## Links
 
 - Web app: `https://web.vitalu.madhushan.me/`
-- Android download: `https://github.com/sandunMadhushan/VitalU-Student-Wellness-App/releases/latest`
+- Android download: `/download` (on this site)
 
-Each appears several times in `index.html`; search and replace to change one. The repository is private, so visitors cannot open the download link. Make the repo public, or publish the APK from a separate public repo and update the link.
+`/download` looks up the latest release of the private GitHub repo and redirects to GitHub's signed link for its `.apk`, so the file downloads straight away. It needs a token in Vercel, set once:
+
+1. GitHub, Settings, Developer settings, Fine-grained tokens, Generate new token. Repository access: only `VitalU-Student-Wellness-App`. Permissions: Contents, Read-only.
+2. Vercel project, Settings, Environment Variables: add `GITHUB_TOKEN` with that token (Production), then redeploy.
+
+Without the token, `/download` falls back to the GitHub releases page. To ship a new version, publish a GitHub release with the APK attached; the site picks it up automatically.
 
 ## Preview locally
 

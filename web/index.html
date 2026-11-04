@@ -20,7 +20,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="VitalU: personalised student health &amp; wellness companion.">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#7459F7">
+  <meta name="theme-color" content="#FD513B">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -34,8 +34,45 @@
 
   <title>VitalU</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Loading screen shown while the app downloads. It is the first frame of the
+    Flutter splash (lib/features/onboarding/splash_screen.dart): the coral heart
+    filling the screen, face looking around. Flutter takes over on its first frame.
+  -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #FD513B; }
+    #splash { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: #FD513B; transition: opacity .2s; }
+    #splash.gone { opacity: 0; pointer-events: none; }
+    #splash svg { width: calc(min(100vw, 400px) * 0.437 * 0.9); overflow: visible; }
+    #splash .eye { transform-box: fill-box; transform-origin: center; animation: blink 3.2s infinite; }
+    #splash .pupil { animation: look 3.2s ease-in-out infinite; }
+    @keyframes look { 0%, 12% { transform: translateX(0); } 20%, 38% { transform: translateX(-0.05px); } 48%, 66% { transform: translateX(0.05px); } 76%, 100% { transform: translateX(0); } }
+    @keyframes blink { 0%, 70%, 78%, 100% { transform: scaleY(1); } 74% { transform: scaleY(0.06); } }
+    @media (prefers-reduced-motion: reduce) { #splash .eye, #splash .pupil { animation: none; } }
+  </style>
 </head>
 <body>
+  <div id="splash" role="img" aria-label="Loading VitalU">
+    <svg viewBox="-0.45 -0.2 0.9 0.4" aria-hidden="true">
+      <defs>
+        <clipPath id="eyeL"><ellipse cx="-0.3" cy="0" rx="0.15" ry="0.15"/></clipPath>
+        <clipPath id="eyeR"><ellipse cx="0.3" cy="0" rx="0.15" ry="0.15"/></clipPath>
+      </defs>
+      <g class="eye"><ellipse cx="-0.3" cy="0" rx="0.15" ry="0.15" fill="#fff"/>
+        <g clip-path="url(#eyeL)"><g class="pupil"><circle cx="-0.3" cy="0" r="0.095" fill="#1B1B1F"/><circle cx="-0.27" cy="-0.03" r="0.025" fill="#fff"/></g></g></g>
+      <g class="eye"><ellipse cx="0.3" cy="0" rx="0.15" ry="0.15" fill="#fff"/>
+        <g clip-path="url(#eyeR)"><g class="pupil"><circle cx="0.3" cy="0" r="0.095" fill="#1B1B1F"/><circle cx="0.33" cy="-0.03" r="0.025" fill="#fff"/></g></g></g>
+      <path d="M-0.085 0.07Q0 0.16 0.085 0.07" fill="none" stroke="#1B1B1F" stroke-width="0.045" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var s = document.getElementById('splash');
+      s.classList.add('gone');
+      setTimeout(function () { s.remove(); }, 250);
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

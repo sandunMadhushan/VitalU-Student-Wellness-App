@@ -28,7 +28,9 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+/* Lenis does the smooth scrolling; this is the fallback without it. */
+html:not(.lenis) { scroll-behavior: smooth; }
 body { margin: 0; font: 500 17px/1.6 var(--body); color: var(--ink); background: var(--paper); overflow-x: hidden; }
 img { max-width: 100%; display: block; }
 a { color: inherit; }
@@ -85,7 +87,8 @@ p { margin: 0; }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
 .fine { margin-top: 16px; font-size: 14px; color: var(--ink-2); }
 
-.hero-art { position: relative; height: 640px; }
+.hero-art { position: relative; height: 640px; transform: translate3d(0, var(--sy, 0px), 0); }
+.hero-copy { transform: translate3d(0, var(--sy-copy, 0px), 0); opacity: var(--fade, 1); }
 .blob { position: absolute; left: 50%; top: 52%; width: 440px; height: 440px; margin: -220px 0 0 -220px; border-radius: 46% 54% 50% 50% / 52% 46% 54% 48%; background: linear-gradient(150deg, #D3F0E4, #E3EDFB); animation: morph 14s ease-in-out infinite alternate; }
 .flight { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .flight path { stroke: var(--water); stroke-width: 1.6; stroke-dasharray: 2 0; opacity: .55; }

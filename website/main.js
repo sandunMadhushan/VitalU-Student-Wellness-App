@@ -4,6 +4,20 @@
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
+  // Smooth scrolling with Lenis. In-page links (#features, #faq...) glide too.
+  // The hero drifts at its own pace as you scroll away from it.
+  const hero = $('.hero');
+  if (!reduce && window.Lenis) {
+    const lenis = new Lenis({ lerp: 0.1, anchors: { duration: 1.3 }, autoRaf: true });
+    window.lenis = lenis;
+    lenis.on('scroll', ({ scroll }) => {
+      if (scroll > hero.offsetHeight) return;
+      hero.style.setProperty('--sy', (scroll * 0.18).toFixed(1) + 'px');
+      hero.style.setProperty('--sy-copy', (scroll * 0.08).toFixed(1) + 'px');
+      hero.style.setProperty('--fade', Math.max(0, 1 - scroll / (hero.offsetHeight * 1.1)).toFixed(3));
+    });
+  }
+
   // Hand-drawn strokes: give each path its own length so it can draw in.
   $$('.draw').forEach((p) => {
     const len = Math.ceil(p.getTotalLength ? p.getTotalLength() : 1000);
@@ -11,7 +25,6 @@
   });
 
   // Hero load sequence.
-  const hero = $('.hero');
   const art = $('.hero-art');
   const start = () => {
     document.body.classList.add('loaded');
