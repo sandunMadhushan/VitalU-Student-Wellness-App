@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../data/repo.dart';
+import '../../data/vital_guidance.dart';
 import '../../ui/text.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets.dart';
@@ -15,6 +16,7 @@ Future<bool> showVitalsSheet(BuildContext context) async {
   final fbg = TextEditingController(), tg = TextEditingController();
   var day = DateTime.now();
   var saved = false;
+  final advice = <VitalAdvice>[];
   final digits = [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))];
 
   Widget field(TextEditingController c, String hint, String unit) => TextField(
@@ -80,6 +82,13 @@ Future<bool> showVitalsSheet(BuildContext context) async {
             try {
               await Repo.saveVitals(systolic: s, diastolic: d, fastingGlucose: g, triglycerides: t, measuredOn: day);
               saved = true;
+              advice
+                ..clear()
+                ..addAll([
+                  if (s != null) VitalGuidance.bp(s, d!),
+                  if (g != null) VitalGuidance.glucose(g),
+                  if (t != null) VitalGuidance.triglycerides(t),
+                ]);
               if (ctx.mounted) Navigator.pop(ctx);
             } catch (_) {
               if (ctx.mounted) toast(ctx, 'Could not save right now. Please try again later.', error: true);
@@ -89,5 +98,39 @@ Future<bool> showVitalsSheet(BuildContext context) async {
           const PrivacyNote('Only you can see these readings. They are not a diagnosis.'),
         ]);
       }));
+  if (saved && advice.isNotEmpty && context.mounted) await _showAdvice(context, advice);
   return saved;
+}
+
+/// "What to do next" for the readings just saved, most pressing first.
+Future<void> _showAdvice(BuildContext context, List<VitalAdvice> advice) {
+  final sorted = [...advice]..sort((a, b) => b.urgency.index.compareTo(a.urgency.index));
+  Color colorFor(VitalUrgency u) => switch (u) {
+        VitalUrgency.urgent => AppColors.error,
+        VitalUrgency.soon => AppColors.warning,
+        VitalUrgency.routine => AppColors.primary,
+        VitalUrgency.none => AppColors.tertiary,
+      };
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('What to do next', style: T.headlineMd),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          for (final a in sorted) ...[
+            Text(a.title, style: T.labelLg.c(colorFor(a.urgency)).w(FontWeight.w700)),
+            const SizedBox(height: 2),
+            Text(a.action, style: T.bodyMd),
+            if (a.why != null) ...[
+              const SizedBox(height: 4),
+              Text(a.why!, style: T.bodySm.c(AppColors.onSurfaceVariant)),
+            ],
+            const SizedBox(height: Sp.md),
+          ],
+          Text('For information only, not a diagnosis. Emergency? Call 1990.', style: T.bodySm.c(AppColors.onSurfaceVariant)),
+        ]),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Got it'))],
+    ),
+  );
 }
