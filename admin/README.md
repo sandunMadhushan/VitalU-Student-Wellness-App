@@ -44,8 +44,8 @@ aggregates. Anonymous consultations are stored with no user id.
 ## Sample data (read this before using the new views)
 
 Health insights, Priority needs, Interventions and the Requests / Trends parts
-of Consultations run on **generated sample data**, not the database. Each shows
-a "Sample data" banner. The data lives in `demo-data.js` (assessment results)
+of Consultations run on **generated sample data**, not the database. 
+The data lives in `demo-data.js` (assessment results)
 and in `interventions.js` / `consults.js` (records kept in the browser's
 `localStorage`). Other files: `charts.js` (SVG charts), `insights.js`.
 

@@ -35,9 +35,6 @@ const Insights = (() => {
     root.querySelectorAll('[data-f]').forEach((s) => (s.onchange = () => ((F[s.dataset.f] = s.value), rerender())));
   }
 
-  const demoBanner = () =>
-    `<div class="demo-note">${icon('flask', 16)}<span><strong>Sample data.</strong> These screens show generated example figures so the design can be reviewed. They are not student results.</span></div>`;
-
   const scopeText = (...skip) =>
     [!skip.includes('period') && periodLabel(F.period), F.faculty ? shortFaculty(F.faculty) : !skip.includes('faculty') && 'All faculties', F.year ? `Year ${F.year}` : !skip.includes('year') && 'All years', F.sex === 'F' ? 'Female' : F.sex === 'M' ? 'Male' : !skip.includes('sex') && 'All students']
       .filter(Boolean)
@@ -79,7 +76,6 @@ const Insights = (() => {
     el.innerHTML = `
       <div class="head"><div><h1>Health insights</h1><p class="muted">What the university's students report about their health, how it is changing and where it differs. Groups under five students are never shown.</p></div></div>
       ${cycleStrip(1)}
-      ${demoBanner()}
       <div class="grid k4">
         <div class="card kpi"><div class="label">Completed assessments</div><div class="value">${cur.n.toLocaleString('en-GB')}</div><div class="fine">of ${cur.eligible.toLocaleString('en-GB')} registered · ${esc(periodLabel(F.period))}</div></div>
         <div class="card kpi"><div class="label">Participation</div><div class="value">${cur.participation ?? '–'}%</div><div class="fine">${prev && !prev.suppressed ? participationDelta(cur, prev) : 'first period on record'}</div></div>
@@ -285,7 +281,6 @@ const Insights = (() => {
     el.innerHTML = `
       <div class="head"><div><h1>Priority health needs</h1><p class="muted">The concerns that most call for university-level action, ranked from the assessment results, with suggested ways to respond.</p></div></div>
       ${cycleStrip(2)}
-      ${demoBanner()}
       ${filterBar(['period', 'faculty', 'year'])}
       ${needs ? needsList(needs, flt) : tooSmall(DEMO.summarize(flt).n)}`;
     bindFilters(el, renderPriority);
@@ -338,5 +333,5 @@ const Insights = (() => {
 
   renderers.insights = renderInsights;
   renderers.priority = renderPriority;
-  return { F, computeNeeds, cycleStrip, demoBanner, filterBar, periodLabel, icon, SUGGEST, LATEST };
+  return { F, computeNeeds, cycleStrip, filterBar, periodLabel, icon, SUGGEST, LATEST };
 })();

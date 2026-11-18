@@ -2,7 +2,7 @@
 // priority need, assign who is responsible, tick off milestones and see whether
 // the next assessments show the concern improving.
 //
-// SAMPLE: records live in this browser's localStorage and start with a few
+// Records live in this browser's localStorage and start with a few
 // example interventions. Baselines and results are always calculated from the
 // assessment data, never typed in.
 'use strict';
@@ -120,7 +120,6 @@ const Interventions = (() => {
       <div class="head"><div><h1>Interventions</h1><p class="muted">Plan health promotion activities for the priority needs, assign who is responsible, and check at each reassessment whether the concern is improving.</p></div>
         <button class="btn primary" id="iv-new">${Insights.icon('plus', 16)} New intervention</button></div>
       ${Insights.cycleStrip(4)}
-      ${Insights.demoBanner()}
       <div class="grid k4">
         <div class="card kpi"><div class="label">Interventions</div><div class="value">${c.total}</div><div class="fine">${c.planned} planned</div></div>
         <div class="card kpi"><div class="label">In progress</div><div class="value">${c.running}</div><div class="fine">being delivered now</div></div>
