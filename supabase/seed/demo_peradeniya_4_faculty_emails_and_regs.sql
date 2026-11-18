@@ -37,3 +37,22 @@ update public.profiles p set email = 'tmp-' || p.id || '@seed.vitalu.invalid', r
 update auth.users u set email = n.email, updated_at = now() from _new n where u.id = n.id;
 update public.profiles p set email = n.email, registration_number = n.reg from _new n where p.id = n.id;
 commit;
+
+-- Allied Health registration numbers carry a degree programme: AHS/20/RAD/001
+-- (RAD is confirmed; NUR, PHY, MLS and PHM are assumed). The email name is the same
+-- characters lower-cased, at ahs.pdn.ac.lk.
+begin;
+create temp table _a on commit drop as
+select p.id, 2000 + substr(p.academic_year, 4, 2)::int as intake, demo_pick.prog,
+       row_number() over (partition by substr(p.academic_year, 4, 2), demo_pick.prog order by random()) as n
+from public.profiles p
+join auth.users u on u.id = p.id
+cross join lateral (select (case when r < .28 then 'NUR' when r < .48 then 'PHY' when r < .68 then 'MLS' when r < .85 then 'RAD' else 'PHM' end) as prog
+                    from (select random() + 0 * length(p.id::text) as r) x) demo_pick
+where u.raw_user_meta_data ->> 'demo_seed' = 'peradeniya-2026' and p.faculty = 'Faculty of Allied Health Sciences';
+update auth.users u set email = lower('AHS' || lpad((a.intake - 2000)::text, 2, '0') || a.prog || lpad(a.n::text, 3, '0')) || '@ahs.pdn.ac.lk', updated_at = now()
+from _a a where u.id = a.id;
+update public.profiles p set registration_number = 'AHS/' || lpad((a.intake - 2000)::text, 2, '0') || '/' || a.prog || '/' || lpad(a.n::text, 3, '0'),
+       email = lower('AHS' || lpad((a.intake - 2000)::text, 2, '0') || a.prog || lpad(a.n::text, 3, '0')) || '@ahs.pdn.ac.lk'
+from _a a where p.id = a.id;
+commit;
