@@ -336,7 +336,7 @@ const Insights = (() => {
   }
 
   // Figures come from the database; load them before drawing.
-  renderers.insights = async () => (await DEMO.ensure(), renderInsights());
-  renderers.priority = async () => (await DEMO.ensure(), renderPriority());
+  renderers.insights = async () => (await Promise.all([DEMO.ensure(), Interventions.refresh()]), renderInsights());
+  renderers.priority = async () => (await Promise.all([DEMO.ensure(), Interventions.refresh()]), renderPriority());
   return { F, computeNeeds, cycleStrip, filterBar, periodLabel, icon, SUGGEST, get LATEST() { return latest(); } };
 })();

@@ -2,74 +2,40 @@
 // priority need, assign who is responsible, tick off milestones and see whether
 // the next assessments show the concern improving.
 //
-// Records live in this browser's localStorage and start with a few
-// example interventions. Baselines and results are always calculated from the
-// assessment data, never typed in.
+// Records are stored in public.health_interventions (admins only). Baselines and
+// results are always calculated from the assessment data, never typed in.
 'use strict';
 
 const Interventions = (() => {
-  const KEY = 'vitalu-admin-interventions-v1';
   const STATUS = { planned: ['Planned', ''], running: ['In progress', 'info'], completed: ['Completed', 'good'], hold: ['On hold', 'warn'] };
   const { PERIODS, IND } = DEMO;
   const filter = { status: '' };
-  let memory = null;
+  let memory = [];
 
-  const seed = () => [
-    {
-      id: 'iv-seed-1', title: 'Healthy Plate weeks and subsidised fruit stalls', indicator: 'low_fruit_veg',
-      faculties: [FACULTIES[4], FACULTIES[5], FACULTIES[7]], owner: 'Dr. N. Perera', unit: 'Nutrition Unit',
-      start: '2026-02-02', end: '2026-12-18', status: 'running', targetPts: 8, baselinePeriod: '2025-end',
-      milestones: [['Review canteen menus with operators', 1], ['Weekly subsidised fruit stalls started', 1], ['Healthy Plate awareness weeks in three faculties', 0], ['Share results at Year End 2026 assessment', 0]],
-      notes: 'Canteen operators agreed to a price cap on seasonal fruit.',
-    },
-    {
-      id: 'iv-seed-2', title: 'Campus Move 30: lunchtime activity breaks', indicator: 'inactive',
-      faculties: [], owner: 'Mr. A. Silva', unit: 'Sports Unit',
-      start: '2026-03-02', end: '2026-11-30', status: 'running', targetPts: 6, baselinePeriod: '2025-end',
-      milestones: [['Open-access sports sessions timetabled', 1], ['Walking routes marked on campus', 1], ['Faculty step-count challenge', 0], ['Midpoint review with faculties', 0]],
-      notes: 'Uptake is lowest in the evening sessions.',
-    },
-    {
-      id: 'iv-seed-3', title: 'Peer-led stress management workshops', indicator: 'high_stress',
-      faculties: [FACULTIES[1], FACULTIES[3], FACULTIES[4], FACULTIES[6]], owner: 'Ms. K. Fernando', unit: 'Counselling Centre',
-      start: '2027-01-11', end: '2027-06-30', status: 'planned', targetPts: 6, baselinePeriod: '2026-mid',
-      milestones: [['Train 20 student peer facilitators', 0], ['Agree timetable slots with four faculties', 0], ['Run first round of workshops', 0], ['Reassess at Mid Year 2027', 0]],
-      notes: '',
-    },
-    {
-      id: 'iv-seed-4', title: 'Hostel breakfast clubs', indicator: 'skip_breakfast',
-      faculties: [FACULTIES[4], FACULTIES[5], FACULTIES[2]], owner: 'Ms. S. Wickramasinghe', unit: 'Nutrition Unit',
-      start: '2025-07-07', end: '2025-11-28', status: 'completed', targetPts: 4, baselinePeriod: '2025-mid',
-      milestones: [['Agree early opening hours with hostel kitchens', 1], ['Launch clubs in six hostels', 1], ['Collect student feedback', 1], ['Reassess at Year End 2025', 1]],
-      notes: 'Continued as a standing service after the pilot.',
-    },
-    {
-      id: 'iv-seed-5', title: 'Sleep hygiene awareness campaign', indicator: 'short_sleep',
-      faculties: [], owner: 'Dr. M. Rajapaksa', unit: 'Medical Centre',
-      start: '2026-08-03', end: '2026-12-11', status: 'hold', targetPts: 5, baselinePeriod: '2026-mid',
-      milestones: [['Design posters and in-app messages', 1], ['Pilot quiet hours in two hostels', 0], ['Campaign before examinations', 0]],
-      notes: 'Paused until after the semester examinations.',
-    },
-  ].map((iv) => ({ ...iv, milestones: iv.milestones.map(([text, done]) => ({ text, done: !!done })) }));
-
-  function load() {
-    if (memory) return memory;
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) return (memory = JSON.parse(raw));
-    } catch {
-      /* private mode or corrupt data: fall back to the examples */
-    }
-    memory = seed();
-    save();
+  const fromRow = (r) => ({
+    id: r.id, title: r.title, indicator: r.indicator, faculties: r.faculties || [], owner: r.owner, unit: r.unit || '',
+    start: r.start_date, end: r.end_date, status: r.status, targetPts: Number(r.target_pts), baselinePeriod: r.baseline_period,
+    milestones: r.milestones || [], notes: r.notes || '',
+  });
+  const toRow = (iv) => ({
+    id: iv.id, title: iv.title, indicator: iv.indicator, faculties: iv.faculties, owner: iv.owner, unit: iv.unit || null,
+    start_date: iv.start, end_date: iv.end, status: iv.status, target_pts: iv.targetPts, baseline_period: iv.baselinePeriod,
+    milestones: iv.milestones, notes: iv.notes || null,
+  });
+  const load = () => memory;
+  async function refresh() {
+    const { data, error } = await sb.from('health_interventions').select('*').order('start_date', { ascending: false });
+    if (error) toast(`Could not load interventions: ${error.message}`);
+    else memory = (data || []).map(fromRow);
     return memory;
   }
-  function save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(memory));
-    } catch {
-      /* private mode: keep in memory only */
+  async function persist(iv) {
+    const { error } = await sb.from('health_interventions').upsert(toRow(iv));
+    if (error) {
+      toast(`Could not save: ${error.message}`);
+      return false;
     }
+    return true;
   }
 
   const facText = (iv) => (iv.faculties.length ? iv.faculties.map(shortFaculty).join(', ') : 'All faculties');
@@ -134,12 +100,21 @@ const Interventions = (() => {
     el.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => ((filter.status = b.dataset.st), render())));
     el.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => edit(list.find((i) => i.id === b.dataset.edit))));
     el.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => remove(list.find((i) => i.id === b.dataset.del))));
-    el.querySelectorAll('[data-status]').forEach((s) => (s.onchange = () => ((list.find((i) => i.id === s.dataset.status).status = s.value), save(), render())));
+    el.querySelectorAll('[data-status]').forEach(
+      (s) =>
+        (s.onchange = async () => {
+          const iv = list.find((i) => i.id === s.dataset.status);
+          iv.status = s.value;
+          if (!(await persist(iv))) await refresh();
+          render();
+        }),
+    );
     el.querySelectorAll('[data-ms]').forEach((c2) =>
-      c2.addEventListener('change', () => {
+      c2.addEventListener('change', async () => {
         const [id, idx] = c2.dataset.ms.split(':');
-        list.find((i) => i.id === id).milestones[Number(idx)].done = c2.checked;
-        save();
+        const iv = list.find((i) => i.id === id);
+        iv.milestones[Number(idx)].done = c2.checked;
+        if (!(await persist(iv))) await refresh();
         render();
       }),
     );
@@ -231,23 +206,21 @@ const Interventions = (() => {
       <label>Notes<textarea id="iv-notes" rows="2" maxlength="500">${esc(v.notes)}</textarea></label>
       <p class="fine">The baseline and the result come from the assessment data for the chosen faculties, so they cannot be typed in.</p>
       <div class="modal-actions"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="ok">${isNew ? 'Save plan' : 'Save changes'}</button></div>`,
-      () => {
+      async () => {
         const title = $('#iv-title').value.trim();
         const owner = $('#iv-owner').value.trim();
         if (!title || !owner) return toast('Add a title and a responsible person.');
         if ($('#iv-end').value < $('#iv-start').value) return toast('The end date is before the start date.');
         const old = new Map((iv?.milestones || []).map((m) => [m.text, m.done]));
         const rec = {
-          id: iv?.id || `iv-${Date.now().toString(36)}`,
+          id: iv?.id || crypto.randomUUID(),
           title, owner, unit: $('#iv-unit').value.trim(), indicator: $('#iv-ind').value, baselinePeriod: $('#iv-base').value,
           targetPts: Math.max(1, Number($('#iv-target').value) || 1), status: $('#iv-status').value, start: $('#iv-start').value, end: $('#iv-end').value,
           faculties: [...document.querySelectorAll('[name="iv-fac"]:checked')].map((c) => c.value),
           milestones: $('#iv-ms').value.split('\n').map((t) => t.trim()).filter(Boolean).map((text) => ({ text, done: old.get(text) || false })),
           notes: $('#iv-notes').value.trim(),
         };
-        if (isNew) list.unshift(rec);
-        else Object.assign(iv, rec);
-        save();
+        if (!(await persist(rec))) return false;
         toast(isNew ? 'Intervention planned.' : 'Changes saved.');
         openTab('interventions');
       },
@@ -258,15 +231,16 @@ const Interventions = (() => {
     openModal(
       `<h2>Delete this intervention?</h2><p>“${esc(iv.title)}” will be removed from the plan. This cannot be undone.</p>
       <div class="modal-actions"><button class="btn" value="cancel">Keep it</button><button class="btn danger" value="ok">Delete</button></div>`,
-      () => {
-        memory = load().filter((i) => i.id !== iv.id);
-        save();
+      async () => {
+        const { error } = await sb.from('health_interventions').delete().eq('id', iv.id);
+        if (error) return toast(`Could not delete: ${error.message}`);
         toast('Intervention deleted.');
+        await refresh();
         render();
       },
     );
   }
 
-  renderers.interventions = async () => (await DEMO.ensure(), render());
-  return { counts, forIndicator, plan: (prefill) => edit(null, prefill) };
+  renderers.interventions = async () => (await Promise.all([DEMO.ensure(), refresh()]), render());
+  return { counts, forIndicator, refresh, plan: (prefill) => edit(null, prefill) };
 })();

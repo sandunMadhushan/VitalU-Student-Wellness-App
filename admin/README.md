@@ -43,28 +43,37 @@ aggregates. Anonymous consultations are stored with no user id.
 
 ## Where the data comes from
 
-Overview, Analytics, Completion, Schedule and the anonymous questions use the
-database. Health insights, Priority needs and the trend/intervention checks use
-`admin_health_cells()` (migration `20261118120000_admin_health_cells.sql`):
-anonymous counts per period, faculty, academic year and sex, with groups under
-five students left out. If that call fails, the screens fall back to a
-generated set in `demo-data.js`.
+Everything comes from the database. Overview, Analytics, Completion, Schedule and
+the anonymous questions use the existing admin functions. Health insights,
+Priority needs and the intervention results use `admin_health_cells()`: anonymous
+counts per period, faculty, academic year and sex, with groups under five
+students left out. If that call fails, the screens fall back to a generated set in
+`demo-data.js`.
 
-Still kept in the browser (`localStorage`, not the database): the intervention
-plans (`interventions.js`) and the named consultation requests with
-appointments (`consults.js`). The "Viewing as" switch there only previews the
-rule that reasons and clinical notes are for the assigned health professional;
-a real version needs a table with row-level security.
+- **Interventions** are rows in `health_interventions` (admins only).
+- **Consultation requests** are rows in `consultation_requests`, which nobody
+  reads directly. Administrators use the `admin_consult_*` functions and see who
+  asked, the concern, the status and the appointment. The reason for the visit and
+  the notes are returned only to a signed-in **health professional**, meaning a
+  row in `health_professionals` whose `user_id` is that account. To see them
+  yourself:
+
+  ```sql
+  update public.health_professionals set user_id = (select id from auth.users where email = 'you@example.ac.lk')
+  where name = 'Dr. N. Perera';
+  ```
 
 ### Demonstration students
 
 `supabase/seed/demo_peradeniya_*.sql` creates about 4,300 University of
-Peradeniya students (399 to 549 per faculty) with five past assessment rounds.
-Their accounts are tagged `raw_user_meta_data.demo_seed = 'peradeniya-2026'`
-and use `@seed.vitalu.invalid` addresses. `demo_peradeniya_cleanup.sql` removes
-all of it. The older test windows that had no responses (Year End 2026 on 24 Oct
-and 10 Nov, and the February 2026 faculty windows labelled "Mid Year 2028") were
-filled with the same generator; their students are covered by the cleanup too.
+Peradeniya students (399 to 549 per faculty) with faculty email addresses and
+registration numbers in the app's format (`AG/24/041`, `ag24041@agri.pdn.ac.lk`),
+seven assessment rounds, health professionals, interventions and about 1,460
+consultation requests. Their accounts are tagged
+`raw_user_meta_data.demo_seed = 'peradeniya-2026'`. The older test windows that
+had no responses (Year End 2026 on 24 Oct and 10 Nov, and the February 2026 faculty
+windows labelled "Mid Year 2028") were filled with the same generator.
+`demo_peradeniya_cleanup.sql` removes all of it.
 
 ## Setup
 
