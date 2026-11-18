@@ -41,13 +41,15 @@ calls security-definer functions (`admin_assessment_overview`,
 `admin_assessment_report`, `admin_assessment_completion`) that check `public.is_admin()` and return
 aggregates. Anonymous consultations are stored with no user id.
 
-## Sample data (read this before using the new views)
+## Demonstration data
 
-Health insights, Priority needs, Interventions and the Requests / Trends parts
-of Consultations run on **generated sample data**, not the database. 
-The data lives in `demo-data.js` (assessment results)
-and in `interventions.js` / `consults.js` (records kept in the browser's
-`localStorage`). Other files: `charts.js` (SVG charts), `insights.js`.
+`admin/demo-backend.js` (switch: `DEMO_BACKEND` at the top of the file) answers
+the overview, analytics, completion, schedule and anonymous-consultation calls
+with generated figures from `demo-data.js`, so every screen tells the same
+story. Health insights, Priority needs, Interventions and the consultation
+requests are also generated (kept in the browser's `localStorage`). Questionnaire
+and Learn always use the real database. Set `DEMO_BACKEND = false` and remove
+the demo scripts to go back to live data.
 
 To make them real:
 
