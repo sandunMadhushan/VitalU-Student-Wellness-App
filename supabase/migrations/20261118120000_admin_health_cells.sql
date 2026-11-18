@@ -6,6 +6,8 @@
 --     group can be identified. Admins still never read individual rows.
 --     Indicator order in "c": overweight/obese, central obesity, skips breakfast,
 --     low fruit and veg, inactive, short sleep, high stress, low mood.
+--     A student who is eligible for several windows of the same round (for
+--     example an all-faculty and a faculty window) is counted once.
 --  2. A student is only "eligible" for a window if they had registered by the
 --     time it closed (overview and completion list), so participation in older
 --     rounds is not understated by students who joined later.
@@ -40,8 +42,8 @@ begin
   ),
   cell as (
     select pw.term, min(pw.opens_at) as opens, pw.faculty, pw.yr, pw.sex,
-      count(*) as eligible,
-      count(a.id) as n,
+      count(distinct pw.uid) as eligible,
+      count(distinct a.id) as n,
       count(*) filter (where jsonb_typeof(a.scores -> 'bmi') = 'number' and (a.scores ->> 'bmi')::numeric >= 25) as ow,
       count(*) filter (where jsonb_typeof(a.scores -> 'whr') = 'number'
                          and (a.scores ->> 'whr')::numeric >= case when pw.sex = 'male' then 0.90 else 0.85 end) as ce,
@@ -54,7 +56,7 @@ begin
     from pw
     left join public.assessments a on a.window_id = pw.wid and a.user_id = pw.uid and a.status = 'completed'
     group by pw.term, pw.faculty, pw.yr, pw.sex
-    having count(a.id) >= 5
+    having count(distinct a.id) >= 5
   )
   select coalesce(jsonb_agg(jsonb_build_object(
            't', term, 'd', opens, 'f', faculty, 'y', yr, 's', case sex when 'female' then 'F' else 'M' end,

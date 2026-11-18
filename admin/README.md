@@ -62,7 +62,9 @@ a real version needs a table with row-level security.
 Peradeniya students (399 to 549 per faculty) with five past assessment rounds.
 Their accounts are tagged `raw_user_meta_data.demo_seed = 'peradeniya-2026'`
 and use `@seed.vitalu.invalid` addresses. `demo_peradeniya_cleanup.sql` removes
-all of it.
+all of it. The older test windows that had no responses (Year End 2026 on 24 Oct
+and 10 Nov, and the February 2026 faculty windows labelled "Mid Year 2028") were
+filled with the same generator; their students are covered by the cleanup too.
 
 ## Setup
 
