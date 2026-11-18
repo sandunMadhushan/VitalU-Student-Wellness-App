@@ -332,6 +332,6 @@ const Consults = (() => {
     pane.querySelectorAll('[data-plan]').forEach((b) => (b.onclick = () => Interventions.plan({ indicator: b.dataset.plan, faculties: [] })));
   }
 
-  renderers.consults = renderHub;
+  renderers.consults = async () => (await DEMO.ensure(), renderHub());
   return { pending: () => load().filter((r) => r.status === 'pending').length };
 })();

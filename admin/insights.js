@@ -5,11 +5,11 @@
 
 const Insights = (() => {
   const { PERIODS, INDICATORS, IND } = DEMO;
-  const LATEST = PERIODS[PERIODS.length - 1].id;
+  const latest = () => DEMO.latest();
   const PART_TARGET = 60; // participation the university aims for, %
 
   // Filters shared by Insights and Priority needs.
-  const F = { period: LATEST, faculty: '', year: '', sex: '' };
+  const F = { period: '', faculty: '', year: '', sex: '' };
   const ui = { view: 'prevalence', dim: 'faculty', ind: 'high_stress', dist: 'nutrition', trend: new Set(['low_fruit_veg', 'inactive', 'high_stress']) };
 
   const periodLabel = (id) => PERIODS.find((p) => p.id === id)?.label || '';
@@ -19,7 +19,9 @@ const Insights = (() => {
   const strip = (flt, ...drop) => Object.fromEntries(Object.entries(flt).filter(([k]) => !drop.includes(k)));
 
   const OPTIONS = {
-    period: PERIODS.map((p) => [p.id, p.label]).reverse(),
+    get period() {
+      return PERIODS.map((p) => [p.id, p.label]).reverse();
+    },
     faculty: [['', 'All faculties'], ...FACULTIES.map((f) => [f, shortFaculty(f)])],
     year: [['', 'All years'], ['1', 'Year 1'], ['2', 'Year 2'], ['3', 'Year 3'], ['4', 'Year 4']],
     sex: [['', 'All students'], ['F', 'Female'], ['M', 'Male']],
@@ -44,8 +46,8 @@ const Insights = (() => {
 
   // ---------------------------------------------------------------- Cycle strip
   function cycleStrip(active) {
-    const cur = DEMO.summarize({ period: LATEST });
-    const high = computeNeeds({ period: LATEST })?.filter((n) => n.level === 'High').length ?? 0;
+    const cur = DEMO.summarize({ period: latest() });
+    const high = computeNeeds({ period: latest() })?.filter((n) => n.level === 'High').length ?? 0;
     const c = Interventions.counts();
     const steps = [
       ['insights', 'Data collection', `${cur.n.toLocaleString('en-GB')} responses`],
@@ -63,6 +65,7 @@ const Insights = (() => {
   // ---------------------------------------------------------------- Insights page
   function renderInsights() {
     const el = $('#tab-insights');
+    if (!PERIODS.some((p) => p.id === F.period)) F.period = latest();
     const flt = { ...F };
     const cur = DEMO.summarize(flt);
     const pp = prevPeriod(F.period);
@@ -276,6 +279,7 @@ const Insights = (() => {
 
   function renderPriority() {
     const el = $('#tab-priority');
+    if (!PERIODS.some((p) => p.id === F.period)) F.period = latest();
     const flt = { ...F, sex: '' };
     const needs = computeNeeds(flt);
     el.innerHTML = `
@@ -331,7 +335,8 @@ const Insights = (() => {
         .join('')}</div>`;
   }
 
-  renderers.insights = renderInsights;
-  renderers.priority = renderPriority;
-  return { F, computeNeeds, cycleStrip, filterBar, periodLabel, icon, SUGGEST, LATEST };
+  // Figures come from the database; load them before drawing.
+  renderers.insights = async () => (await DEMO.ensure(), renderInsights());
+  renderers.priority = async () => (await DEMO.ensure(), renderPriority());
+  return { F, computeNeeds, cycleStrip, filterBar, periodLabel, icon, SUGGEST, get LATEST() { return latest(); } };
 })();

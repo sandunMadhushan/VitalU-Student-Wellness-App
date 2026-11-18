@@ -41,26 +41,28 @@ calls security-definer functions (`admin_assessment_overview`,
 `admin_assessment_report`, `admin_assessment_completion`) that check `public.is_admin()` and return
 aggregates. Anonymous consultations are stored with no user id.
 
-## Demonstration data
+## Where the data comes from
 
-`admin/demo-backend.js` (switch: `DEMO_BACKEND` at the top of the file) answers
-the overview, analytics, completion, schedule and anonymous-consultation calls
-with generated figures from `demo-data.js`, so every screen tells the same
-story. Health insights, Priority needs, Interventions and the consultation
-requests are also generated (kept in the browser's `localStorage`). Questionnaire
-and Learn always use the real database. Set `DEMO_BACKEND = false` and remove
-the demo scripts to go back to live data.
+Overview, Analytics, Completion, Schedule and the anonymous questions use the
+database. Health insights, Priority needs and the trend/intervention checks use
+`admin_health_cells()` (migration `20261118120000_admin_health_cells.sql`):
+anonymous counts per period, faculty, academic year and sex, with groups under
+five students left out. If that call fails, the screens fall back to a
+generated set in `demo-data.js`.
 
-To make them real:
+Still kept in the browser (`localStorage`, not the database): the intervention
+plans (`interventions.js`) and the named consultation requests with
+appointments (`consults.js`). The "Viewing as" switch there only previews the
+rule that reasons and clinical notes are for the assigned health professional;
+a real version needs a table with row-level security.
 
-1. Replace `summarize()` in `demo-data.js` with the existing
-   `admin_assessment_report` function (add the eight indicators and the
-   academic-year / sex breakdowns). Keep the minimum group of five.
-2. Store interventions in a table writable only by admins.
-3. Store consultation requests in a table with row-level security so that
-   reasons and clinical notes are readable only by the assigned health
-   professional. The "Viewing as" switch in the sample is only a preview of that
-   rule; it does not enforce anything.
+### Demonstration students
+
+`supabase/seed/demo_peradeniya_*.sql` creates about 4,300 University of
+Peradeniya students (399 to 549 per faculty) with five past assessment rounds.
+Their accounts are tagged `raw_user_meta_data.demo_seed = 'peradeniya-2026'`
+and use `@seed.vitalu.invalid` addresses. `demo_peradeniya_cleanup.sql` removes
+all of it.
 
 ## Setup
 

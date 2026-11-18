@@ -1,15 +1,13 @@
-// SAMPLE DATA for the Insights, Priority needs, Interventions and
-// Consultations views.
+// Pooled health-indicator data for the Insights, Priority needs, Interventions
+// and Consultations views.
 //
-// Nothing in this file comes from the database. It generates a repeatable
-// (seeded) set of pooled assessment results so the decision-support screens can
-// be designed and reviewed before the real aggregate functions exist. When the
-// backend is ready, replace the body of `summarize()` (and `PERIODS`) with calls
-// to the security-definer report functions; the screens only use the functions
-// returned at the bottom of this file.
+// DEMO.ensure() loads it from the database (admin_health_cells(): anonymous
+// counts per period, faculty, academic year and sex; cells under five students
+// are never returned). Until that succeeds, or if it fails or returns nothing,
+// a repeatable generated set below is used so the screens still render.
 //
-// The privacy rule of the real system is kept: any group of fewer than five
-// students is suppressed.
+// The privacy rule is kept either way: any group of fewer than five students is
+// suppressed.
 'use strict';
 
 const DEMO = (() => {
@@ -23,7 +21,8 @@ const DEMO = (() => {
     { id: '2025-end', label: 'Year End 2025', short: "End '25", date: '2025-12-11' },
     { id: '2026-mid', label: 'Mid Year 2026', short: "Mid '26", date: '2026-06-18' },
   ];
-  const LAST = PERIODS.length - 1;
+  const GEN_LAST = PERIODS.length - 1;
+  let source = 'sample';
 
   // Health indicators. For every indicator a higher percentage is worse.
   // `base` is the university-wide level in the latest period, `slope` the
@@ -32,11 +31,11 @@ const DEMO = (() => {
   const INDICATORS = [
     { key: 'overweight_obese', label: 'Overweight or obesity', short: 'Overweight / obese', group: 'Nutrition', note: 'BMI 25 or more', base: 25, slope: 0.4, target: 20 },
     { key: 'central_obesity', label: 'Central obesity', short: 'Central obesity', group: 'Nutrition', note: 'Waist-to-hip ratio 0.90+ men, 0.85+ women', base: 18, slope: 0, target: 12 },
-    { key: 'skip_breakfast', label: 'Breakfast skipping', short: 'Skips breakfast', group: 'Nutrition', note: 'Breakfast on fewer than 5 days a week', base: 38, slope: -2.4, target: 25 },
-    { key: 'low_fruit_veg', label: 'Inadequate fruit and vegetable intake', short: 'Low fruit & veg', group: 'Nutrition', note: 'Fruit or vegetables on fewer than 5 days a week', base: 68, slope: 1.8, target: 50 },
-    { key: 'inactive', label: 'Physical inactivity', short: 'Inactive', group: 'Activity', note: 'Under 150 minutes of activity a week', base: 55, slope: 2.2, target: 40 },
+    { key: 'skip_breakfast', label: 'Breakfast skipping', short: 'Skips breakfast', group: 'Nutrition', note: 'Breakfast on 3 days a week or fewer', base: 38, slope: -2.4, target: 25 },
+    { key: 'low_fruit_veg', label: 'Inadequate fruit and vegetable intake', short: 'Low fruit & veg', group: 'Nutrition', note: 'Fruit or vegetables on 3 days a week or fewer', base: 68, slope: 1.8, target: 50 },
+    { key: 'inactive', label: 'Physical inactivity', short: 'Inactive', group: 'Activity', note: 'Active for 30 minutes on 2 days a week or fewer', base: 55, slope: 2.2, target: 40 },
     { key: 'short_sleep', label: 'Insufficient sleep', short: 'Short sleep', group: 'Rest and mind', note: 'Under 7 hours a night', base: 47, slope: 0.3, target: 35 },
-    { key: 'high_stress', label: 'High perceived stress', short: 'High stress', group: 'Rest and mind', note: 'Perceived stress score in the high band', base: 41, slope: 3, target: 30 },
+    { key: 'high_stress', label: 'High perceived stress', short: 'High stress', group: 'Rest and mind', note: 'Workload very hard, or often gets in the way of meals, sleep or exercise', base: 41, slope: 3, target: 30 },
     { key: 'low_mood', label: 'Low mood screen positive', short: 'Low mood', group: 'Rest and mind', note: 'PHQ-2 score 3 or more', base: 15, slope: -1.3, target: 10 },
   ];
   const IND = Object.fromEntries(INDICATORS.map((i) => [i.key, i]));
@@ -80,7 +79,7 @@ const DEMO = (() => {
 
   // One cell per period x faculty x academic year x sex.
   const shared = INDICATORS.map((_, i) => PERIODS.map((_, p) => (rng(9000 + i * 31 + p)() - 0.5) * 1.6));
-  const CELLS = [];
+  let CELLS = [];
   for (let p = 0; p < PERIODS.length; p++) {
     for (let f = 0; f < ELIGIBLE.length; f++) {
       for (let y = 0; y < 4; y++) {
@@ -93,7 +92,7 @@ const DEMO = (() => {
           const counts = {};
           INDICATORS.forEach((ind, i) => {
             const m = MOD[ind.key];
-            let rate = ind.base + ind.slope * (p - LAST) + m.fac[f] + m.year[y] + m.sex[s] + shared[i][p] + (r() - 0.5) * 2.4;
+            let rate = ind.base + ind.slope * (p - GEN_LAST) + m.fac[f] + m.year[y] + m.sex[s] + shared[i][p] + (r() - 0.5) * 2.4;
             for (const e of EFFECTS) if (e.key === ind.key && e.facs.includes(f) && p >= e.from) rate += e.delta;
             counts[ind.key] = Math.round((n * clamp(rate, 2, 95)) / 100);
           });
@@ -131,7 +130,7 @@ const DEMO = (() => {
 
   // One value per period (null when a group is too small), up to and including `upTo`.
   function series(key, flt = {}, upTo) {
-    const end = upTo ? PERIODS.findIndex((x) => x.id === upTo) : LAST;
+    const end = upTo ? PERIODS.findIndex((x) => x.id === upTo) : PERIODS.length - 1;
     return PERIODS.slice(0, end + 1).map((p) => {
       const s = summarize({ ...flt, period: p.id });
       if (s.suppressed) return null;
@@ -207,5 +206,31 @@ const DEMO = (() => {
     return d.parts.map(([label, color], i) => ({ label, color, value: Math.round(vals[i] * 10) / 10 }));
   }
 
-  return { MIN_GROUP, rng, PERIODS, LAST, INDICATORS, IND, DISTRIBUTIONS, summarize, series, trend, groupBy, distribution };
+  // Replace the generated data with the pooled figures from the database.
+  async function load() {
+    try {
+      const { data, error } = await sb.rpc('admin_health_cells');
+      if (error || !Array.isArray(data) || !data.length) return false;
+      const terms = [...new Map(data.map((c) => [c.t, c.d])).entries()].sort((a, b) => new Date(a[1]) - new Date(b[1]));
+      const periods = terms.map(([t, d]) => {
+        const mid = /mid/i.test(t);
+        const year = Number((t.match(/(\d{4})/) || [])[1]) || new Date(d).getFullYear();
+        return { term: t, id: `${year}-${mid ? 'mid' : 'end'}`, label: t.replace(' Assessment', ''), short: `${mid ? 'Mid' : 'End'} '${String(year).slice(2)}`, date: String(d).slice(0, 10) };
+      });
+      const idx = new Map(periods.map((p, i) => [p.term, i]));
+      CELLS = data
+        .map((c) => ({ p: idx.get(c.t), f: FACULTIES.indexOf(c.f), y: c.y - 1, s: c.s === 'F' ? 0 : 1, eligible: c.e, n: c.n, counts: Object.fromEntries(INDICATORS.map((ind, i) => [ind.key, c.c[i] || 0])) }))
+        .filter((c) => c.f >= 0 && c.y >= 0 && c.y < 4);
+      PERIODS.splice(0, PERIODS.length, ...periods);
+      source = 'database';
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  let loading = null;
+  const ensure = (force = false) => (loading && !force ? loading : (loading = load()));
+  const latest = () => PERIODS[PERIODS.length - 1].id;
+
+  return { MIN_GROUP, rng, PERIODS, ensure, latest, source: () => source, INDICATORS, IND, DISTRIBUTIONS, summarize, series, trend, groupBy, distribution };
 })();

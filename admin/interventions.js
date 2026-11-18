@@ -267,6 +267,6 @@ const Interventions = (() => {
     );
   }
 
-  renderers.interventions = render;
+  renderers.interventions = async () => (await DEMO.ensure(), render());
   return { counts, forIndicator, plan: (prefill) => edit(null, prefill) };
 })();
