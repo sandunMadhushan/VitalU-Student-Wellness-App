@@ -150,7 +150,7 @@ $('#logout').addEventListener('click', async () => {
 // Tabs
 // ---------------------------------------------------------------------------
 
-const renderers = { overview: renderOverview, analytics: renderAnalytics, completion: renderCompletion, schedule: renderSchedule, questions: renderQuestions, learn: renderLearn, consults: renderConsults };
+const renderers = { overview: renderOverview, analytics: renderAnalytics, completion: renderCompletion, schedule: renderSchedule, questions: renderQuestions, learn: renderLearn, consults: renderAnonConsults };
 
 // On narrow screens the sidebar slides in as a drawer.
 function setMenu(open) {
@@ -1127,14 +1127,15 @@ async function refreshConsultCount() {
   $('#bell-dot').hidden = !count;
 }
 
-async function renderConsults() {
-  const el = $('#tab-consults');
+async function renderAnonConsults() {
+  // Drawn inside the Consultations hub (consults.js) when it is present.
+  const el = $('#consult-pane') || $('#tab-consults');
   let query = sb.from('anon_consultations').select('*').order('created_at', { ascending: false }).limit(200);
   if (consultFilter.status) query = query.eq('status', consultFilter.status);
   const { data, error } = await query;
   const urgency = { urgent: ['Urgent', 'bad'], soon: ['Soon', 'warn'], routine: ['Routine', ''] };
   el.innerHTML = `
-    <div class="head"><div><h1>Anonymous consultations</h1><p class="muted">Questions sent to the health centre with no link to a student account. Replies appear in the student's app under their ticket code.</p></div>
+    <div class="head"><div><h2>Anonymous consultations</h2><p class="muted">Questions sent to the health centre with no link to a student account. Replies appear in the student's app under their ticket code.</p></div>
       <label style="min-width:180px">Show<select id="c-status">
         <option value="open" ${consultFilter.status === 'open' ? 'selected' : ''}>Waiting for a reply</option>
         <option value="answered" ${consultFilter.status === 'answered' ? 'selected' : ''}>Answered</option>
@@ -1151,7 +1152,7 @@ async function renderConsults() {
           ${c.status !== 'closed' ? `<button class="btn small" data-close="${esc(c.id)}">Close</button>` : ''}</div></div>`,
       )
       .join('') || '<div class="card muted">Nothing here.</div>'}`;
-  $('#c-status').onchange = (e) => ((consultFilter.status = e.target.value), renderConsults());
+  $('#c-status').onchange = (e) => ((consultFilter.status = e.target.value), renderAnonConsults());
   el.querySelectorAll('[data-reply]').forEach((b) =>
     b.addEventListener('click', () => {
       const c = data.find((x) => x.id === b.dataset.reply);
@@ -1167,7 +1168,7 @@ async function renderConsults() {
           if (e) return toast(e.message);
           toast('Reply sent.');
           await refreshConsultCount();
-          renderConsults();
+          renderAnonConsults();
         },
       );
     }),
@@ -1176,7 +1177,7 @@ async function renderConsults() {
     b.addEventListener('click', async () => {
       await sb.from('anon_consultations').update({ status: 'closed' }).eq('id', b.dataset.close);
       await refreshConsultCount();
-      renderConsults();
+      renderAnonConsults();
     }),
   );
 }

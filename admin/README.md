@@ -10,6 +10,15 @@ locally (for example `npx serve admin`).
 - **Light and dark themes**: switch with the moon/sun button at the top right.
   The choice is remembered in that browser.
 - **Overview**: registered students and participation in each assessment window.
+- **Health insights**: prevalence of eight health concerns (overweight and
+  obesity, central obesity, breakfast skipping, low fruit and vegetable
+  intake, physical inactivity, short sleep, high stress, low mood), trend lines
+  across assessment periods, comparison by faculty / academic year / sex, risk
+  distributions (nutritional status and others) and participation by faculty.
+- **Priority needs**: concerns ranked by how common, how fast rising and how far
+  above target they are, with hot-spot faculties and suggested interventions.
+- **Interventions**: plan, assign, monitor and evaluate health promotion
+  activities against the next periodic assessment.
 - **Analytics**: pooled results of the periodic assessment, by window and
   faculty, with a CSV download. Results for groups of fewer than five
   students are never shown.
@@ -21,7 +30,9 @@ locally (for example `npx serve admin`).
   and a "now open" notification.
 - **Questionnaire**: edit questions, answers and scoring, reorder, add or
   retire questions.
-- **Consultations**: read and reply to anonymous questions sent from the app.
+- **Consultations**: anonymous questions from the app, consultation requests
+  with appointment scheduling and statuses (Pending, Scheduled, Completed,
+  Follow-up Required), and pooled trends in what students ask about.
 
 ## Privacy model
 
@@ -29,6 +40,25 @@ Admins never read the `assessments` or `profiles` tables. The dashboard only
 calls security-definer functions (`admin_assessment_overview`,
 `admin_assessment_report`, `admin_assessment_completion`) that check `public.is_admin()` and return
 aggregates. Anonymous consultations are stored with no user id.
+
+## Sample data (read this before using the new views)
+
+Health insights, Priority needs, Interventions and the Requests / Trends parts
+of Consultations run on **generated sample data**, not the database. Each shows
+a "Sample data" banner. The data lives in `demo-data.js` (assessment results)
+and in `interventions.js` / `consults.js` (records kept in the browser's
+`localStorage`). Other files: `charts.js` (SVG charts), `insights.js`.
+
+To make them real:
+
+1. Replace `summarize()` in `demo-data.js` with the existing
+   `admin_assessment_report` function (add the eight indicators and the
+   academic-year / sex breakdowns). Keep the minimum group of five.
+2. Store interventions in a table writable only by admins.
+3. Store consultation requests in a table with row-level security so that
+   reasons and clinical notes are readable only by the assigned health
+   professional. The "Viewing as" switch in the sample is only a preview of that
+   rule; it does not enforce anything.
 
 ## Setup
 

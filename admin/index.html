@@ -41,6 +41,11 @@
       <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
       <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
       <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10v-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17 9 11l4 4 8-9M15 6h6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9V3M7.5 15h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     </defs>
   </svg>
 
@@ -75,6 +80,9 @@
       <nav class="tabs" id="tabs" role="tablist" aria-label="Sections">
         <button role="tab" data-tab="overview" class="tab active"><svg><use href="#i-home"/></svg><span class="label">Overview</span></button>
         <button role="tab" data-tab="analytics" class="tab"><svg><use href="#i-chart"/></svg><span class="label">Analytics</span></button>
+        <button role="tab" data-tab="insights" class="tab"><svg><use href="#i-trend"/></svg><span class="label">Health insights</span></button>
+        <button role="tab" data-tab="priority" class="tab"><svg><use href="#i-target"/></svg><span class="label">Priority needs</span></button>
+        <button role="tab" data-tab="interventions" class="tab"><svg><use href="#i-flag"/></svg><span class="label">Interventions</span></button>
         <button role="tab" data-tab="completion" class="tab"><svg><use href="#i-check"/></svg><span class="label">Completion</span></button>
         <button role="tab" data-tab="schedule" class="tab"><svg><use href="#i-calendar"/></svg><span class="label">Schedule</span></button>
         <button role="tab" data-tab="questions" class="tab"><svg><use href="#i-clipboard"/></svg><span class="label">Questionnaire</span></button>
@@ -111,6 +119,9 @@
       <main class="content">
         <section id="tab-overview" class="tab-panel"></section>
         <section id="tab-analytics" class="tab-panel" hidden></section>
+        <section id="tab-insights" class="tab-panel" hidden></section>
+        <section id="tab-priority" class="tab-panel" hidden></section>
+        <section id="tab-interventions" class="tab-panel" hidden></section>
         <section id="tab-completion" class="tab-panel" hidden></section>
         <section id="tab-schedule" class="tab-panel" hidden></section>
         <section id="tab-questions" class="tab-panel" hidden></section>
@@ -124,5 +135,11 @@
   <div id="toast" class="toast" role="status" hidden></div>
 
   <script src="app.js"></script>
+  <!-- Decision-support views (sample data): each file registers its tab in app.js's `renderers` -->
+  <script src="demo-data.js"></script>
+  <script src="charts.js"></script>
+  <script src="insights.js"></script>
+  <script src="interventions.js"></script>
+  <script src="consults.js"></script>
 </body>
 </html>
