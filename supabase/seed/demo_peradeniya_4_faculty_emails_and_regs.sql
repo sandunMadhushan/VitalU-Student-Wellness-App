@@ -12,7 +12,7 @@ select p.id, array_position(array['Faculty of Agriculture','Faculty of Allied He
 from public.profiles p join auth.users u on u.id = p.id
 where u.raw_user_meta_data ->> 'demo_seed' = 'peradeniya-2026';
 create temp table _cfg on commit drop as
-select i as f, (array['AG','AH','A','DS','E','MG','M','S','V'])[i] as code, (array['agri','ahs','arts','dental','eng','mgt','med','sci','vet'])[i] || '.pdn.ac.lk' as dom
+select i as f, (array['AG','AH','A','D','E','MG','M','S','V'])[i] as code, (array['agri','ahs','arts','dental','eng','mgt','med','sci','vet'])[i] || '.pdn.ac.lk' as dom
 from generate_series(1, 9) i;
 create temp table _num on commit drop as
 select g.f, g.intake, n, row_number() over (partition by g.f, g.intake order by random()) as rk
