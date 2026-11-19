@@ -7,7 +7,7 @@
  font-family: Inter, sans-serif; }
   .bg { position:absolute; inset:0; background: var(--lav); }
   .blob { position:absolute; border-radius:50%; filter: blur(0px); }
-  .eyebrow { font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .eyebrow { font: 700 28px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
   .cap-title { font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }
   .cap-sub { font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }
   .chip { display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
@@ -27,10 +27,10 @@
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-    tl.fromTo("#c_assess-glow", {scale:.7, opacity:.4}, {scale:1.1, opacity:1, duration:2.2, ease:"none"}, 0);
+    tl.fromTo("#c_assess-glow", {scale:.7, opacity:.4}, {scale:1.1, opacity:1, duration:2.0, ease:"none"}, 0);
     tl.fromTo("#c_assess-a", {opacity:0, y:40, filter:"blur(10px)"}, {opacity:1, y:0, filter:"blur(0px)", duration:.55, ease:"power3.out"}, 0.1);
     tl.fromTo("#c_assess-b", {opacity:0, y:40, filter:"blur(10px)"}, {opacity:1, y:0, filter:"blur(0px)", duration:.55, ease:"power3.out"}, 0.35);
-    tl.to(["#c_assess-a", "#c_assess-b"], {opacity:0, y:-20, duration:.3, ease:"power2.in"}, 1.85);
+    tl.to(["#c_assess-a", "#c_assess-b"], {opacity:0, y:-20, duration:.3, ease:"power2.in"}, 1.65);
     window.__timelines["c_assess"] = tl;
   </script>
 </template>

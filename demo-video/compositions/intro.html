@@ -7,7 +7,7 @@
  font-family: Inter, sans-serif; }
   .bg { position:absolute; inset:0; background: var(--lav); }
   .blob { position:absolute; border-radius:50%; filter: blur(0px); }
-  .eyebrow { font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .eyebrow { font: 700 28px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
   .cap-title { font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }
   .cap-sub { font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }
   .chip { display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
@@ -28,13 +28,13 @@
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
-    tl.fromTo("#intro-b1", {x:0, y:0}, {x:120, y:60, duration:5, ease:"none"}, 0);
-    tl.fromTo("#intro-b2", {x:0, y:0}, {x:-100, y:-50, duration:5, ease:"none"}, 0);
-    tl.fromTo("#intro-icon", {opacity:0, scale:.5, rotation:-12}, {opacity:1, scale:1, rotation:0, duration:.8, ease:"back.out(1.8)"}, 0.2);
-    tl.fromTo("#intro-word", {opacity:0, x:-30, filter:"blur(10px)"}, {opacity:1, x:0, filter:"blur(0px)", duration:.6, ease:"power3.out"}, 0.6);
+    tl.fromTo("#intro-b1", {x:0, y:0}, {x:120, y:60, duration:4.4, ease:"none"}, 0);
+    tl.fromTo("#intro-b2", {x:0, y:0}, {x:-100, y:-50, duration:4.4, ease:"none"}, 0);
+    tl.fromTo("#intro-icon", {opacity:1, scale:.82, rotation:-8}, {opacity:1, scale:1, rotation:0, duration:.8, ease:"back.out(1.8)"}, 0);
+    tl.fromTo("#intro-word", {opacity:1, x:-24}, {opacity:1, x:0, duration:.7, ease:"power3.out"}, 0);
     tl.fromTo("#intro-line", {opacity:0, y:30}, {opacity:1, y:0, duration:.7, ease:"power3.out"}, 1.4);
-    tl.to("#intro-line", {letterSpacing:"0.01em", duration:2.6, ease:"none"}, 2.0);
-    tl.to(["#intro-icon", "#intro-word", "#intro-line"], {opacity:0, y:-20, duration:.4, ease:"power2.in"}, 4.55);
+    tl.fromTo("#intro-line", {scale:1}, {scale:1.03, duration:2.4, ease:"none"}, 2.1);
+    tl.to(["#intro-icon", "#intro-word", "#intro-line"], {opacity:0, y:-20, duration:.4, ease:"power2.in"}, 3.95);
     window.__timelines["intro"] = tl;
   </script>
 </template>

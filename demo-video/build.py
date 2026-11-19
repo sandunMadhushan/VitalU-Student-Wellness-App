@@ -27,67 +27,72 @@ CSS_VARS = """
 # captions: [start, duration, title, sub]  (times local to the scene)
 # zooms:    [at, duration, scale, originX%, originY%]  scale 1 = no zoom
 SCENES = [
-    dict(id="intro", kind="intro", dur=5),
-    dict(id="app", kind="phone", dur=15, clip="app_home",
+    dict(id="intro", kind="intro", dur=4.4),
+    dict(id="app", kind="phone", dur=12.5, clip="app_home",
          eyebrow="The student app",
-         captions=[[0.3, 5.2, "Sign in once", "Email or Google"],
-                   [5.6, 9.2, "Five sections, one app", "Home · Tools · Diet · Progress · Profile"]],
-         chips=["Home", "Tools", "Diet", "Progress", "Profile"], chips_at=7.0,
-         zooms=[[9.0, 1.2, 1.35, 50, 96], [13.6, 0.9, 1.0, 50, 50]]),
-    dict(id="c_tools", kind="card", dur=2.2, line=["Know your", "numbers"]),
-    dict(id="tools", kind="phone", dur=23, clip="tools",
-         eyebrow="Health tools",
-         captions=[[0.3, 9.5, "BMI, in seconds", "Enter height and weight, get your category"],
-                   [10.0, 12.8, "Eight tools, one place", "Body, heart, water, activity, sleep, anxiety, cycle"]],
-         chips=["BMI", "Waist-to-hip", "Heart risk", "Water", "Activity", "Sleep", "Anxiety", "Cycle"], chips_at=10.4,
-         zooms=[[5.5, 1.0, 1.55, 50, 40], [9.4, 0.8, 1.0, 50, 50]]),
-    dict(id="c_diet", kind="card", dur=2.5, line=["Nutrition that's", "personal"]),
-    dict(id="diet", kind="phone", dur=31.5, clip="diet",
-         eyebrow="Personalised nutrition",
-         captions=[[0.3, 7.5, "Log a meal", "Sri Lankan foods, one or two taps"],
-                   [8.0, 7.6, "Your intake vs your needs", "Calories against your estimated daily energy requirement"],
-                   [15.8, 6.0, "Dietary diversity", "How many food groups you really eat"],
-                   [22.0, 5.4, "Diet quality (PDQS)", "A score built on what you eat, not general advice"],
-                   [27.6, 3.7, "Healthy plate guidance", "What your plate should look like"]],
-         zooms=[[8.6, 1.0, 1.5, 50, 30], [14.6, 0.8, 1.0, 50, 50],
-                [17.0, 1.0, 1.45, 50, 35], [21.2, 0.8, 1.0, 50, 50],
-                [23.0, 1.0, 1.45, 50, 35], [27.0, 0.6, 1.0, 50, 50]]),
-    dict(id="progress", kind="phone", dur=10, clip="progress",
-         eyebrow="Progress and engagement",
-         captions=[[0.3, 4.6, "See your progress", "Trends across everything you log"],
-                   [5.0, 4.8, "Badges, streaks, reminders", "Gentle nudges toward healthy habits"]],
-         zooms=[[5.4, 0.9, 1.4, 50, 45]]),
-    dict(id="consult", kind="phone", dur=8, clip="consult",
-         eyebrow="Student support",
-         captions=[[0.3, 7.5, "Ask for a consultation", "Anonymous questions or a booked appointment"]],
+         captions=[[0.3, 3.3, "Sign in once", "Email or Google. Health data stays private."],
+                   [3.8, 8.5, "Five sections, one app", "Home, Tools, Diet, Learn and Profile"]],
+         chips=["Home", "Tools", "Diet", "Learn", "Profile"], chip_times=[6.0, 6.9, 7.8, 9.0, 10.2],
          zooms=[]),
-    dict(id="c_assess", kind="card", dur=2.2, line=["Every term,", "a check-in"]),
-    dict(id="assess", kind="split", dur=19.3, clip="assess", clip2="admin_completion", split_at=13.8,
+    dict(id="c_tools", kind="card", dur=2.0, line=["Know your", "numbers"]),
+    dict(id="tools", kind="phone", dur=22.3, clip="tools",
+         eyebrow="Health tools",
+         captions=[[0.3, 8.1, "BMI, in seconds", "Height and weight in, category and a personal plan out"],
+                   [8.7, 13.4, "Eight tools, one place", "Body, heart, mind, water, movement, sleep and cycle"]],
+         chips=["BMI", "Waist-to-hip", "Heart risk", "Anxiety", "Water", "Activity", "Sleep", "Cycle"],
+         chip_times=[8.9, 9.0, 10.6, 12.1, 13.6, 17.4, 18.9, 20.5],
+         zooms=[[6.4, 0.9, 1.45, 50, 40], [8.0, 0.5, 1.0, 50, 50], [14.6, 0.8, 1.35, 50, 30], [17.0, 0.4, 1.0, 50, 50]]),
+    dict(id="c_diet", kind="card", dur=2.0, line=["Nutrition that's", "personal"]),
+    dict(id="diet", kind="phone", dur=35.3, clip="diet",
+         eyebrow="Personalised nutrition",
+         captions=[[0.3, 3.9, "A personal energy target", "Worked out from your own profile"],
+                   [4.4, 7.2, "Log a meal", "Sri Lankan foods by portion, in a few taps"],
+                   [11.9, 5.1, "Your intake vs your needs", "510 of 1,900 kcal, against energy used today"],
+                   [17.3, 4.8, "Dietary diversity", "How many of the ten food groups you ate today"],
+                   [22.3, 3.9, "Diet quality (PDQS)", "A two-minute weekly check-in"],
+                   [26.5, 4.5, "Your own diet score", "Guidance built on what you eat, not general advice"],
+                   [31.2, 3.9, "Healthy plate guidance", "Half vegetables, a quarter grains, a quarter protein"]],
+         zooms=[[12.2, 0.9, 1.45, 50, 20], [15.6, 0.6, 1.0, 50, 50],
+                [17.6, 0.8, 1.5, 50, 12], [20.6, 0.6, 1.0, 50, 50],
+                [26.6, 0.8, 1.4, 50, 45], [29.0, 0.6, 1.0, 50, 50]]),
+    dict(id="progress", kind="phone", dur=11.1, clip="progress",
+         eyebrow="Progress and engagement",
+         captions=[[0.3, 4.3, "Track your progress", "Assessments, meals, diet quality and tools used"],
+                   [4.8, 2.8, "Badges and streaks", "Small goals that build lasting habits"],
+                   [7.8, 3.2, "Helpful reminders", "Water, cycle and assessment nudges"]],
+         zooms=[]),
+    dict(id="consult", kind="phone", dur=8.1, clip="consult",
+         eyebrow="Student support",
+         captions=[[0.3, 7.6, "Request a consultation", "Book a visit with the University Health Centre"]],
+         zooms=[]),
+    dict(id="c_assess", kind="card", dur=2.0, line=["Every term,", "a check-in"]),
+    dict(id="assess", kind="split", dur=24.5, clip="assess", clip2="admin_completion", split_at=19.6,
          eyebrow="Periodic assessment",
-         captions=[[0.3, 4.6, "“Assessment now open”", "Students are notified in the app"],
-                   [5.0, 8.5, "Diet, lifestyle, well-being", "One short questionnaire each term"],
-                   [13.9, 5.2, "Submitted, and counted", "Participation reaches the university instantly"]],
-         zooms=[[0.6, 0.9, 1.5, 50, 12], [4.2, 0.7, 1.0, 50, 50]]),
-    dict(id="c_admin", kind="card", dur=2.8, line=["From individual health", "to campus health"]),
-    dict(id="admin", kind="browser", dur=19.2, clip="admin_tour",
+         captions=[[0.3, 6.8, "\u201cAssessment now open\u201d", "Every student is notified in the app"],
+                   [7.3, 7.0, "Diet, lifestyle, well-being", "41 short questions in 11 sections"],
+                   [14.5, 4.9, "A personal snapshot", "Well-being by area, seen only by the student"],
+                   [19.7, 4.6, "Student assessment tracking", "Completion reaches the dashboard, never the answers"]],
+         zooms=[[0.6, 0.8, 1.6, 82, 4], [2.6, 0.6, 1.0, 50, 50]]),
+    dict(id="c_admin", kind="card", dur=2.5, line=["From individual health", "to campus health"]),
+    dict(id="admin", kind="browser", dur=17.4, clip="admin_tour",
          eyebrow="University administration dashboard",
-         captions=[[0.3, 4.4, "Centralised health overview", "Registered students, participation, what's next"],
-                   [4.8, 3.4, "Assessment scheduling", "Open windows by faculty"],
-                   [8.3, 3.4, "Assessment tracking", "Who has completed, never what they answered"],
-                   [11.8, 3.6, "Health education", "Publish learning content to the app"],
-                   [15.5, 3.5, "Consultation management", "Requests, appointments and follow-ups"]],
-         zooms=[[0.8, 1.0, 1.25, 30, 30], [4.2, 0.6, 1.0, 50, 50]]),
-    dict(id="analytics", kind="browser", dur=29, clip="analytics",
+         captions=[[0.3, 4.0, "Centralised health overview", "Students, participation and what's coming up"],
+                   [4.5, 5.0, "Assessment scheduling", "Open a window for any faculty, from right now"],
+                   [9.8, 2.8, "Health education", "Publish and curate Learn articles"],
+                   [12.9, 4.3, "Consultation management", "Requests, appointments and follow-ups"]],
+         zooms=[[5.0, 0.9, 1.3, 55, 25], [8.3, 0.6, 1.0, 50, 50]]),
+    dict(id="analytics", kind="browser", dur=26.6, clip="analytics",
          eyebrow="Aggregated health analytics",
-         captions=[[0.3, 6.0, "What's common on campus", "Prevalence of eight health concerns"],
-                   [6.4, 5.4, "Faculty by faculty", "Where each concern is concentrated"],
-                   [12.0, 5.4, "Trends across assessments", "Rising, falling, or on target"],
-                   [17.6, 6.0, "Priority needs, ranked", "e.g. breakfast skipping, low fruit and vegetable intake"],
-                   [23.8, 5.0, "Plan, act, re-assess", "Interventions monitored through the next assessment"]],
-         zooms=[[1.0, 1.0, 1.35, 35, 40], [5.6, 0.6, 1.0, 50, 50],
-                [12.6, 1.0, 1.35, 50, 45], [16.8, 0.6, 1.0, 50, 50],
-                [18.4, 1.0, 1.3, 40, 35], [23.2, 0.6, 1.0, 50, 50]]),
-    dict(id="final", kind="final", dur=10.3),
+         captions=[[0.3, 5.7, "Health prevalence", "How common each concern is, against university targets"],
+                   [6.2, 4.3, "Trends over time", "Change across the six-monthly assessments"],
+                   [10.7, 3.9, "Faculty-wise comparison", "Where each concern is concentrated"],
+                   [14.8, 5.2, "Priority needs, ranked", "e.g. breakfast skipping, low fruit and vegetable intake"],
+                   [20.2, 6.2, "Plan, act, re-assess", "Interventions monitored through the next assessment"]],
+         zooms=[[2.9, 0.9, 1.3, 55, 35], [5.6, 0.5, 1.0, 50, 50],
+                [8.7, 0.8, 1.3, 55, 50], [10.3, 0.4, 1.0, 50, 50],
+                [17.3, 0.8, 1.3, 55, 45], [19.8, 0.5, 1.0, 50, 50],
+                [22.9, 0.8, 1.25, 60, 55], [25.3, 0.5, 1.0, 50, 50]]),
+    dict(id="final", kind="final", dur=9.3),
 ]
 
 total = round(sum(s["dur"] for s in SCENES), 3)
@@ -98,7 +103,7 @@ def head(extra=""):
   #root {{ position:absolute; inset:0; overflow:hidden; {CSS_VARS} font-family: Inter, sans-serif; }}
   .bg {{ position:absolute; inset:0; background: var(--lav); }}
   .blob {{ position:absolute; border-radius:50%; filter: blur(0px); }}
-  .eyebrow {{ font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }}
+  .eyebrow {{ font: 700 28px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }}
   .cap-title {{ font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }}
   .cap-sub {{ font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }}
   .chip {{ display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
@@ -211,10 +216,11 @@ def scene_phone(s):
           cj, zoom_js(f"#{sid}-ph-zoom", s.get("zooms", []))]
     if s.get("chips"):
         chips = "".join(f'<span id="{sid}-chip{i}" class="chip">{c}</span>' for i, c in enumerate(s["chips"]))
-        at = s["chips_at"]
+        at = s.get("chips_at", (s.get("chip_times") or [0])[0])
         body.append(f'<div id="{sid}-chips" class="clip" data-start="{at}" data-duration="{round(d - at, 2)}" data-track-index="3" style="position:absolute; left:900px; top:560px; width:820px;">{chips}</div>')
+        times = s.get("chip_times") or [round(at + 0.15 + i * 0.35, 2) for i in range(len(s["chips"]))]
         for i in range(len(s["chips"])):
-            js.append(f'tl.fromTo("#{sid}-chip{i}", {{opacity:0, scale:.8}}, {{opacity:1, scale:1, duration:.35, ease:"back.out(2)"}}, {round(at + 0.15 + i * 0.35, 2)});')
+            js.append(f'tl.fromTo("#{sid}-chip{i}", {{opacity:0, scale:.8}}, {{opacity:1, scale:1, duration:.35, ease:"back.out(2)"}}, {times[i]});')
     return wrap(sid, "\n    ".join(body), "\n    ".join(js))
 
 
@@ -224,16 +230,16 @@ def scene_browser(s):
     body = [blobs(sid),
             f'<div id="{sid}-br-wrap" style="position:absolute; inset:0;">{browser_markup(sid + "-br", s["clip"], d, w=w, top=40)}</div>',
             # caption panel bottom-left, over the browser
-            f'<div id="{sid}-panel" style="position:absolute; left:80px; bottom:60px; width:780px; height:250px; border-radius:28px; background:rgba(255,255,255,.94); box-shadow:0 24px 60px rgba(5,61,49,.22);"></div>',
-            f'<div id="{sid}-eb" class="eyebrow" style="position:absolute; left:120px; bottom:252px; font-size:19px;">{s["eyebrow"]}</div>']
-    ch, cj = captions_html(sid, s["captions"], 120, 840, 700)
+            f'<div id="{sid}-panel" style="position:absolute; left:80px; bottom:60px; width:840px; height:290px; border-radius:28px; background:rgba(255,255,255,.94); box-shadow:0 24px 60px rgba(5,61,49,.22);"></div>',
+            f'<div id="{sid}-eb" class="eyebrow" style="position:absolute; left:120px; bottom:272px;">{s["eyebrow"]}</div>']
+    ch, cj = captions_html(sid, s["captions"], 120, 826, 770)
     body.append(ch)
     js = [blob_js(sid, d),
           f'tl.fromTo("#{sid}-br", {{opacity:0, y:60, scale:.96}}, {{opacity:1, y:0, scale:1, duration:0.8, ease:"power3.out"}}, 0);',
           f'tl.fromTo("#{sid}-panel", {{opacity:0, y:30}}, {{opacity:1, y:0, duration:0.5, ease:"power3.out"}}, 0.2);',
           f'tl.fromTo("#{sid}-eb", {{opacity:0}}, {{opacity:1, duration:0.4}}, 0.3);',
           cj, zoom_js(f"#{sid}-br-zoom", s.get("zooms", []))]
-    css = ".cap-title{font-size:46px} .cap-sub{font-size:24px; margin-top:12px}"
+    css = ".cap-title{font-size:48px} .cap-sub{font-size:28px; margin-top:10px}"
     return wrap(sid, "\n    ".join(body), "\n    ".join(js), css)
 
 
@@ -242,7 +248,7 @@ def scene_split(s):
     sid, d, sp = s["id"], s["dur"], s["split_at"]
     body = [blobs(sid),
             f'<div id="{sid}-ph-wrap" style="position:absolute; inset:0;">{phone_markup(sid + "-ph", s["clip"], d, left=300)}</div>',
-            f'<div id="{sid}-br-wrap" class="clip" data-start="{sp}" data-duration="{round(d - sp, 2)}" data-track-index="3" style="position:absolute; inset:0;">'
+            f'<div id="{sid}-br-wrap" style="position:absolute; inset:0;">'
             f'{browser_markup(sid + "-br", s["clip2"], round(d - sp, 2), start=sp, left=820, top=150, w=1020)}</div>',
             f'<div id="{sid}-eb" class="eyebrow" style="position:absolute; left:900px; top:250px;">{s["eyebrow"]}</div>']
     ch, cj = captions_html(sid, s["captions"][:-1], 900, 300, 820)
@@ -254,9 +260,10 @@ def scene_split(s):
           f'tl.fromTo("#{sid}-eb", {{opacity:0}}, {{opacity:1, duration:0.4}}, 0.15);',
           f'tl.to("#{sid}-eb", {{opacity:0, duration:0.3}}, {sp - 0.4});',
           f'tl.to("#{sid}-ph", {{x:-150, duration:0.8, ease:"power3.inOut"}}, {sp - 0.2});',
-          f'tl.fromTo("#{sid}-br", {{opacity:0, x:200}}, {{opacity:1, x:0, duration:0.8, ease:"power3.out"}}, {sp});',
+          f'tl.set("#{sid}-br", {{opacity:0}}, 0);',
+          f'tl.fromTo("#{sid}-br", {{opacity:0, x:200}}, {{opacity:1, x:0, duration:0.8, ease:"power3.out", immediateRender:false}}, {sp});',
           cj, cj2, zoom_js(f"#{sid}-ph-zoom", s.get("zooms", []))]
-    css = f"#{sid}x-cap0 .cap-title{{font-size:44px}} #{sid}x-cap0 .cap-sub{{font-size:24px; margin-top:8px}}"
+    css = f"#{sid}x-cap0 .cap-title{{font-size:44px}} #{sid}x-cap0 .cap-sub{{font-size:28px; margin-top:8px}}"
     return wrap(sid, "\n    ".join(body), "\n    ".join(js), css)
 
 
@@ -290,19 +297,19 @@ def scene_intro(s):
       <div id="{sid}-line" style="margin-top:46px; font: 600 56px Outfit; letter-spacing:-0.01em; color: var(--green);">Beyond the Academic Transcript</div>
     </div>'''
     js = f'''{blob_js(sid, d)}
-    tl.fromTo("#{sid}-icon", {{opacity:0, scale:.5, rotation:-12}}, {{opacity:1, scale:1, rotation:0, duration:.8, ease:"back.out(1.8)"}}, 0.2);
-    tl.fromTo("#{sid}-word", {{opacity:0, x:-30, filter:"blur(10px)"}}, {{opacity:1, x:0, filter:"blur(0px)", duration:.6, ease:"power3.out"}}, 0.6);
+    tl.fromTo("#{sid}-icon", {{opacity:1, scale:.82, rotation:-8}}, {{opacity:1, scale:1, rotation:0, duration:.8, ease:"back.out(1.8)"}}, 0);
+    tl.fromTo("#{sid}-word", {{opacity:1, x:-24}}, {{opacity:1, x:0, duration:.7, ease:"power3.out"}}, 0);
     tl.fromTo("#{sid}-line", {{opacity:0, y:30}}, {{opacity:1, y:0, duration:.7, ease:"power3.out"}}, 1.4);
-    tl.to("#{sid}-line", {{letterSpacing:"0.01em", duration:2.6, ease:"none"}}, 2.0);
+    tl.fromTo("#{sid}-line", {{scale:1}}, {{scale:1.03, duration:2.4, ease:"none"}}, 2.1);
     tl.to(["#{sid}-icon", "#{sid}-word", "#{sid}-line"], {{opacity:0, y:-20, duration:.4, ease:"power2.in"}}, {d - 0.45});'''
     return wrap(sid, body, js)
 
 
 def scene_final(s):
     sid, d = s["id"], s["dur"]
-    end_at = 5.0
+    end_at = 3.8
     body = f'''{blobs(sid)}
-    <div id="{sid}-split" class="clip" data-start="0" data-duration="{end_at}" data-track-index="3" style="position:absolute; inset:0;">
+    <div id="{sid}-split" style="position:absolute; inset:0;">
       <div id="{sid}-sw" style="position:absolute; inset:0;">
         {phone_markup(sid + "-ph", "final_app", end_at, left=170, top=110)}
         {browser_markup(sid + "-br", "final_admin", end_at, left=700, top=200, w=1080)}
@@ -329,11 +336,12 @@ def scene_final(s):
     tl.fromTo("#{sid}-br", {{opacity:0, x:80}}, {{opacity:1, x:0, duration:.8, ease:"power3.out"}}, 0.25);
     tl.fromTo("#{sid}-tag", {{opacity:0, y:20}}, {{opacity:1, y:0, duration:.6, ease:"power3.out"}}, 0.8);
     tl.fromTo("#{sid}-labels", {{opacity:0, y:20}}, {{opacity:1, y:0, duration:.6, ease:"power3.out"}}, 1.3);
+    tl.set("#{sid}-split", {{opacity:0}}, {end_at});
     tl.to("#{sid}-sw", {{scale:.94, transformOrigin:"50% 55%", duration:{end_at - 0.5}, ease:"none"}}, 0.5);
     tl.fromTo("#{sid}-icon", {{opacity:0, scale:.6}}, {{opacity:1, scale:1, duration:.7, ease:"back.out(1.8)"}}, {end_at + 0.1});
     tl.fromTo("#{sid}-word", {{opacity:0, x:-20}}, {{opacity:1, x:0, duration:.6, ease:"power3.out"}}, {end_at + 0.35});
-    tl.fromTo("#{sid}-sub", {{opacity:0, y:20}}, {{opacity:1, y:0, duration:.6, ease:"power3.out"}}, {end_at + 0.9});
-    tl.fromTo("#{sid}-line", {{opacity:0, scale:.9}}, {{opacity:1, scale:1, duration:.6, ease:"back.out(1.6)"}}, {end_at + 1.4});'''
+    tl.fromTo("#{sid}-sub", {{opacity:0, y:20}}, {{opacity:1, y:0, duration:.6, ease:"power3.out"}}, {end_at + 0.6});
+    tl.fromTo("#{sid}-line", {{opacity:0, scale:.9}}, {{opacity:1, scale:1, duration:.6, ease:"back.out(1.6)"}}, {end_at + 0.9});'''
     return wrap(sid, body, js)
 
 
@@ -348,6 +356,21 @@ for s in SCENES:
         data-width="{W}" data-height="{H}"></div>''')
     t += s["dur"]
 
+starts, _t = {}, 0.0
+for _s in SCENES:
+    starts[_s["id"]] = round(_t, 3); _t += _s["dur"]
+sfx_events = []
+for k, _s in enumerate([x for x in SCENES if x["kind"] == "card"]):
+    sfx_events.append((starts[_s["id"]], "whoosh.mp3" if k % 2 == 0 else "whoosh-short.mp3", 0.55))
+for _s in SCENES:
+    if _s["kind"] == "split":
+        sfx_events.append((round(starts[_s["id"]] + _s["split_at"], 3), "whoosh-short.mp3", 0.45))
+    if _s["kind"] == "final":
+        sfx_events.append((starts[_s["id"]], "whoosh.mp3", 0.45))
+        sfx_events.append((round(starts[_s["id"]] + 3.9, 3), "pop.mp3", 0.6))
+SFX_LEN = {"whoosh.mp3": 0.57, "whoosh-short.mp3": 0.57, "pop.mp3": 0.72}
+sfx = "\n".join(f'      <audio id="sfx{i}" class="clip" src="assets/sfx/{f}" data-start="{t}" data-duration="{SFX_LEN[f]}" data-track-index="6" data-volume="{v}"></audio>'
+                for i, (t, f, v) in enumerate(sorted(sfx_events)))
 music = ""
 if (ROOT / "assets" / "music.mp3").exists():
     music = f'''      <audio id="music" class="clip" src="assets/music.mp3" data-start="0" data-duration="{total}" data-track-index="5"
@@ -368,6 +391,7 @@ index = f"""<!doctype html>
     <div id="root" data-composition-id="main" data-start="0" data-duration="{total}" data-width="{W}" data-height="{H}">
 {chr(10).join(hosts)}
 {music}
+{sfx}
     </div>
     <script>
       const tl = gsap.timeline({{ paused: true }});
