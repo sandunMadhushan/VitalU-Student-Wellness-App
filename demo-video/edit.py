@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).parent
-RAW = pathlib.Path(os.environ.get("RAW", ROOT / "raw"))
+RAW = pathlib.Path(os.environ.get("RAW", ROOT.parent.parent / "vitalu-demo-raw"))
 OUT = ROOT / "assets" / "footage"
 OUT.mkdir(parents=True, exist_ok=True)
 
