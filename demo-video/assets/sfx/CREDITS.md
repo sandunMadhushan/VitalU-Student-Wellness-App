@@ -33,3 +33,9 @@ All files are distributed under the [Pixabay Content License](https://pixabay.co
 - Redistribution as part of derivative works (such as videos rendered with HyperFrames)
 
 without any attribution requirement.
+
+## Music
+
+`assets/music.mp3` is an edit (trimmed, looped section, faded, loudness-normalised) of
+"Inspiring Ambient Motivation" by Soundrider/Dope, https://www.jamendo.com/track/1670558,
+licensed under CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/). Credited on the end card.

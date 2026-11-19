@@ -330,6 +330,7 @@ def scene_final(s):
         <div id="{sid}-sub" style="margin-top:40px; font: 500 40px Inter; color: var(--mint-soft);">An integrated university health information platform</div>
         <div id="{sid}-line" style="margin-top:34px; font: 600 30px Outfit; color: var(--deep); background: var(--mint); padding: 14px 34px; border-radius: 999px;">Beyond the Academic Transcript</div>
       </div>
+      <div id="{sid}-credit" data-layout-ignore style="position:absolute; left:0; right:0; bottom:44px; text-align:center; font: 400 18px Inter; color: rgba(213,239,231,.65);">Music: \u201cInspiring Ambient Motivation\u201d by Soundrider/Dope (Jamendo), CC BY 3.0</div>
     </div>'''
     js = f'''{blob_js(sid, d)}
     tl.fromTo("#{sid}-ph", {{opacity:0, x:-80}}, {{opacity:1, x:0, duration:.8, ease:"power3.out"}}, 0.1);
@@ -374,7 +375,7 @@ sfx = "\n".join(f'      <audio id="sfx{i}" class="clip" src="assets/sfx/{f}" dat
 music = ""
 if (ROOT / "assets" / "music.mp3").exists():
     music = f'''      <audio id="music" class="clip" src="assets/music.mp3" data-start="0" data-duration="{total}" data-track-index="5"
-        data-volume="0.8" data-fade-in="1" data-fade-out="3"></audio>'''
+        data-volume="1"></audio>'''
 
 index = f"""<!doctype html>
 <html lang="en" data-resolution="landscape">
