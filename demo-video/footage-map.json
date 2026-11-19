@@ -1,0 +1,16 @@
+{
+  "intro": null,
+  "app": "app_home",
+  "c_tools": null,
+  "tools": "tools",
+  "c_diet": null,
+  "diet": "diet",
+  "progress": "progress",
+  "consult": "consult",
+  "c_assess": null,
+  "assess": "assess",
+  "c_admin": null,
+  "admin": "admin_tour",
+  "analytics": "analytics",
+  "final": null
+}

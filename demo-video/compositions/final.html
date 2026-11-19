@@ -1,0 +1,82 @@
+<template>
+  <style>
+  #root { position:absolute; inset:0; overflow:hidden; 
+  --green: #0B7A63; --deep: #053D31; --mint: #5FD3B4; --mint-soft: #D5EFE7;
+  --lav: #F8F5FD; --lav-2: #EDE9F5; --ink: #111317; --ink-2: #5B5768;
+  --coral: #CC2F55; --amber: #F5B321;
+ font-family: Inter, sans-serif; }
+  .bg { position:absolute; inset:0; background: var(--lav); }
+  .blob { position:absolute; border-radius:50%; filter: blur(0px); }
+  .eyebrow { font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .cap-title { font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }
+  .cap-sub { font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }
+  .chip { display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
+          padding: 12px 22px; border-radius: 999px; margin: 0 12px 14px 0; }
+  
+</style>
+  <div id="root" data-composition-id="final" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div id="final-b1" class="blob" style="left:-220px; top:-260px; width:760px; height:760px; background: radial-gradient(circle, rgba(95,211,180,.35), rgba(95,211,180,0) 70%);"></div>
+    <div id="final-b2" class="blob" style="right:-260px; bottom:-300px; width:860px; height:860px; background: radial-gradient(circle, rgba(11,122,99,.18), rgba(11,122,99,0) 70%);"></div>
+    <div id="final-split" class="clip" data-start="0" data-duration="5.0" data-track-index="3" style="position:absolute; inset:0;">
+      <div id="final-sw" style="position:absolute; inset:0;">
+        <div id="final-ph" style="position:absolute; left:170px; top:110px; width:430px; height:930px;
+        border-radius:64px; background:#111317; box-shadow: 0 40px 90px rgba(5,61,49,.28), 0 0 0 2px #2a2d33 inset;">
+      <div style="position:absolute; left:16px; top:34px; width:398px; height:862px; border-radius:44px; overflow:hidden; background:#fff;">
+        <div id="final-ph-zoom" style="position:absolute; inset:0;">
+          <video id="final-ph-v" class="clip" src="assets/footage/final_app.mp4" muted playsinline data-start="0" data-duration="5.0" data-track-index="1"
+            style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"></video>
+        </div>
+      </div>
+      <div style="position:absolute; left:50%; top:16px; width:120px; height:30px; margin-left:-60px; border-radius:20px; background:#111317;"></div>
+    </div>
+        <div id="final-br" style="position:absolute; left:700px; top:200px; width:1080px; height:708px; border-radius:13px;
+        overflow:hidden; background:#fff; box-shadow: 0 40px 90px rgba(5,61,49,.25);">
+      <div style="height:33px; background:#ECE8F3; display:flex; align-items:center; padding-left:14px; gap:6px;">
+        <i style="width:9px;height:9px;border-radius:50%;background:#FF5F57"></i>
+        <i style="width:9px;height:9px;border-radius:50%;background:#FEBC2E"></i>
+        <i style="width:9px;height:9px;border-radius:50%;background:#28C840"></i>
+        <span data-layout-ignore style="margin-left:17px; font:500 12px Inter; color:#5B5768; background:#fff; padding:4px 13px; border-radius:8px;">vitalu · admin</span>
+      </div>
+      <div style="position:absolute; left:0; top:33px; right:0; bottom:0; overflow:hidden;">
+        <div id="final-br-zoom" style="position:absolute; inset:0;">
+          <video id="final-br-v" class="clip" src="assets/footage/final_admin.mp4" muted playsinline data-start="0" data-duration="5.0" data-track-index="1"
+            style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position: top;"></video>
+        </div>
+      </div>
+    </div>
+      </div>
+      <div id="final-l1" style="position:absolute; left:170px; top:1050px; width:430px; text-align:center;"></div>
+      <div id="final-tag" style="position:absolute; left:700px; top:110px; width:1080px; font:700 46px Outfit; color:var(--ink); letter-spacing:-0.02em;">
+        Individual monitoring <span style="color:var(--green)">+</span> population insight</div>
+      <div id="final-labels" style="position:absolute; left:700px; top:930px; width:1080px; display:flex; gap:16px;">
+        <span class="chip">Students: monitor and improve</span><span class="chip">University: understand and act</span></div>
+    </div>
+    <div id="final-end" class="clip" data-start="5.0" data-duration="5.3" data-track-index="3" style="position:absolute; inset:0;">
+      <div style="position:absolute; inset:0; background: var(--deep);"></div>
+      <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+        <div style="display:flex; align-items:center; gap:30px;">
+          <img id="final-icon" src="assets/img/app_icon.png" style="width:150px; height:150px; border-radius:38px;" />
+          <div id="final-word" style="font: 700 136px Outfit; letter-spacing:-0.04em; color:#fff;">VitalU</div>
+        </div>
+        <div id="final-sub" style="margin-top:40px; font: 500 40px Inter; color: var(--mint-soft);">An integrated university health information platform</div>
+        <div id="final-line" style="margin-top:34px; font: 600 30px Outfit; color: var(--deep); background: var(--mint); padding: 14px 34px; border-radius: 999px;">Beyond the Academic Transcript</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#final-b1", {x:0, y:0}, {x:120, y:60, duration:10.3, ease:"none"}, 0);
+    tl.fromTo("#final-b2", {x:0, y:0}, {x:-100, y:-50, duration:10.3, ease:"none"}, 0);
+    tl.fromTo("#final-ph", {opacity:0, x:-80}, {opacity:1, x:0, duration:.8, ease:"power3.out"}, 0.1);
+    tl.fromTo("#final-br", {opacity:0, x:80}, {opacity:1, x:0, duration:.8, ease:"power3.out"}, 0.25);
+    tl.fromTo("#final-tag", {opacity:0, y:20}, {opacity:1, y:0, duration:.6, ease:"power3.out"}, 0.8);
+    tl.fromTo("#final-labels", {opacity:0, y:20}, {opacity:1, y:0, duration:.6, ease:"power3.out"}, 1.3);
+    tl.to("#final-sw", {scale:.94, transformOrigin:"50% 55%", duration:4.5, ease:"none"}, 0.5);
+    tl.fromTo("#final-icon", {opacity:0, scale:.6}, {opacity:1, scale:1, duration:.7, ease:"back.out(1.8)"}, 5.1);
+    tl.fromTo("#final-word", {opacity:0, x:-20}, {opacity:1, x:0, duration:.6, ease:"power3.out"}, 5.35);
+    tl.fromTo("#final-sub", {opacity:0, y:20}, {opacity:1, y:0, duration:.6, ease:"power3.out"}, 5.9);
+    tl.fromTo("#final-line", {opacity:0, scale:.9}, {opacity:1, scale:1, duration:.6, ease:"back.out(1.6)"}, 6.4);
+    window.__timelines["final"] = tl;
+  </script>
+</template>

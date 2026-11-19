@@ -1,0 +1,76 @@
+<template>
+  <style>
+  #root { position:absolute; inset:0; overflow:hidden; 
+  --green: #0B7A63; --deep: #053D31; --mint: #5FD3B4; --mint-soft: #D5EFE7;
+  --lav: #F8F5FD; --lav-2: #EDE9F5; --ink: #111317; --ink-2: #5B5768;
+  --coral: #CC2F55; --amber: #F5B321;
+ font-family: Inter, sans-serif; }
+  .bg { position:absolute; inset:0; background: var(--lav); }
+  .blob { position:absolute; border-radius:50%; filter: blur(0px); }
+  .eyebrow { font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .cap-title { font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }
+  .cap-sub { font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }
+  .chip { display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
+          padding: 12px 22px; border-radius: 999px; margin: 0 12px 14px 0; }
+  #assessx-cap0 .cap-title{font-size:44px} #assessx-cap0 .cap-sub{font-size:24px; margin-top:8px}
+</style>
+  <div id="root" data-composition-id="assess" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div id="assess-b1" class="blob" style="left:-220px; top:-260px; width:760px; height:760px; background: radial-gradient(circle, rgba(95,211,180,.35), rgba(95,211,180,0) 70%);"></div>
+    <div id="assess-b2" class="blob" style="right:-260px; bottom:-300px; width:860px; height:860px; background: radial-gradient(circle, rgba(11,122,99,.18), rgba(11,122,99,0) 70%);"></div>
+    <div id="assess-ph-wrap" style="position:absolute; inset:0;"><div id="assess-ph" style="position:absolute; left:300px; top:75px; width:430px; height:930px;
+        border-radius:64px; background:#111317; box-shadow: 0 40px 90px rgba(5,61,49,.28), 0 0 0 2px #2a2d33 inset;">
+      <div style="position:absolute; left:16px; top:34px; width:398px; height:862px; border-radius:44px; overflow:hidden; background:#fff;">
+        <div id="assess-ph-zoom" style="position:absolute; inset:0;">
+          <video id="assess-ph-v" class="clip" src="assets/footage/assess.mp4" muted playsinline data-start="0" data-duration="19.3" data-track-index="1"
+            style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"></video>
+        </div>
+      </div>
+      <div style="position:absolute; left:50%; top:16px; width:120px; height:30px; margin-left:-60px; border-radius:20px; background:#111317;"></div>
+    </div></div>
+    <div id="assess-br-wrap" class="clip" data-start="13.8" data-duration="5.5" data-track-index="3" style="position:absolute; inset:0;"><div id="assess-br" style="position:absolute; left:820px; top:150px; width:1020px; height:669px; border-radius:12px;
+        overflow:hidden; background:#fff; box-shadow: 0 40px 90px rgba(5,61,49,.25);">
+      <div style="height:31px; background:#ECE8F3; display:flex; align-items:center; padding-left:14px; gap:6px;">
+        <i style="width:9px;height:9px;border-radius:50%;background:#FF5F57"></i>
+        <i style="width:9px;height:9px;border-radius:50%;background:#FEBC2E"></i>
+        <i style="width:9px;height:9px;border-radius:50%;background:#28C840"></i>
+        <span data-layout-ignore style="margin-left:16px; font:500 12px Inter; color:#5B5768; background:#fff; padding:3px 12px; border-radius:8px;">vitalu · admin</span>
+      </div>
+      <div style="position:absolute; left:0; top:31px; right:0; bottom:0; overflow:hidden;">
+        <div id="assess-br-zoom" style="position:absolute; inset:0;">
+          <video id="assess-br-v" class="clip" src="assets/footage/admin_completion.mp4" muted playsinline data-start="13.8" data-duration="5.5" data-track-index="1"
+            style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position: top;"></video>
+        </div>
+      </div>
+    </div></div>
+    <div id="assess-eb" class="eyebrow" style="position:absolute; left:900px; top:250px;">Periodic assessment</div>
+    <div id="assess-cap0" class="clip" data-start="0.3" data-duration="4.6" data-track-index="2"
+      style="position:absolute; left:900px; top:300px; width:820px; text-align:left;">
+      <div id="assess-cap0-in"><div class="cap-title">“Assessment now open”</div><div class="cap-sub">Students are notified in the app</div></div></div>
+    <div id="assess-cap1" class="clip" data-start="5.0" data-duration="8.5" data-track-index="2"
+      style="position:absolute; left:900px; top:300px; width:820px; text-align:left;">
+      <div id="assess-cap1-in"><div class="cap-title">Diet, lifestyle, well-being</div><div class="cap-sub">One short questionnaire each term</div></div></div>
+    <div id="assessx-cap0" class="clip" data-start="13.9" data-duration="5.2" data-track-index="2"
+      style="position:absolute; left:820px; top:880px; width:1020px; text-align:left;">
+      <div id="assessx-cap0-in"><div class="cap-title">Submitted, and counted</div><div class="cap-sub">Participation reaches the university instantly</div></div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#assess-b1", {x:0, y:0}, {x:120, y:60, duration:19.3, ease:"none"}, 0);
+    tl.fromTo("#assess-b2", {x:0, y:0}, {x:-100, y:-50, duration:19.3, ease:"none"}, 0);
+    tl.fromTo("#assess-ph", {opacity:0, y:80}, {opacity:1, y:0, duration:0.8, ease:"power3.out"}, 0);
+    tl.fromTo("#assess-eb", {opacity:0}, {opacity:1, duration:0.4}, 0.15);
+    tl.to("#assess-eb", {opacity:0, duration:0.3}, 13.4);
+    tl.to("#assess-ph", {x:-150, duration:0.8, ease:"power3.inOut"}, 13.600000000000001);
+    tl.fromTo("#assess-br", {opacity:0, x:200}, {opacity:1, x:0, duration:0.8, ease:"power3.out"}, 13.8);
+    tl.fromTo("#assess-cap0-in", {opacity:0, y:30}, {opacity:1, y:0, duration:0.5, ease:"power3.out"}, 0.3);
+    tl.to("#assess-cap0-in", {opacity:0, y:-16, duration:0.3, ease:"power2.in"}, 4.55);
+    tl.fromTo("#assess-cap1-in", {opacity:0, y:30}, {opacity:1, y:0, duration:0.5, ease:"power3.out"}, 5.0);
+    tl.to("#assess-cap1-in", {opacity:0, y:-16, duration:0.3, ease:"power2.in"}, 13.15);
+    tl.fromTo("#assessx-cap0-in", {opacity:0, y:30}, {opacity:1, y:0, duration:0.5, ease:"power3.out"}, 13.9);
+    tl.to("#assessx-cap0-in", {opacity:0, y:-16, duration:0.3, ease:"power2.in"}, 18.75);
+    tl.to("#assess-ph-zoom", { scale:1.5, transformOrigin:"50% 12%", duration:0.9, ease:"power3.inOut" }, 0.6);
+    tl.to("#assess-ph-zoom", { scale:1.0, transformOrigin:"50% 50%", duration:0.7, ease:"power3.inOut" }, 4.2);
+    window.__timelines["assess"] = tl;
+  </script>
+</template>

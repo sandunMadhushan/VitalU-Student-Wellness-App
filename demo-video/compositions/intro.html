@@ -1,0 +1,40 @@
+<template>
+  <style>
+  #root { position:absolute; inset:0; overflow:hidden; 
+  --green: #0B7A63; --deep: #053D31; --mint: #5FD3B4; --mint-soft: #D5EFE7;
+  --lav: #F8F5FD; --lav-2: #EDE9F5; --ink: #111317; --ink-2: #5B5768;
+  --coral: #CC2F55; --amber: #F5B321;
+ font-family: Inter, sans-serif; }
+  .bg { position:absolute; inset:0; background: var(--lav); }
+  .blob { position:absolute; border-radius:50%; filter: blur(0px); }
+  .eyebrow { font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .cap-title { font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }
+  .cap-sub { font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }
+  .chip { display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
+          padding: 12px 22px; border-radius: 999px; margin: 0 12px 14px 0; }
+  
+</style>
+  <div id="root" data-composition-id="intro" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div id="intro-b1" class="blob" style="left:-220px; top:-260px; width:760px; height:760px; background: radial-gradient(circle, rgba(95,211,180,.35), rgba(95,211,180,0) 70%);"></div>
+    <div id="intro-b2" class="blob" style="right:-260px; bottom:-300px; width:860px; height:860px; background: radial-gradient(circle, rgba(11,122,99,.18), rgba(11,122,99,0) 70%);"></div>
+    <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+      <div style="display:flex; align-items:center; gap:34px;">
+        <img id="intro-icon" src="assets/img/app_icon.png" style="width:170px; height:170px; border-radius:42px; box-shadow:0 30px 70px rgba(5,61,49,.3);" />
+        <div id="intro-word" style="font: 700 150px Outfit; letter-spacing:-0.04em; color: var(--ink);">VitalU</div>
+      </div>
+      <div id="intro-line" style="margin-top:46px; font: 600 56px Outfit; letter-spacing:-0.01em; color: var(--green);">Beyond the Academic Transcript</div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#intro-b1", {x:0, y:0}, {x:120, y:60, duration:5, ease:"none"}, 0);
+    tl.fromTo("#intro-b2", {x:0, y:0}, {x:-100, y:-50, duration:5, ease:"none"}, 0);
+    tl.fromTo("#intro-icon", {opacity:0, scale:.5, rotation:-12}, {opacity:1, scale:1, rotation:0, duration:.8, ease:"back.out(1.8)"}, 0.2);
+    tl.fromTo("#intro-word", {opacity:0, x:-30, filter:"blur(10px)"}, {opacity:1, x:0, filter:"blur(0px)", duration:.6, ease:"power3.out"}, 0.6);
+    tl.fromTo("#intro-line", {opacity:0, y:30}, {opacity:1, y:0, duration:.7, ease:"power3.out"}, 1.4);
+    tl.to("#intro-line", {letterSpacing:"0.01em", duration:2.6, ease:"none"}, 2.0);
+    tl.to(["#intro-icon", "#intro-word", "#intro-line"], {opacity:0, y:-20, duration:.4, ease:"power2.in"}, 4.55);
+    window.__timelines["intro"] = tl;
+  </script>
+</template>

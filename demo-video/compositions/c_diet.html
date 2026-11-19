@@ -1,0 +1,36 @@
+<template>
+  <style>
+  #root { position:absolute; inset:0; overflow:hidden; 
+  --green: #0B7A63; --deep: #053D31; --mint: #5FD3B4; --mint-soft: #D5EFE7;
+  --lav: #F8F5FD; --lav-2: #EDE9F5; --ink: #111317; --ink-2: #5B5768;
+  --coral: #CC2F55; --amber: #F5B321;
+ font-family: Inter, sans-serif; }
+  .bg { position:absolute; inset:0; background: var(--lav); }
+  .blob { position:absolute; border-radius:50%; filter: blur(0px); }
+  .eyebrow { font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .cap-title { font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }
+  .cap-sub { font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }
+  .chip { display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
+          padding: 12px 22px; border-radius: 999px; margin: 0 12px 14px 0; }
+  
+</style>
+  <div id="root" data-composition-id="c_diet" data-width="1920" data-height="1080">
+    <div style="position:absolute; inset:0; background: var(--deep);"></div>
+    <div id="c_diet-glow" style="position:absolute; left:50%; top:50%; width:1400px; height:1400px; margin:-700px 0 0 -700px; border-radius:50%;
+       background: radial-gradient(circle, rgba(95,211,180,.28), rgba(95,211,180,0) 60%);"></div>
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;">
+      <div style="font: 700 104px/1.05 Outfit; letter-spacing:-0.03em;">
+        <span id="c_diet-a" style="display:inline-block; color:#fff;">Nutrition that's</span>
+        <span id="c_diet-b" style="display:inline-block; color: var(--mint);">personal</span>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#c_diet-glow", {scale:.7, opacity:.4}, {scale:1.1, opacity:1, duration:2.5, ease:"none"}, 0);
+    tl.fromTo("#c_diet-a", {opacity:0, y:40, filter:"blur(10px)"}, {opacity:1, y:0, filter:"blur(0px)", duration:.55, ease:"power3.out"}, 0.1);
+    tl.fromTo("#c_diet-b", {opacity:0, y:40, filter:"blur(10px)"}, {opacity:1, y:0, filter:"blur(0px)", duration:.55, ease:"power3.out"}, 0.35);
+    tl.to(["#c_diet-a", "#c_diet-b"], {opacity:0, y:-20, duration:.3, ease:"power2.in"}, 2.15);
+    window.__timelines["c_diet"] = tl;
+  </script>
+</template>

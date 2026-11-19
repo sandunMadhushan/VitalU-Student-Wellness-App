@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#F8F5FD; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="180.0" data-width="1920" data-height="1080">
+      <div id="intro" data-composition-id="intro" data-composition-src="compositions/intro.html"
+        data-start="0.0" data-duration="5" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="app" data-composition-id="app" data-composition-src="compositions/app.html"
+        data-start="5.0" data-duration="15" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="c_tools" data-composition-id="c_tools" data-composition-src="compositions/c_tools.html"
+        data-start="20.0" data-duration="2.2" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="tools" data-composition-id="tools" data-composition-src="compositions/tools.html"
+        data-start="22.2" data-duration="23" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="c_diet" data-composition-id="c_diet" data-composition-src="compositions/c_diet.html"
+        data-start="45.2" data-duration="2.5" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="diet" data-composition-id="diet" data-composition-src="compositions/diet.html"
+        data-start="47.7" data-duration="31.5" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="progress" data-composition-id="progress" data-composition-src="compositions/progress.html"
+        data-start="79.2" data-duration="10" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="consult" data-composition-id="consult" data-composition-src="compositions/consult.html"
+        data-start="89.2" data-duration="8" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="c_assess" data-composition-id="c_assess" data-composition-src="compositions/c_assess.html"
+        data-start="97.2" data-duration="2.2" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="assess" data-composition-id="assess" data-composition-src="compositions/assess.html"
+        data-start="99.4" data-duration="19.3" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="c_admin" data-composition-id="c_admin" data-composition-src="compositions/c_admin.html"
+        data-start="118.7" data-duration="2.8" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="admin" data-composition-id="admin" data-composition-src="compositions/admin.html"
+        data-start="121.5" data-duration="19.2" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="analytics" data-composition-id="analytics" data-composition-src="compositions/analytics.html"
+        data-start="140.7" data-duration="29" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+      <div id="final" data-composition-id="final" data-composition-src="compositions/final.html"
+        data-start="169.7" data-duration="10.3" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080"></div>
+
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

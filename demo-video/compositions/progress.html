@@ -1,0 +1,52 @@
+<template>
+  <style>
+  #root { position:absolute; inset:0; overflow:hidden; 
+  --green: #0B7A63; --deep: #053D31; --mint: #5FD3B4; --mint-soft: #D5EFE7;
+  --lav: #F8F5FD; --lav-2: #EDE9F5; --ink: #111317; --ink-2: #5B5768;
+  --coral: #CC2F55; --amber: #F5B321;
+ font-family: Inter, sans-serif; }
+  .bg { position:absolute; inset:0; background: var(--lav); }
+  .blob { position:absolute; border-radius:50%; filter: blur(0px); }
+  .eyebrow { font: 700 22px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .cap-title { font: 700 64px/1.05 Outfit; color: var(--ink); letter-spacing: -0.02em; }
+  .cap-sub { font: 400 28px/1.35 Inter; color: var(--ink-2); margin-top: 18px; }
+  .chip { display:inline-block; font: 600 28px Inter; color: var(--deep); background: var(--mint-soft);
+          padding: 12px 22px; border-radius: 999px; margin: 0 12px 14px 0; }
+  
+</style>
+  <div id="root" data-composition-id="progress" data-width="1920" data-height="1080">
+    <div class="bg"></div>
+    <div id="progress-b1" class="blob" style="left:-220px; top:-260px; width:760px; height:760px; background: radial-gradient(circle, rgba(95,211,180,.35), rgba(95,211,180,0) 70%);"></div>
+    <div id="progress-b2" class="blob" style="right:-260px; bottom:-300px; width:860px; height:860px; background: radial-gradient(circle, rgba(11,122,99,.18), rgba(11,122,99,0) 70%);"></div>
+    <div id="progress-ph-wrap" style="position:absolute; inset:0;"><div id="progress-ph" style="position:absolute; left:300px; top:75px; width:430px; height:930px;
+        border-radius:64px; background:#111317; box-shadow: 0 40px 90px rgba(5,61,49,.28), 0 0 0 2px #2a2d33 inset;">
+      <div style="position:absolute; left:16px; top:34px; width:398px; height:862px; border-radius:44px; overflow:hidden; background:#fff;">
+        <div id="progress-ph-zoom" style="position:absolute; inset:0;">
+          <video id="progress-ph-v" class="clip" src="assets/footage/progress.mp4" muted playsinline data-start="0" data-duration="10" data-track-index="1"
+            style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;"></video>
+        </div>
+      </div>
+      <div style="position:absolute; left:50%; top:16px; width:120px; height:30px; margin-left:-60px; border-radius:20px; background:#111317;"></div>
+    </div></div>
+    <div id="progress-eb" class="eyebrow" style="position:absolute; left:900px; top:250px;">Progress and engagement</div>
+    <div id="progress-cap0" class="clip" data-start="0.3" data-duration="4.6" data-track-index="2"
+      style="position:absolute; left:900px; top:300px; width:820px; text-align:left;">
+      <div id="progress-cap0-in"><div class="cap-title">See your progress</div><div class="cap-sub">Trends across everything you log</div></div></div>
+    <div id="progress-cap1" class="clip" data-start="5.0" data-duration="4.8" data-track-index="2"
+      style="position:absolute; left:900px; top:300px; width:820px; text-align:left;">
+      <div id="progress-cap1-in"><div class="cap-title">Badges, streaks, reminders</div><div class="cap-sub">Gentle nudges toward healthy habits</div></div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#progress-b1", {x:0, y:0}, {x:120, y:60, duration:10, ease:"none"}, 0);
+    tl.fromTo("#progress-b2", {x:0, y:0}, {x:-100, y:-50, duration:10, ease:"none"}, 0);
+    tl.fromTo("#progress-ph", {opacity:0, y:80, rotation:-2}, {opacity:1, y:0, rotation:0, duration:0.8, ease:"power3.out"}, 0);
+    tl.fromTo("#progress-eb", {opacity:0, x:-20}, {opacity:1, x:0, duration:0.5, ease:"power3.out"}, 0.15);
+    tl.fromTo("#progress-cap0-in", {opacity:0, y:30}, {opacity:1, y:0, duration:0.5, ease:"power3.out"}, 0.3);
+    tl.to("#progress-cap0-in", {opacity:0, y:-16, duration:0.3, ease:"power2.in"}, 4.55);
+    tl.fromTo("#progress-cap1-in", {opacity:0, y:30}, {opacity:1, y:0, duration:0.5, ease:"power3.out"}, 5.0);
+    tl.to("#progress-cap1-in", {opacity:0, y:-16, duration:0.3, ease:"power2.in"}, 9.45);
+    tl.to("#progress-ph-zoom", { scale:1.4, transformOrigin:"50% 45%", duration:0.9, ease:"power3.inOut" }, 5.4);
+    window.__timelines["progress"] = tl;
+  </script>
+</template>
